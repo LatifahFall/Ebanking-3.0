@@ -81,5 +81,18 @@ public class PaymentRuleService {
         return paymentRuleRepository.findById(ruleId)
                 .orElseThrow(() -> new RuntimeException("Rule not found: " + ruleId));
     }
+
+    @Transactional
+    public void deleteRule(UUID ruleId) {
+        if (!paymentRuleRepository.existsById(ruleId)) {
+            throw new RuntimeException("Rule not found: " + ruleId);
+        }
+        paymentRuleRepository.deleteById(ruleId);
+    }
+
+    @Transactional
+    public List<PaymentRule> getAllRules() {
+        return paymentRuleRepository.findAll();
+    }
 }
 

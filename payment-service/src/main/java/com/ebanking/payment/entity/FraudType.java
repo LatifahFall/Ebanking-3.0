@@ -1,0 +1,13 @@
+package com.ebanking.payment.entity;
+
+public enum FraudType {
+    SUSPICIOUS_AMOUNT,
+    UNUSUAL_PATTERN,
+    BLACKLIST,
+    FREQUENCY_ANOMALY,
+    LOCATION_ANOMALY,
+    TIME_ANOMALY,
+    DUPLICATE_TRANSACTION,
+    HIGH_RISK_BENEFICIARY
+}
+

@@ -42,6 +42,9 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
+    clean-disabled: ${FLYWAY_CLEAN_DISABLED:true}
+    out-of-order: false
+    baseline-version: 0
   
   # Kafka Configuration
   kafka:

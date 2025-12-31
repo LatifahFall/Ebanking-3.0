@@ -41,3 +41,9 @@ logs/
 ### Local History ###
 .history/
 .lh/
+
+### Environment Variables (Secrets) ###
+.env
+.env.local
+.env.*.local
+application-local.yml

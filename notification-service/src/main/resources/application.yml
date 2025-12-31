@@ -1,0 +1,145 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: notification-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/notification_db
+    username: postgres
+    password: aabir
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+    # ==================== KAFKA CONFIGURATION ====================
+    kafka:
+      bootstrap-servers: localhost:9092
+
+      # CONSUMER CONFIGURATION (Notification Service)
+      consumer:
+        group-id: notification-service
+        auto-offset-reset: earliest  # earliest = lire depuis le début | latest = nouveaux messages uniquement
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        enable-auto-commit: true
+        auto-commit-interval: 5000
+        max-poll-records: 10  # Nombre max de messages par poll
+        session-timeout-ms: 30000
+        heartbeat-interval-ms: 10000
+
+      # PRODUCER CONFIGURATION (si le service produit aussi des events)
+      producer:
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: org.apache.kafka.common.serialization.StringSerializer
+        acks: all  # all = garantie forte | 1 = leader uniquement | 0 = aucune garantie
+        retries: 3
+        batch-size: 16384
+        linger-ms: 10
+        buffer-memory: 33554432
+
+      # LISTENER CONFIGURATION
+      listener:
+        ack-mode: batch  # Commit par batch pour performance
+        concurrency: 3  # 3 consumers en parallèle
+
+        # ==================== MAIL CONFIGURATION (Gmail SMTP) ====================
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: aabir02benhamamouche@gmail.com
+    password: gtgxzoiwrtxiwlzh
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# ==================== TWILIO CONFIGURATION (SMS) ====================
+twilio:
+  account:
+    sid: ${TWILIO_ACCOUNT_SID:your-twilio-account-sid}
+  auth:
+    token: ${TWILIO_AUTH_TOKEN:your-twilio-auth-token}
+  messaging:
+    service:
+      sid: MGf2ad7488c8ce7fe52e3eff15ead9eaa4
+  phone:
+    number: +18166769869
+# ==================== ACTUATOR (Monitoring & Health Checks) ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true  # Enable Kubernetes probes
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENVIRONMENT:dev}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+# ==================== LOGGING (JSON format for ELK) ====================
+logging:
+  level:
+    root: INFO
+    com.ebanking.notificationservice: DEBUG
+    org.springframework.kafka: INFO
+    org.springframework.mail: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/notification-service.log
+    max-size: 10MB
+    max-history: 30
+
+# ==================== CUSTOM APPLICATION PROPERTIES ====================
+app:
+  notification:
+    # Retry configuration
+    retry:
+      max-attempts: 3
+      backoff-delay: 2000  # ms
+      max-delay: 10000     # ms
+
+    # Batch notification configuration
+    batch:
+      size: 100
+      delay: 1000  # ms entre chaque batch
+
+    # Audit retention (RGPD compliance)
+    audit:
+      retention-days: 90
+
+    # Rate limiting (pour éviter spam)
+    rate-limit:
+      enabled: true
+      max-per-user-per-minute: 10

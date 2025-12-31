@@ -1,0 +1,25 @@
+# Example configuration file
+# Copy this file and rename it to override specific values
+# Or set environment variables instead
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ebanking_payment
+    username: postgres
+    password: your_password_here
+
+# Kafka
+KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+
+# Account Service
+ACCOUNT_SERVICE_URL: http://localhost:8081
+
+# Keycloak
+KEYCLOAK_AUTH_SERVER_URL: http://localhost:8180
+KEYCLOAK_REALM: ebanking
+KEYCLOAK_CLIENT_ID: payment-service
+KEYCLOAK_CLIENT_SECRET: your_client_secret_here
+
+# Server
+SERVER_PORT: 8080
+

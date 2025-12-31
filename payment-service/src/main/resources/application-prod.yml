@@ -1,0 +1,69 @@
+# Production Profile Configuration
+spring:
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        use_sql_comments: false
+        jdbc:
+          batch_size: 50
+    open-in-view: false
+  
+  datasource:
+    hikari:
+      maximum-pool-size: ${DATABASE_POOL_SIZE:20}
+      minimum-idle: ${DATABASE_POOL_MIN_IDLE:10}
+      connection-timeout: ${DATABASE_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${DATABASE_IDLE_TIMEOUT:600000}
+      max-lifetime: ${DATABASE_MAX_LIFETIME:1800000}
+      leak-detection-threshold: 60000
+
+# Logging - JSON format for production
+logging:
+  level:
+    root: INFO
+    com.ebanking.payment: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE:/var/log/payment-service/application.log}
+    max-size: 10MB
+    max-history: 30
+
+# Actuator - Secure in production
+management:
+  endpoint:
+    health:
+      show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Swagger disabled in production
+springdoc:
+  swagger-ui:
+    enabled: false
+
+# Payment Service Production Configuration
+payment:
+  service:
+    fraud:
+      detection:
+        enabled: true
+        blacklist:
+          cache:
+            ttl: 3600
+
+# Keycloak - SSL required in production
+keycloak:
+  ssl-required: all
+  bearer-only: true
+

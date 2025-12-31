@@ -21,7 +21,7 @@ public class WebClientConfig {
     @Value("${payment.service.account.service.timeout.read:10000}")
     private int readTimeout;
 
-    @Bean
+    @Bean(name = "accountServiceWebClient")
     public WebClient accountServiceWebClient() {
         HttpClient httpClient = HttpClient.create()
                 .responseTimeout(Duration.ofMillis(readTimeout))

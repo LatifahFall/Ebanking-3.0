@@ -19,6 +19,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 
 @RestController
@@ -72,13 +75,6 @@ public class AdminController {
         return ResponseEntity.ok(mapToResponse(user));
     }
 
-    @PatchMapping("/{id}/last-login")
-    @Operation(summary = "Update user's last login timestamp")
-    public ResponseEntity<UserResponse> updateLastLogin(@PathVariable Long id) {
-        User user = userService.updateLastLogin(id);
-        return ResponseEntity.ok(mapToResponse(user));
-    }
-
 
     @PostMapping("/assignments")
     @Operation(summary = "Assign client to agent", description = "Create a new agent-client assignment")
@@ -97,6 +93,24 @@ public class AdminController {
         Page<UserResponse> result = userService.searchUsers(q, role, pageable)
             .map(this::mapToResponse);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/agents/{agentId}/clients")
+    @Operation(summary = "Get all clients assigned to an agent", description = "Retrieve all clients assigned to a specific agent")
+    public ResponseEntity<List<UserResponse>> getClientsForAgent(@PathVariable Long agentId) {
+        List<User> clients = assignmentService.getClientsForAgent(agentId);
+        List<UserResponse> response = clients.stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/clients/{clientId}/agent")
+    @Operation(summary = "Get agent assigned to a client", description = "Retrieve the agent assigned to a specific client")
+    public ResponseEntity<UserResponse> getAgentForClient(@PathVariable Long clientId) {
+        return assignmentService.getAgentForClient(clientId)
+            .map(agent -> ResponseEntity.ok(mapToResponse(agent)))
+            .orElse(ResponseEntity.notFound().build());
     }
     
     private UserResponse mapToResponse(User user) {

@@ -9,6 +9,11 @@ import userservice.model.AgentClientAssignment;
 import userservice.model.User;
 import userservice.repository.AgentClientAssignmentRepository;
 import userservice.repository.UserRepository;
+import org.hibernate.Hibernate;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -67,5 +72,40 @@ public class AgentClientAssignmentService {
         response.setAssignedAt(assignment.getAssignedAt());
         response.setNotes(assignment.getNotes());
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> getClientsForAgent(Long agentId) {
+        User agent = userRepository.findById(agentId)
+            .orElseThrow(() -> new IllegalArgumentException("Agent not found"));
+        
+        if (agent.getRole() != User.UserRole.AGENT) {
+            throw new IllegalArgumentException("User is not an agent");
+        }
+
+        List<User> clients = assignmentRepository.findByAgent(agent).stream()
+            .map(AgentClientAssignment::getClient)
+            .collect(Collectors.toList());
+        
+        clients.forEach(Hibernate::initialize);
+        return clients;
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<User> getAgentForClient(Long clientId) {
+        User client = userRepository.findById(clientId)
+            .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        
+        if (client.getRole() != User.UserRole.CLIENT) {
+            throw new IllegalArgumentException("User is not a client");
+        }
+
+        Optional<AgentClientAssignment> assignment = assignmentRepository.findByClient(client);
+        if (assignment.isPresent()) {
+            User agent = assignment.get().getAgent();
+            Hibernate.initialize(agent); // Force initialization
+            return Optional.of(agent);
+        }
+        return Optional.empty();
     }
 }

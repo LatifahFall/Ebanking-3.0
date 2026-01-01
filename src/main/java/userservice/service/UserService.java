@@ -3,6 +3,7 @@ package userservice.service;
 import userservice.model.User;
 import userservice.model.UserPreferences;
 import userservice.repository.UserRepository;
+import userservice.repository.UserPreferencesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,12 +15,15 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.ArrayList;
 import jakarta.persistence.criteria.Predicate;
+import userservice.dto.UpdateProfileRequest;
+import userservice.dto.UserPreferencesRequest;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     
     private final UserRepository userRepository;
+    private final UserPreferencesRepository preferencesRepository;
     
     @Transactional
     public User createUser(User user) {
@@ -88,7 +92,9 @@ public class UserService {
         }).orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
-        public Page<User> searchUsers(String q, User.UserRole role, Pageable pageable) {
+
+
+    public Page<User> searchUsers(String q, User.UserRole role, Pageable pageable) {
         Specification<User> spec = (root, query, cb) -> {
             java.util.List<Predicate> predicates = new ArrayList<>();
 
@@ -114,6 +120,88 @@ public class UserService {
 
         return userRepository.findAll(spec, pageable);
     }
-    
-    
+
+    @Transactional
+    public User updateOwnProfile(Long id, UpdateProfileRequest request) {
+        return userRepository.findById(id).map(user -> {
+            if (request.getLogin() != null) {
+                user.setLogin(request.getLogin());
+            }
+            if (request.getEmail() != null) {
+                user.setEmail(request.getEmail());
+            }
+            if (request.getPassword() != null) {
+                user.setPasswordHash(PasswordUtil.hash(request.getPassword()));
+            }
+            if (request.getPhone() != null) {
+                user.setPhone(request.getPhone());
+            }
+            user.setUpdatedAt(LocalDateTime.now());
+            return userRepository.save(user);
+        }).orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    @Transactional
+    public UserPreferences updateUserPreferences(Long userId, UserPreferencesRequest request) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        UserPreferences prefs = preferencesRepository.findByUser(user)
+            .orElseThrow(() -> new IllegalArgumentException("Preferences not found"));
+        
+        if (request.getLanguage() != null) {
+            prefs.setLanguage(request.getLanguage());
+        }
+        if (request.getNotificationEmail() != null) {
+            prefs.setNotificationEmail(request.getNotificationEmail());
+        }
+        if (request.getNotificationSms() != null) {
+            prefs.setNotificationSms(request.getNotificationSms());
+        }
+        if (request.getNotificationPush() != null) {
+            prefs.setNotificationPush(request.getNotificationPush());
+        }
+        if (request.getNotificationInApp() != null) {
+            prefs.setNotificationInApp(request.getNotificationInApp());
+        }
+        if (request.getTheme() != null) {
+            prefs.setTheme(request.getTheme());
+        }
+        
+        return preferencesRepository.save(prefs);
+    }
+
+    public Page<User> searchAgentClients(Long agentId, String q, Pageable pageable) {
+        User agent = userRepository.findById(agentId)
+            .orElseThrow(() -> new IllegalArgumentException("Agent not found"));
+        
+        if (agent.getRole() != User.UserRole.AGENT) {
+            throw new IllegalArgumentException("User is not an agent");
+        }
+        
+        Specification<User> spec = (root, query, cb) -> {
+            java.util.List<Predicate> predicates = new ArrayList<>();
+            
+            // Must be CLIENT role
+            predicates.add(cb.equal(root.get("role"), User.UserRole.CLIENT));
+            
+            // Free-text search if provided
+            if (q != null && !q.isBlank()) {
+                String like = "%" + q.toLowerCase() + "%";
+                Predicate match = cb.or(
+                    cb.like(cb.lower(root.get("login")), like),
+                    cb.like(cb.lower(root.get("email")), like),
+                    cb.like(cb.lower(root.get("fname")), like),
+                    cb.like(cb.lower(root.get("lname")), like),
+                    cb.like(cb.lower(root.get("phone")), like),
+                    cb.like(cb.lower(root.get("cin")), like)
+                );
+                predicates.add(match);
+            }
+            
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        
+        return userRepository.findAll(spec, pageable);
+    }
 }

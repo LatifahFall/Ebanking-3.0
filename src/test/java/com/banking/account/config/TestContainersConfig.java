@@ -1,0 +1,32 @@
+package com.banking.account.config;
+
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
+
+@TestConfiguration
+@Import(TestKafkaConfiguration.class)
+public class TestContainersConfig {
+
+    @Bean
+    @ServiceConnection
+    PostgreSQLContainer<?> postgresContainer() {
+        return new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"))
+                .withDatabaseName("ebanking_test")
+                .withUsername("test")
+                .withPassword("test")
+                .withReuse(true);
+    }
+
+    @Bean
+    @ServiceConnection
+    KafkaContainer kafkaContainer() {
+        return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.6.0"))
+                .withKraft()
+                .withReuse(true);
+    }
+}

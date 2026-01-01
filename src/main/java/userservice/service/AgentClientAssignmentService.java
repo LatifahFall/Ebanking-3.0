@@ -103,7 +103,7 @@ public class AgentClientAssignmentService {
         Optional<AgentClientAssignment> assignment = assignmentRepository.findByClient(client);
         if (assignment.isPresent()) {
             User agent = assignment.get().getAgent();
-            Hibernate.initialize(agent); // Force initialization
+            Hibernate.initialize(agent);
             return Optional.of(agent);
         }
         return Optional.empty();

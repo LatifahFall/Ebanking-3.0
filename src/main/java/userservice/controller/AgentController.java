@@ -2,10 +2,11 @@ package userservice.controller;
 
 import userservice.dto.UserResponse;
 import userservice.dto.CreateUserRequest;
+import userservice.dto.AssignClientRequest;
 import userservice.model.User;
 import userservice.model.AgentClientAssignment;
 import userservice.service.UserService;
-import userservice.repository.AgentClientAssignmentRepository;
+import userservice.service.AgentClientAssignmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +26,41 @@ import java.util.stream.Collectors;
 public class AgentController {
 
     private final UserService userService;
-    private final AgentClientAssignmentRepository assignmentRepository;
+    private final AgentClientAssignmentService assignmentService;
+
+    @PostMapping("/{agentId}")
+    @Operation(summary = "Create assigned client profile", description = "Create a client assigned to this agent")
+    public ResponseEntity<UserResponse> createClient(
+        @PathVariable Long agentId,
+        @Valid @RequestBody CreateUserRequest request) {
+        
+        // agent exists
+        User agent = userService.getUserById(agentId)
+            .orElseThrow(() -> new IllegalArgumentException("Agent not found"));
+        
+        // Verify agent has AGENT role
+        if (agent.getRole() != User.UserRole.AGENT) {
+            throw new IllegalArgumentException("User is not an agent");
+        }
+
+        User newUser = new User();
+        newUser.setFname(request.getFname());
+        newUser.setLname(request.getLname());
+        newUser.setPhone(request.getPhone());
+        newUser.setAddress(request.getAddress());
+        newUser.setCin(request.getCin());
+        newUser.setLogin(request.getLogin());
+        newUser.setEmail(request.getEmail());
+        newUser.setPasswordHash(request.getPassword());
+        
+        User result = userService.createUser(newUser);
+        AssignClientRequest assignRequest = new AssignClientRequest();
+        assignRequest.setAgentId(agentId);
+        assignRequest.setClientId(result.getId());
+        assignRequest.setNotes("Auto-assigned during user creation");
+        assignmentService.assignClient(assignRequest);
+        return ResponseEntity.ok(mapToResponse(result));
+    }
 
     @PutMapping("/{agentId}")
     @Operation(summary = "Update assigned client profile", description = "Update profile of a client assigned to this agent")
@@ -48,8 +83,8 @@ public class AgentController {
         }
         
         // Verify assignment exists (client is assigned to this agent)
-        boolean isAssigned = assignmentRepository.findByClient(client)
-            .map(assignment -> assignment.getAgent().getId().equals(agentId))
+        boolean isAssigned = assignmentService.getAgentForClient(clientId)
+            .map(assignedAgent -> assignedAgent.getId().equals(agentId))
             .orElse(false);
         
         if (!isAssigned) {
@@ -89,8 +124,8 @@ public class AgentController {
         }
         
         // Verify assignment exists (client is assigned to this agent)
-        boolean isAssigned = assignmentRepository.findByClient(client)
-            .map(assignment -> assignment.getAgent().getId().equals(agentId))
+        boolean isAssigned = assignmentService.getAgentForClient(clientId)
+            .map(assignedAgent -> assignedAgent.getId().equals(agentId))
             .orElse(false);
         
         if (!isAssigned) {
@@ -116,9 +151,9 @@ public class AgentController {
         }
         
         // get his assigned clients
-        List<AgentClientAssignment> assignments = assignmentRepository.findByAgent(agent);
-        List<Long> clientIds = assignments.stream()
-            .map(assignment -> assignment.getClient().getId())
+        List<User> clients = assignmentService.getClientsForAgent(agentId);
+        List<Long> clientIds = clients.stream()
+            .map(User::getId)
             .collect(Collectors.toList());
         
         // search among all clients (we'll filter after)

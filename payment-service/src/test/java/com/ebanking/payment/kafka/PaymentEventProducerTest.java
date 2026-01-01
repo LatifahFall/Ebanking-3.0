@@ -1,9 +1,9 @@
 package com.ebanking.payment.kafka;
 
+import com.ebanking.payment.config.KafkaConfig;
 import com.ebanking.payment.kafka.event.FraudDetectedEvent;
 import com.ebanking.payment.kafka.event.PaymentCompletedEvent;
 import com.ebanking.payment.kafka.event.PaymentReversedEvent;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,15 +17,22 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.NONE,
+    classes = {KafkaConfig.class, PaymentEventProducer.class},
+    properties = {
+        "keycloak.enabled=false",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration,org.springframework.boot.autoconfigure.web.servlet.ServletWebServerFactoryAutoConfiguration",
+        "spring.kafka.consumer.group-id=payment-service-test-group"
+    }
+)
 @EmbeddedKafka(
         partitions = 1,
         topics = {"payment.completed", "payment.reversed", "fraud.detected"},
-        brokerProperties = {"listeners=PLAINTEXT://localhost:9092", "port=9092"}
+        brokerProperties = {"listeners=PLAINTEXT://localhost:0", "port=0"}
 )
 @DirtiesContext
 @ActiveProfiles("test")

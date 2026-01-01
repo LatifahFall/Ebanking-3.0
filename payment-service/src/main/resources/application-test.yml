@@ -1,18 +1,21 @@
 # Test Profile Configuration
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver
     username: sa
     password: 
   
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
     show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
     properties:
       hibernate:
         format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: false
   
   h2:
     console:
@@ -22,7 +25,7 @@ spring:
     enabled: false
   
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${spring.embedded.kafka.brokers:${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}}
     consumer:
       group-id: payment-service-test-group
       auto-offset-reset: earliest
@@ -57,8 +60,18 @@ payment:
     fraud:
       detection:
         enabled: true
+    kafka:
+      topics:
+        producer:
+          payment-completed: payment.completed
+          payment-reversed: payment.reversed
+          fraud-detected: fraud.detected
+        consumer:
+          account-created: account.created
+          account-updated: account.updated
 
-# Keycloak - Mocked in tests
+# Keycloak - Disabled in tests
 keycloak:
+  enabled: false
   bearer-only: false
 

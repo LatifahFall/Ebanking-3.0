@@ -250,6 +250,7 @@ public class UserService {
         }).orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 
+    @Transactional
     public User authenticateUser(String login, String password) {
         Optional<User> user = userRepository.findByLogin(login);
         if (user == null || !user.isPresent()) {
@@ -259,7 +260,6 @@ public class UserService {
         if (!PasswordUtil.matches(password, user.get().getPasswordHash())) {
             throw new IllegalArgumentException("Invalid login or password");
         }
-        
-        return user.get();
+        return updateLastLogin(user.get().getId());
     }
 }

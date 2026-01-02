@@ -28,6 +28,10 @@
     }
   </div>
 
+  <div *ngIf="devCode" class="dev-code">
+    <p><strong>Dev MFA code:</strong> {{ devCode }} <small>(visible in dev only)</small></p>
+  </div>
+
   <div class="form-actions">
     <app-custom-button
       label="Verify"

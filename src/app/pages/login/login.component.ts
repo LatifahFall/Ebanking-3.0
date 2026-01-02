@@ -24,7 +24,7 @@ import { AuthService } from '../../core/services/auth.service';
   styleUrl: './login.component.scss'
 })
 export class LoginComponent {
-  email = '';
+  username = '';
   password = '';
   rememberMe = false;
   hidePassword = true;
@@ -37,15 +37,15 @@ export class LoginComponent {
   ) {}
 
   onSubmit(): void {
-    if (!this.email || !this.password) {
-      this.errorMessage = 'Please enter both email and password';
+    if (!this.username || !this.password) {
+      this.errorMessage = 'Please enter both username and password';
       return;
     }
 
     this.loading = true;
     this.errorMessage = '';
 
-    this.authService.login(this.email, this.password).subscribe({
+    this.authService.login(this.username, this.password).subscribe({
       next: (response) => {
         if (response.requiresMFA) {
           this.router.navigate(['/auth/mfa']);

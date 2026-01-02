@@ -17,12 +17,19 @@ export class MfaComponent {
   loading = false;
   errorMessage = '';
   resendTimer = 60;
+  pendingUserId: string | null = null;
+  devCode: string | null = null;
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {
     this.startResendTimer();
+    // get pending MFA user id and dev code if available
+    try {
+      this.pendingUserId = this.authService.getPendingMfaUserId();
+      this.devCode = this.pendingUserId ? this.authService.getMfaCodeForDev(this.pendingUserId) : null;
+    } catch {}
   }
 
   onCodeInput(index: number, event: any): void {
@@ -57,8 +64,7 @@ export class MfaComponent {
     const fullCode = this.code.join('');
     this.loading = true;
     this.errorMessage = '';
-
-    this.authService.verifyMFA(fullCode).subscribe({
+    this.authService.verifyMFA(fullCode, this.pendingUserId || undefined).subscribe({
       next: (response) => {
         if (response.success) {
           this.router.navigate(['/dashboard']);

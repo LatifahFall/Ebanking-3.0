@@ -51,6 +51,16 @@ For end-to-end (e2e) testing, run:
 ```bash
 ng e2e
 ```
+If you don't have an e2e target configured, you can use Cypress directly:
+
+- Start the dev server: `npm start` (runs on http://localhost:4200)
+- In another terminal run the Cypress test suite (headless): `npm run e2e:run`
+- Or open interactive test runner: `npm run e2e:open`
+
+The repository includes a smoke test at `cypress/e2e/payments.cy.ts` which:
+- Initiates a payment via the UI
+- Verifies it appears in the payments list
+- Verifies pagination (page size and Next button)
 
 Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 

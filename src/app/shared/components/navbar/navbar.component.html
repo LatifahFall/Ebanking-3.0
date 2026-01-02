@@ -28,11 +28,8 @@
     <!-- User Profile Menu -->
     <button class="profile-btn" [matMenuTriggerFor]="profileMenu">
       <div class="profile-avatar">
-        @if (currentUser?.avatar) {
-          <img [src]="currentUser!.avatar" [alt]="currentUser!.fullName">
-        } @else {
-          <span class="avatar-initials">{{ getUserInitials() }}</span>
-        }
+        <img *ngIf="currentUser?.avatar" [src]="currentUser!.avatar" [alt]="currentUser!.fullName">
+        <span *ngIf="!currentUser?.avatar" class="avatar-initials">{{ getUserInitials() }}</span>
       </div>
       <div class="profile-info">
         <span class="profile-name">{{ currentUser?.fullName }}</span>
@@ -44,11 +41,8 @@
     <mat-menu #profileMenu="matMenu" class="profile-menu">
       <div class="profile-menu-header">
         <div class="profile-avatar-large">
-          @if (currentUser?.avatar) {
-            <img [src]="currentUser!.avatar" [alt]="currentUser!.fullName">
-          } @else {
-            <span class="avatar-initials">{{ getUserInitials() }}</span>
-          }
+          <img *ngIf="currentUser?.avatar" [src]="currentUser!.avatar" [alt]="currentUser!.fullName">
+          <span *ngIf="!currentUser?.avatar" class="avatar-initials">{{ getUserInitials() }}</span>
         </div>
         <div class="profile-details">
           <h4>{{ currentUser?.fullName }}</h4>

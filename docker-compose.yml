@@ -43,19 +43,4 @@ services:
     ports:
       - "6379:6379"
 
-  payment-service:
-    build: ./simulation_microservices_pr_test_infra/payment-service
-    container_name: payment-service
-    depends_on:
-      - kafka
-      - postgres
-      - redis
-      - keycloak
 
-  notification-service:
-    build: ./simulation_microservices_pr_test_infra/notification-service
-    container_name: notification-service
-    depends_on:
-      - kafka
-      - redis
-      - keycloak

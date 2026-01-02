@@ -1,5 +1,5 @@
-# Base image Java 17
-FROM openjdk:17
+# Base image Java 
+FROM eclipse-temurin:21-jdk-jammy
 
 # Créer le dossier de travail dans le container
 WORKDIR /app

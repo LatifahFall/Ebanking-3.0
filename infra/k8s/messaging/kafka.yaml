@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-all-in-one
+  namespace: ebanking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-all
+  template:
+    metadata:
+      labels:
+        app: kafka-all
+    spec:
+      containers:
+      - name: kafka
+        image: obsidiandynamics/kafka  # ← CHANGE L'IMAGE
+        env:
+        - name: KAFKA_LISTENERS
+          value: "PLAINTEXT://0.0.0.0:9092"
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: "PLAINTEXT://kafka:9092"
+        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+          value: "true"
+        # Cette image démarre Kafka + ZooKeeper automatiquement
+        ports:
+        - containerPort: 9092
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: ebanking
+spec:
+  selector:
+    app: kafka-all
+  ports:
+  - port: 9092
+    targetPort: 9092

@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: account-service-test
+  namespace: ebanking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: account-service-test
+  template:
+    metadata:
+      labels:
+        app: account-service-test
+    spec:
+      containers:
+      - name: test
+        image: springio/gs-spring-boot-docker  # Image Spring Boot publique
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_HOST
+          value: "postgres"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: account-service-test
+  namespace: ebanking
+spec:
+  selector:
+    app: account-service-test
+  ports:
+  - port: 80
+    targetPort: 8080

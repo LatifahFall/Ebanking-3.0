@@ -62,6 +62,30 @@ public class AgentClientAssignmentService {
         AgentClientAssignment saved = assignmentRepository.save(assignment);
         return toResponse(saved);
     }
+    @Transactional
+    public void disassignClient(Long clientId, Long agentId) {
+        User client = userRepository.findById(clientId)
+            .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        User agent = userRepository.findById(agentId)
+            .orElseThrow(() -> new IllegalArgumentException("Agent not found"));
+            
+        if (client.getRole() != User.UserRole.CLIENT) {
+            throw new IllegalArgumentException("User is not a client");
+        }
+        if (agent.getRole() != User.UserRole.AGENT) {
+            throw new IllegalArgumentException("User is not an agent");
+        }
+        
+        AgentClientAssignment assignment = assignmentRepository.findByClient(client)
+            .orElseThrow(() -> new IllegalArgumentException("Client is not assigned to any agent"));
+            
+        // Vérifier que le client est bien assigné à cet agent
+        if (!assignment.getAgent().getId().equals(agentId)) {
+            throw new IllegalArgumentException("Client is not assigned to this agent");
+        }
+        
+        assignmentRepository.delete(assignment);
+    }
 
     private AgentClientAssignmentResponse toResponse(AgentClientAssignment assignment) {
         AgentClientAssignmentResponse response = new AgentClientAssignmentResponse();

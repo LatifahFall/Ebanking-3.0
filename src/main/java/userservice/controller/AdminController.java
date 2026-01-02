@@ -32,6 +32,7 @@ public class AdminController {
     
     private final UserService userService;
     private final AgentClientAssignmentService assignmentService;
+    private final userservice.service.UserEventProducer userEventProducer;
     
     @PostMapping
     @Operation(summary = "Create a new user", description = "Register a new user account")
@@ -47,6 +48,8 @@ public class AdminController {
         user.setAddress(request.getAddress());
         user.setRole(User.UserRole.valueOf(request.getRole()));
         User createdUser = userService.createUser(user);
+        //kafka event
+        userEventProducer.publishUserCreatedEvent(createdUser); 
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(createdUser));
     }
     
@@ -74,6 +77,8 @@ public class AdminController {
         }        
         updatedUser.setRole(User.UserRole.valueOf(request.getRole()));
         User user = userService.updateUser(id, updatedUser);
+        // kafka event
+        userEventProducer.publishUserUpdatedEvent(user);
         return ResponseEntity.ok(mapToResponse(user));
     }
 
@@ -82,7 +87,18 @@ public class AdminController {
     @Operation(summary = "Assign client to agent", description = "Create a new agent-client assignment")
     public ResponseEntity<AgentClientAssignmentResponse> assignClient(@Valid @RequestBody AssignClientRequest request) {
         AgentClientAssignmentResponse response = assignmentService.assignClient(request);
+        // kafka event
+        userEventProducer.publishClientAssignedEvent(request.getClientId(), request.getAgentId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @DeleteMapping("/assignments")
+    @Operation(summary = "Disassign client from agent", description = "Remove an agent-client assignment")
+    public ResponseEntity<Void> disassignClient(@RequestParam Long clientId, @RequestParam Long agentId) {
+        assignmentService.disassignClient(clientId, agentId);
+        // kafka event
+        userEventProducer.publishClientUnassignedEvent(clientId, agentId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")
@@ -125,6 +141,8 @@ public class AdminController {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
         
         User result = userService.activateUserProfile(userId);
+        // kafka event
+        userEventProducer.publishUserActivatedEvent(userId, "ADMIN");
         return ResponseEntity.ok(mapToResponse(result));
     }        
 
@@ -136,6 +154,8 @@ public class AdminController {
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
         
         User result = userService.deactivateUserProfile(userId);
+        // kafka event
+        userEventProducer.publishUserDeactivatedEvent(userId, "ADMIN");
         return ResponseEntity.ok(mapToResponse(result));
     }
     

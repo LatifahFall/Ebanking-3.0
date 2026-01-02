@@ -27,6 +27,7 @@ public class AgentController {
 
     private final UserService userService;
     private final AgentClientAssignmentService assignmentService;
+    private final userservice.service.UserEventProducer userEventProducer;
 
     @PostMapping("/{agentId}")
     @Operation(summary = "Create assigned client profile", description = "Create a client assigned to this agent")
@@ -59,6 +60,9 @@ public class AgentController {
         assignRequest.setClientId(result.getId());
         assignRequest.setNotes("Auto-assigned during user creation");
         assignmentService.assignClient(assignRequest);
+        // kafka events
+        userEventProducer.publishUserCreatedEventWithCreator(result, agent);
+        userEventProducer.publishClientAssignedEvent(result.getId(), agentId);
         return ResponseEntity.ok(mapToResponse(result));
     }
 
@@ -102,6 +106,8 @@ public class AgentController {
             updatedUser.setPasswordHash(request.getPassword());
         }         
         User result = userService.updateUser(clientId, updatedUser);
+        // kafka event
+        userEventProducer.publishUserUpdatedEventWithUpdater(result, agent);
         return ResponseEntity.ok(mapToResponse(result));
     }
 
@@ -202,6 +208,8 @@ public class AgentController {
             throw new IllegalArgumentException("Client is not assigned to this agent");
         }        
         User result = userService.activateUserProfile(clientId);
+        // kafka event
+        userEventProducer.publishUserActivatedEvent(clientId, "AGENT");
         return ResponseEntity.ok(mapToResponse(result));
     }
 
@@ -233,6 +241,8 @@ public class AgentController {
             throw new IllegalArgumentException("Client is not assigned to this agent");
         }        
         User result = userService.deactivateUserProfile(clientId);
+        // kafka event
+        userEventProducer.publishUserDeactivatedEvent(clientId, "AGENT");
         return ResponseEntity.ok(mapToResponse(result));
     }
 

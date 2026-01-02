@@ -20,6 +20,7 @@ import jakarta.validation.Valid;
 public class MeController {
 
     private final UserService userService;
+    private final userservice.service.UserEventProducer userEventProducer;
 
     @GetMapping("/{id}")
     @Operation(summary = "Get my profile", description = "Retrieve the current user's profile by id")
@@ -33,6 +34,8 @@ public class MeController {
     @Operation(summary = "Update my profile", description = "Update login, email, password, or phone")
     public ResponseEntity<UserResponse> updateMyProfile(@PathVariable Long id, @Valid @RequestBody UpdateProfileRequest request) {
         User updated = userService.updateOwnProfile(id, request);
+        //kafka event
+        userEventProducer.publishUserUpdatedEventWithUpdater(updated, updated);
         return ResponseEntity.ok(mapToResponse(updated));
     }
     

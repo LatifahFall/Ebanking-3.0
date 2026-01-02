@@ -23,5 +23,17 @@ mettre les nom des topics , qui est le producer microservice , qui est consumer
 | `payment.reversed` | **payment-service** | **account-service**, notification-service, audit-service |
 | `fraud.detected` | **payment-service** | **account-service**, notification-service, audit-service |
 
+## Topics PRODUITS par User Service
+
+| Topic | Producer | Consumer(s) |
+|-------|----------|-------------|
+| `user.created` | **user-service** | account-service, audit-service, notification-service |
+| `user.updated` | **user-service** | audit-service |
+| `user.activated` | **user-service** | audit-service, , notification-service |
+| `user.deactivated` | **user-service** | audit-service |
+| `client.assigned` | **user-service** | audit-service |
+| `client.unassigned` | **user-service** | audit-service |
+
+
 
 

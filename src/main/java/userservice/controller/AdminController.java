@@ -69,7 +69,9 @@ public class AdminController {
         updatedUser.setCin(request.getCin());
         updatedUser.setLogin(request.getLogin());
         updatedUser.setEmail(request.getEmail());
-        updatedUser.setPasswordHash(request.getPassword());
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            updatedUser.setPasswordHash(request.getPassword());
+        }        
         updatedUser.setRole(User.UserRole.valueOf(request.getRole()));
         User user = userService.updateUser(id, updatedUser);
         return ResponseEntity.ok(mapToResponse(user));
@@ -112,6 +114,30 @@ public class AdminController {
             .map(agent -> ResponseEntity.ok(mapToResponse(agent)))
             .orElse(ResponseEntity.notFound().build());
     }
+
+    @PatchMapping("/activate")
+    @Operation(summary = "Activate a user's profile", description = "Activate profile of a user by admin")
+    public ResponseEntity<UserResponse> activateUserProfile(
+        @RequestParam Long userId) {
+        
+        // user exists
+        User user = userService.getUserById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        User result = userService.activateUserProfile(userId);
+        return ResponseEntity.ok(mapToResponse(result));
+    }        
+
+
+    @PatchMapping("/deactivate")
+    @Operation(summary = "Deactivate a user's profile", description = "Deactivate profile of a user by admin")
+    public ResponseEntity<UserResponse> deactivateUserProfile(@RequestParam Long userId) {
+        User user = userService.getUserById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        User result = userService.deactivateUserProfile(userId);
+        return ResponseEntity.ok(mapToResponse(result));
+    }
     
     private UserResponse mapToResponse(User user) {
         UserResponse response = new UserResponse();
@@ -124,8 +150,13 @@ public class AdminController {
         response.setCin(user.getCin());
         response.setAddress(user.getAddress());
         response.setRole(user.getRole().toString());
+        response.setIsActive(user.getIsActive());
         response.setKycStatus(user.getKycStatus().toString());
         response.setGdprConsent(user.getGdprConsent());
+        response.setLastLogin(user.getLastLogin());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
         return response;
     }
+
 }

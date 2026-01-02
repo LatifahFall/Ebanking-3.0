@@ -55,10 +55,20 @@ public class UserService {
             if (updatedUser.getFname() != null) {
                 existingUser.setFname(updatedUser.getFname());
             }
-            if (updatedUser.getLogin() != null) {
+            if (updatedUser.getLogin() != null && !updatedUser.getLogin().equalsIgnoreCase(existingUser.getLogin())) {
+                // Check if login exists for another user
+                var existingLogin = userRepository.findByLogin(updatedUser.getLogin());
+                if (existingLogin.isPresent() && !existingLogin.get().getId().equals(id)) {
+                    throw new IllegalArgumentException("Login already exists");
+                }
                 existingUser.setLogin(updatedUser.getLogin());
             }
-            if (updatedUser.getEmail() != null) {
+            if (updatedUser.getEmail() != null && !updatedUser.getEmail().equalsIgnoreCase(existingUser.getEmail())) {
+                // Check if email exists for another user
+                var existingEmail = userRepository.findByEmail(updatedUser.getEmail());
+                if (existingEmail.isPresent() && !existingEmail.get().getId().equals(id)) {
+                    throw new IllegalArgumentException("Email already exists");
+                }
                 existingUser.setEmail(updatedUser.getEmail());
             }
             if (updatedUser.getLname() != null) {
@@ -70,7 +80,12 @@ public class UserService {
             if (updatedUser.getAddress() != null) {
                 existingUser.setAddress(updatedUser.getAddress());
             }
-            if (updatedUser.getCin() != null) {
+            if (updatedUser.getCin() != null && !updatedUser.getCin().equals(existingUser.getCin())) {
+                // Check if CIN exists for another user
+                var existingCin = userRepository.findByCin(updatedUser.getCin());
+                if (existingCin.isPresent() && !existingCin.get().getId().equals(id)) {
+                    throw new IllegalArgumentException("CIN already exists");
+                }
                 existingUser.setCin(updatedUser.getCin());
             }
             if (updatedUser.getPasswordHash() != null) {
@@ -124,10 +139,20 @@ public class UserService {
     @Transactional
     public User updateOwnProfile(Long id, UpdateProfileRequest request) {
         return userRepository.findById(id).map(user -> {
-            if (request.getLogin() != null) {
+            if (request.getLogin() != null && !request.getLogin().equalsIgnoreCase(user.getLogin())) {
+                // Check if login exists for another user
+                var existingLogin = userRepository.findByLogin(request.getLogin());
+                if (existingLogin.isPresent() && !existingLogin.get().getId().equals(id)) {
+                    throw new IllegalArgumentException("Login already exists");
+                }
                 user.setLogin(request.getLogin());
             }
-            if (request.getEmail() != null) {
+            if (request.getEmail() != null && !request.getEmail().equalsIgnoreCase(user.getEmail())) {
+                // Check if email exists for another user
+                var existingEmail = userRepository.findByEmail(request.getEmail());
+                if (existingEmail.isPresent() && !existingEmail.get().getId().equals(id)) {
+                    throw new IllegalArgumentException("Email already exists");
+                }
                 user.setEmail(request.getEmail());
             }
             if (request.getPassword() != null) {
@@ -139,6 +164,14 @@ public class UserService {
             user.setUpdatedAt(LocalDateTime.now());
             return userRepository.save(user);
         }).orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    public UserPreferences getUserPreferences(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        return preferencesRepository.findByUser(user)
+            .orElseThrow(() -> new IllegalArgumentException("Preferences not found"));
     }
 
     @Transactional
@@ -182,10 +215,8 @@ public class UserService {
         Specification<User> spec = (root, query, cb) -> {
             java.util.List<Predicate> predicates = new ArrayList<>();
             
-            // Must be CLIENT role
             predicates.add(cb.equal(root.get("role"), User.UserRole.CLIENT));
             
-            // Free-text search if provided
             if (q != null && !q.isBlank()) {
                 String like = "%" + q.toLowerCase() + "%";
                 Predicate match = cb.or(
@@ -203,5 +234,32 @@ public class UserService {
         };
         
         return userRepository.findAll(spec, pageable);
+    }
+    @Transactional
+    public User activateUserProfile(Long id) {
+        return userRepository.findById(id).map(user -> {
+            user.setIsActive(true);
+            return userRepository.save(user);
+        }).orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+    @Transactional
+    public User deactivateUserProfile(Long id) {
+        return userRepository.findById(id).map(user -> {
+            user.setIsActive(false);
+            return userRepository.save(user);
+        }).orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    public User authenticateUser(String login, String password) {
+        Optional<User> user = userRepository.findByLogin(login);
+        if (user == null || !user.isPresent()) {
+            throw new IllegalArgumentException("Invalid login or password");
+        }
+        
+        if (!PasswordUtil.matches(password, user.get().getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid login or password");
+        }
+        
+        return user.get();
     }
 }

@@ -98,8 +98,9 @@ public class AgentController {
         updatedUser.setCin(request.getCin());
         updatedUser.setLogin(request.getLogin());
         updatedUser.setEmail(request.getEmail());
-        updatedUser.setPasswordHash(request.getPassword());
-        
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            updatedUser.setPasswordHash(request.getPassword());
+        }         
         User result = userService.updateUser(clientId, updatedUser);
         return ResponseEntity.ok(mapToResponse(result));
     }
@@ -173,6 +174,70 @@ public class AgentController {
         return ResponseEntity.ok(result);
     }
 
+    @PatchMapping("/{agentId}/activate")
+    @Operation(summary = "Activate an assigned client's profile", description = "Activate profile of a client assigned to this agent")
+    public ResponseEntity<UserResponse> activateClientProfile(
+        @PathVariable Long agentId,
+        @RequestParam Long clientId) {
+        
+        // client exists
+        User client = userService.getUserById(clientId)
+            .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        
+        // agent exists
+        User agent = userService.getUserById(agentId)
+            .orElseThrow(() -> new IllegalArgumentException("Agent not found"));
+        
+        // Verify agent has AGENT role
+        if (agent.getRole() != User.UserRole.AGENT) {
+            throw new IllegalArgumentException("User is not an agent");
+        }
+        
+        // Verify assignment exists (client is assigned to this agent)
+        boolean isAssigned = assignmentService.getAgentForClient(clientId)
+            .map(assignedAgent -> assignedAgent.getId().equals(agentId))
+            .orElse(false);
+        
+        if (!isAssigned) {
+            throw new IllegalArgumentException("Client is not assigned to this agent");
+        }        
+        User result = userService.activateUserProfile(clientId);
+        return ResponseEntity.ok(mapToResponse(result));
+    }
+
+    @PatchMapping("/{agentId}/deactivate")
+    @Operation(summary = "Deactivate an assigned client's profile", description = "Deactivate profile of a client assigned to this agent")
+    public ResponseEntity<UserResponse> deactivateClientProfile(
+        @PathVariable Long agentId,
+        @RequestParam Long clientId) {
+        
+        // client exists
+        User client = userService.getUserById(clientId)
+            .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        
+        // agent exists
+        User agent = userService.getUserById(agentId)
+            .orElseThrow(() -> new IllegalArgumentException("Agent not found"));
+        
+        // Verify agent has AGENT role
+        if (agent.getRole() != User.UserRole.AGENT) {
+            throw new IllegalArgumentException("User is not an agent");
+        }
+        
+        // Verify assignment exists (client is assigned to this agent)
+        boolean isAssigned = assignmentService.getAgentForClient(clientId)
+            .map(assignedAgent -> assignedAgent.getId().equals(agentId))
+            .orElse(false);
+        
+        if (!isAssigned) {
+            throw new IllegalArgumentException("Client is not assigned to this agent");
+        }        
+        User result = userService.deactivateUserProfile(clientId);
+        return ResponseEntity.ok(mapToResponse(result));
+    }
+
+
+
     private UserResponse mapToResponse(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());
@@ -184,8 +249,12 @@ public class AgentController {
         response.setCin(user.getCin());
         response.setAddress(user.getAddress());
         response.setRole(user.getRole().toString());
+        response.setIsActive(user.getIsActive());
         response.setKycStatus(user.getKycStatus().toString());
         response.setGdprConsent(user.getGdprConsent());
+        response.setLastLogin(user.getLastLogin());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
         return response;
     }
 }

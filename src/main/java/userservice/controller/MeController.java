@@ -43,11 +43,28 @@ public class MeController {
         return ResponseEntity.ok(mapToResponse(user));
     }
 
+    @GetMapping("/{id}/preferences")
+    @Operation(summary = "Get my preferences", description = "Retrieve language, theme, and notification settings")
+    public ResponseEntity<UserPreferences> getPreferences(@PathVariable Long id) {
+        UserPreferences prefs = userService.getUserPreferences(id);
+        return ResponseEntity.ok(prefs);
+    }
+
     @PutMapping("/{id}/preferences")
     @Operation(summary = "Update my preferences", description = "Update language, theme, and notification settings")
     public ResponseEntity<UserPreferences> updatePreferences(@PathVariable Long id, @RequestBody UserPreferencesRequest request) {
         UserPreferences prefs = userService.updateUserPreferences(id, request);
         return ResponseEntity.ok(prefs);
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "Authenticate user", description = "Verify login credentials and return user profile")
+    public ResponseEntity<UserResponse> authenticateUser(
+        @RequestParam String login, 
+        @RequestParam String password) {
+        
+        User user = userService.authenticateUser(login, password);
+        return ResponseEntity.ok(mapToResponse(user));
     }
 
     private UserResponse mapToResponse(User user) {
@@ -61,8 +78,12 @@ public class MeController {
         response.setCin(user.getCin());
         response.setAddress(user.getAddress());
         response.setRole(user.getRole().toString());
+        response.setIsActive(user.getIsActive());
         response.setKycStatus(user.getKycStatus().toString());
         response.setGdprConsent(user.getGdprConsent());
+        response.setLastLogin(user.getLastLogin());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
         return response;
     }
 }

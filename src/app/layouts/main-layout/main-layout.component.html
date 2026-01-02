@@ -1,0 +1,18 @@
+<div class="main-layout">
+  <!-- Sidebar -->
+  <app-sidebar 
+    [isCollapsed]="isSidebarCollapsed()"
+    (collapsedChange)="onSidebarToggle($event)">
+  </app-sidebar>
+
+  <!-- Main Content Area -->
+  <div class="main-content" [class.expanded]="isSidebarCollapsed()">
+    <!-- Top Navbar -->
+    <app-navbar></app-navbar>
+
+    <!-- Page Content -->
+    <main class="page-container">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

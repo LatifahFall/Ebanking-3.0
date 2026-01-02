@@ -1,0 +1,73 @@
+/**
+ * Light Theme
+ * REAL BANKING APPLICATION - Light backgrounds, dark blue accents
+ */
+
+@use './variables' as *;
+
+.light-theme {
+  // Primary Colors
+  --primary-color: #{$primary-600};
+  --primary-light: #{$primary-50};
+  --primary-light-10: rgba(30, 106, 225, 0.1);
+  --primary-dark: #{$primary-700};
+
+  // Secondary Colors
+  --secondary-color: #{$secondary-600};
+  --secondary-light: #{$secondary-100};
+
+  // Accent
+  --accent-color: #{$accent-600};
+
+  // Status Colors
+  --success-color: #{$success-color};
+  --warning-color: #{$warning-color};
+  --error-color: #{$error-color};
+  --info-color: #{$info-color};
+
+  // Background Colors - LIGHT THEME!
+  --body-bg: #F5F7FB;
+  --card-bg: #FFFFFF;
+  --sidebar-bg: #0F2744;
+  --navbar-bg: #0F2744;
+  --secondary-bg: #{$gray-100};
+  --hover-bg: rgba(30, 106, 225, 0.05);
+
+  // Text Colors
+  --text-primary: #{$gray-900};
+  --text-secondary: #{$gray-500};
+  --text-tertiary: #{$gray-400};
+  --text-on-primary: #FFFFFF;
+  --text-on-dark: #FFFFFF;
+
+  // Border Colors
+  --border-color: #{$gray-200};
+  --border-hover: #{$gray-300};
+
+  // Gradients
+  --gradient-primary: linear-gradient(135deg, #1E6AE1 0%, #1557B8 100%);
+  --gradient-secondary: linear-gradient(135deg, #0EA5E9 0%, #0288D1 100%);
+  --gradient-cosmic: linear-gradient(135deg, #1565C0 0%, #0EA5E9 100%);
+  --gradient-sunset: linear-gradient(135deg, #1E6AE1 0%, #4DA9FF 100%);
+  --gradient-ocean: linear-gradient(135deg, #0EA5E9 0%, #2196F3 100%);
+  --gradient-sidebar: none;
+
+  // Skeleton Loading
+  --skeleton-base: #{$gray-200};
+  --skeleton-shimmer: #{$gray-100};
+
+  // Shadows
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  --shadow-card: #{$shadow-card};
+  --shadow-card-hover: #{$shadow-card-hover};
+
+  // Chart Colors
+  --chart-color-1: #{$primary-500};
+  --chart-color-2: #{$secondary-500};
+  --chart-color-3: #{$accent-500};
+  --chart-color-4: #{$info-color};
+  --chart-color-5: #8B5CF6;
+  --chart-color-6: #EC4899;
+}

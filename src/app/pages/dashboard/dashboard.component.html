@@ -1,0 +1,172 @@
+<div class="dashboard-page">
+  @if (loading) {
+    <app-loader [fullScreen]="true" message="Loading your dashboard..."></app-loader>
+  } @else {
+    <!-- Page Header -->
+    <app-page-header 
+      title="Dashboard" 
+      subtitle="Overview of your accounts and recent activity"
+      [breadcrumbs]="['Home', 'Dashboard']">
+    </app-page-header>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <app-info-card
+        title="Total Balance"
+        [value]="formatCurrency(accountSummary?.totalBalance || 0)"
+        subtitle="Across all accounts"
+        icon="account_balance_wallet"
+        [trend]="2.5"
+        trendLabel="vs last month"
+        color="#1E6AE1"
+        [clickable]="true">
+      </app-info-card>
+
+      <app-info-card
+        title="Monthly Income"
+        [value]="formatCurrency(accountSummary?.totalIncome || 0)"
+        subtitle="This month"
+        icon="trending_up"
+        [trend]="15.3"
+        trendLabel="vs last month"
+        color="#3B82F6"
+        [clickable]="true">
+      </app-info-card>
+
+      <app-info-card
+        title="Monthly Expenses"
+        [value]="formatCurrency(accountSummary?.totalExpense || 0)"
+        subtitle="This month"
+        icon="trending_down"
+        [trend]="-8.2"
+        trendLabel="vs last month"
+        color="#1565C0"
+        [clickable]="true">
+      </app-info-card>
+
+      <app-info-card
+        title="Crypto Assets"
+        [value]="formatCurrency(getCryptoTotal())"
+        subtitle="Portfolio value"
+        icon="currency_bitcoin"
+        [trend]="12.7"
+        trendLabel="24h change"
+        color="#0EA5E9"
+        [clickable]="true">
+      </app-info-card>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <h3 class="section-title">Quick Actions</h3>
+      <div class="action-buttons">
+        <app-custom-button
+          label="Transfer Money"
+          icon="swap_horiz"
+          variant="primary"
+          (clicked)="onQuickTransfer()">
+        </app-custom-button>
+
+        <app-custom-button
+          label="Pay Bills"
+          icon="payment"
+          variant="secondary"
+          (clicked)="onPayBills()">
+        </app-custom-button>
+
+        <app-custom-button
+          label="View All Accounts"
+          icon="account_balance"
+          variant="secondary"
+          (clicked)="onViewAllAccounts()">
+        </app-custom-button>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+      <!-- Accounts Overview -->
+      <div class="dashboard-card accounts-card">
+        <div class="card-header">
+          <h3>My Accounts</h3>
+          <button class="view-all-btn" (click)="onViewAllAccounts()">
+            View All
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+        <div class="accounts-list">
+          @for (account of accounts; track account.id) {
+            <div class="account-item">
+              <div class="account-icon" [attr.data-type]="account.accountType">
+                <mat-icon>{{ account.icon }}</mat-icon>
+              </div>
+              <div class="account-details">
+                <h4>{{ account.accountName }}</h4>
+                <p>{{ account.accountNumber }}</p>
+              </div>
+              <div class="account-balance">
+                <span class="balance">{{ formatCurrency(account.balance) }}</span>
+                <span class="currency">{{ account.currency }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="dashboard-card transactions-card">
+        <div class="card-header">
+          <h3>Recent Transactions</h3>
+          <button class="view-all-btn" (click)="onViewAllTransactions()">
+            View All
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+        </div>
+        <div class="transactions-list">
+          @for (transaction of recentTransactions; track transaction.id) {
+            <app-transaction-item 
+              [transaction]="transaction"
+              [clickable]="true">
+            </app-transaction-item>
+          }
+        </div>
+      </div>
+
+      <!-- Spending Analytics -->
+      <div class="dashboard-card chart-card">
+        <app-chart-widget
+          title="Spending Overview"
+          type="line"
+          [height]="300">
+        </app-chart-widget>
+      </div>
+
+      <!-- Crypto Portfolio -->
+      <div class="dashboard-card crypto-card">
+        <div class="card-header">
+          <h3>Crypto Portfolio</h3>
+          <mat-icon>currency_bitcoin</mat-icon>
+        </div>
+        <div class="crypto-list">
+          @for (crypto of accountSummary?.cryptoAssets; track crypto.id) {
+            <div class="crypto-item">
+              <div class="crypto-icon" [attr.data-crypto]="crypto.symbol">
+                <span>{{ crypto.icon }}</span>
+              </div>
+              <div class="crypto-details">
+                <h4>{{ crypto.name }}</h4>
+                <p>{{ crypto.balance }} {{ crypto.symbol }}</p>
+              </div>
+              <div class="crypto-value">
+                <span class="value">{{ formatCurrency(crypto.valueInUSD) }}</span>
+                <span class="change" [class.positive]="crypto.change24h > 0" [class.negative]="crypto.change24h < 0">
+                  {{ crypto.change24h > 0 ? '+' : '' }}{{ crypto.change24h }}%
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

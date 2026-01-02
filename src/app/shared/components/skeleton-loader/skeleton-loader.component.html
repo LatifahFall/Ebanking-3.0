@@ -1,0 +1,10 @@
+<div class="skeleton-container">
+  @for (item of [].constructor(count()); track $index) {
+    <div 
+      class="skeleton-loader" 
+      [class]="'skeleton-' + variant()"
+      [style.width]="width()"
+      [style.height]="height()">
+    </div>
+  }
+</div>

@@ -1,0 +1,23 @@
+<button 
+  class="custom-btn"
+  [class]="'custom-btn-' + variant() + ' custom-btn-' + size()"
+  [class.full-width]="fullWidth()"
+  [disabled]="disabled() || loading()"
+  (click)="onClick()">
+  
+  @if (loading()) {
+    <mat-spinner diameter="20" color="inherit"></mat-spinner>
+  } @else {
+    @if (icon() && iconPosition() === 'left') {
+      <mat-icon class="btn-icon">{{ icon() }}</mat-icon>
+    }
+    
+    @if (label()) {
+      <span class="btn-label">{{ label() }}</span>
+    }
+    
+    @if (icon() && iconPosition() === 'right') {
+      <mat-icon class="btn-icon">{{ icon() }}</mat-icon>
+    }
+  }
+</button>

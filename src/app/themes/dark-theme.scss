@@ -1,0 +1,73 @@
+/**
+ * Dark Theme
+ * Premium dark color scheme for E-Banking 3.0
+ * Features soft gradients, enhanced contrast, and reduced eye strain
+ */
+
+@use './variables' as *;
+
+.dark-theme {
+  // Primary Colors
+  --primary-color: #{$primary-500};
+  --primary-light: rgba(33, 150, 243, 0.15);
+  --primary-light-10: rgba(10, 79, 214, 0.1);
+  --primary-dark: #{$primary-700};
+
+  // Secondary Colors
+  --secondary-color: #{$secondary-400};
+  --secondary-light: rgba(34, 197, 94, 0.15);
+
+  // Accent
+  --accent-color: #{$accent-500};
+
+  // Status Colors
+  --success-color: #{$secondary-400};
+  --warning-color: #{$accent-500};
+  --error-color: #F87171;
+  --info-color: #60A5FA;
+
+  // Background Colors
+  --body-bg: #0A1929;
+  --card-bg: #132F4C;
+  --sidebar-bg: linear-gradient(180deg, #041D54 0%, #020B1F 100%);
+  --navbar-bg: rgba(19, 47, 76, 0.98);
+  --secondary-bg: #1A2027;
+  --hover-bg: rgba(255, 255, 255, 0.08);
+
+  // Text Colors
+  --text-primary: #{$gray-100};
+  --text-secondary: #{$gray-400};
+  --text-tertiary: #{$gray-500};
+  --text-on-primary: #FFFFFF;
+
+  // Border Colors
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.12);
+
+  // Gradients
+  --gradient-primary: linear-gradient(135deg, #0A4FD6 0%, #2196F3 100%);
+  --gradient-secondary: linear-gradient(135deg, #0EA5E9 0%, #00BCD4 100%);
+  --gradient-cosmic: linear-gradient(135deg, #1565C0 0%, #0EA5E9 100%);
+  --gradient-sunset: linear-gradient(135deg, #0A4FD6 0%, #42A5F5 100%);
+  --gradient-ocean: linear-gradient(135deg, #0EA5E9 0%, #2196F3 100%);
+  --gradient-sidebar: linear-gradient(180deg, #041D54 0%, #020B1F 100%);
+
+  // Skeleton Loading
+  --skeleton-base: #{$dark-100};
+  --skeleton-shimmer: #{$dark-50};
+
+  // Shadows (enhanced for dark mode)
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.6);
+
+  // Chart Colors (adjusted for dark theme)
+  --chart-color-1: #{$primary-400};
+  --chart-color-2: #{$secondary-400};
+  --chart-color-3: #{$accent-500};
+  --chart-color-4: #60A5FA;
+  --chart-color-5: #A78BFA;
+  --chart-color-6: #F472B6;
+}

@@ -1,0 +1,40 @@
+<div class="accounts-page">
+  <app-page-header 
+    title="My Accounts" 
+    subtitle="Manage your banking accounts"
+    [breadcrumbs]="['Home', 'Accounts']">
+  </app-page-header>
+
+  @if (!loading) {
+    <div class="accounts-grid">
+      @for (account of accounts; track account.id) {
+        <div class="account-card">
+          <div class="account-header">
+            <div class="account-icon" [style.background]="account.color">
+              <mat-icon>{{ account.icon }}</mat-icon>
+            </div>
+            <span class="account-status">{{ account.status }}</span>
+          </div>
+          <div class="account-body">
+            <h3>{{ account.accountName }}</h3>
+            <p class="account-number">{{ account.accountNumber }}</p>
+            <div class="account-balance">
+              <span class="balance-label">Available Balance</span>
+              <span class="balance-amount">{{ formatCurrency(account.balance, account.currency) }}</span>
+            </div>
+          </div>
+          <div class="account-footer">
+            <button class="action-btn">
+              <mat-icon>visibility</mat-icon>
+              View Details
+            </button>
+            <button class="action-btn">
+              <mat-icon>swap_horiz</mat-icon>
+              Transfer
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

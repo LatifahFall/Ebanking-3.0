@@ -37,6 +37,6 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/crypto-service:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/crypto-service:buildcache,mode=max
 
-      # 5. Notification (optionnel)
+      # 5. Notification
       - name: Notify on success
         run: echo "Docker image pushed successfully to Docker Hub!"

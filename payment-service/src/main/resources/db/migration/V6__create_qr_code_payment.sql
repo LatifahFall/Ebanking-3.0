@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS qr_code_payment (
     is_used BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_qr_code_payment_payment FOREIGN KEY (payment_id) REFERENCES payment(id) ON DELETE CASCADE
+    CONSTRAINT fk_qr_code_payment_payment FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
 );
 
 -- Create indexes for better query performance

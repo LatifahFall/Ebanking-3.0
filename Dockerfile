@@ -15,10 +15,10 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Copy war from build stage
-COPY --from=build /app/target/*.war app.war
+COPY --from=build /app/target/*.jar app.jar
 
 # Expose port
 EXPOSE 8081
 
 # Run the application
-ENTRYPOINT ["java", "-jar", "app.war"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

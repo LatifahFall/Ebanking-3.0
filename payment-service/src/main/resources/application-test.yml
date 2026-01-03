@@ -1,0 +1,77 @@
+# Test Profile Configuration
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: false
+  
+  h2:
+    console:
+      enabled: false
+  
+  flyway:
+    enabled: false
+  
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers:${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}}
+    consumer:
+      group-id: payment-service-test-group
+      auto-offset-reset: earliest
+
+# Logging - Minimal in tests
+logging:
+  level:
+    root: WARN
+    com.ebanking.payment: INFO
+
+# Actuator - Minimal in tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+# Swagger disabled in tests
+springdoc:
+  swagger-ui:
+    enabled: false
+
+# Payment Service Test Configuration
+payment:
+  service:
+    account:
+      service:
+        url: http://localhost:${wiremock.server.port:8089}
+    fraud:
+      detection:
+        enabled: true
+    kafka:
+      topics:
+        producer:
+          payment-completed: payment.completed
+          payment-reversed: payment.reversed
+          fraud-detected: fraud.detected
+        consumer:
+          account-created: account.created
+          account-updated: account.updated
+
+# Keycloak - Disabled in tests
+keycloak:
+  enabled: false
+  bearer-only: false
+

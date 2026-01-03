@@ -1,7 +1,7 @@
 # ====================================
 # Stage 1: Build avec Maven
 # ====================================
-FROM maven:latest AS build
+FROM maven:3.9.6-amazoncorretto-17 AS build
 WORKDIR /build
 
 # Copy dependency definitions (for better layer caching)

@@ -35,6 +35,8 @@ public class KafkaProducer {
 
     @Value("${app.kafka.topics.account-closed}")
     private String accountClosedTopic;
+    @Value("${app.kafka.topics.transaction-completed:transaction.completed}")
+    private String transactionCompletedTopic;
 
     /**
      * Producer 1: account.created 🎉 [OBLIGATOIRE]
@@ -94,6 +96,16 @@ public class KafkaProducer {
 
         sendEvent(accountClosedTopic, event.getAccountId().toString(), event, "AccountClosed");
     }
+    public void publishTransactionCompleted(TransactionCompletedEvent event) {
+        log.info("📤 [TRANSACTION-COMPLETED] Publishing event for transactionId: {}, accountId: {}, amount: {} {}, type: {}",
+                event.getTransactionId(),
+                event.getAccountId(),
+                event.getAmount(),
+                event.getCurrency(),
+                event.getType());
+
+        sendEvent(transactionCompletedTopic, event.getTransactionId(), event, "TransactionCompleted");
+    }
 
     /**
      * Generic method to send events with proper error handling
@@ -129,4 +141,5 @@ public class KafkaProducer {
         log.info("✅ [ACCOUNT-CREATED-SYNC] Event sent with offset: {}",
                 result.getRecordMetadata().offset());
     }
+    
 }

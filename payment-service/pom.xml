@@ -76,10 +76,6 @@
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.flywaydb</groupId>
-      <artifactId>flyway-database-postgresql</artifactId>
-    </dependency>
     <!-- OpenAPI / Swagger Documentation -->
     <dependency>
       <groupId>org.springdoc</groupId>
@@ -91,6 +87,11 @@
       <groupId>org.keycloak</groupId>
       <artifactId>keycloak-spring-boot-starter</artifactId>
       <version>23.0.0</version>
+    </dependency>
+    <!-- Apache HttpClient for Keycloak -->
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
     </dependency>
     <!-- Lombok (optional but useful) -->
     <dependency>
@@ -150,6 +151,29 @@
       <artifactId>wiremock-standalone</artifactId>
       <version>3.3.1</version>
       <scope>test</scope>
+    </dependency>
+    <!-- Reactor Test for StepVerifier -->
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- H2 Database for testing -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- ZXing for QR Code generation -->
+    <dependency>
+      <groupId>com.google.zxing</groupId>
+      <artifactId>core</artifactId>
+      <version>3.5.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.zxing</groupId>
+      <artifactId>javase</artifactId>
+      <version>3.5.2</version>
     </dependency>
   </dependencies>
   <build>

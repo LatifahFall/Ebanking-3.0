@@ -1,5 +1,6 @@
 package com.ebanking.payment.config;
 
+import io.netty.channel.ChannelOption;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,12 +26,15 @@ public class WebClientConfig {
     public WebClient accountServiceWebClient() {
         HttpClient httpClient = HttpClient.create()
                 .responseTimeout(Duration.ofMillis(readTimeout))
-                .option(reactor.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeout);
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeout);
 
         return WebClient.builder()
                 .baseUrl(accountServiceUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }
+
+    // Note: Azure Face API WebClient est créé directement dans AzureFaceApiClient
+    // car il nécessite des headers spécifiques (Ocp-Apim-Subscription-Key)
 }
 

@@ -21,14 +21,31 @@ import java.util.UUID;
 public class PaymentValidationService {
 
     private final AccountServiceClient accountServiceClient;
+    
+    @org.springframework.beans.factory.annotation.Value("${payment.validation.skip-account-check:false}")
+    private boolean skipAccountCheck;
 
     public Mono<Void> validatePaymentRequest(PaymentRequest request) {
+        if (skipAccountCheck) {
+            log.warn("Account validation is DISABLED (dev mode). Skipping account and balance checks.");
+            return Mono.empty();
+        }
+        
         return validateAccount(request.getFromAccountId())
                 .then(validateBalance(request.getFromAccountId(), request.getAmount()))
                 .then(Mono.fromRunnable(() -> log.debug("Payment request validated: {}", request.getFromAccountId())));
     }
 
     public Mono<Account> validateAccount(UUID accountId) {
+        if (skipAccountCheck) {
+            log.warn("Account validation is DISABLED (dev mode). Creating mock account.");
+            Account mockAccount = Account.builder()
+                    .id(accountId)
+                    .status(AccountStatus.ACTIVE)
+                    .build();
+            return Mono.just(mockAccount);
+        }
+        
         return accountServiceClient.getAccount(accountId)
                 .doOnNext(account -> {
                     if (account.getStatus() != AccountStatus.ACTIVE) {
@@ -41,6 +58,11 @@ public class PaymentValidationService {
     }
 
     public Mono<Void> validateBalance(UUID accountId, BigDecimal amount) {
+        if (skipAccountCheck) {
+            log.warn("Balance validation is DISABLED (dev mode). Skipping balance check.");
+            return Mono.empty();
+        }
+        
         return accountServiceClient.checkBalance(accountId)
                 .flatMap(balance -> {
                     if (balance.compareTo(amount) < 0) {

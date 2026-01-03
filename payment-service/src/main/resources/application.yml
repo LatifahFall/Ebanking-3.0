@@ -125,6 +125,18 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
+# Biometric Verification Configuration (QR Code based)
+biometric:
+  verification:
+    enabled: ${BIOMETRIC_VERIFICATION_ENABLED:true}
+
+# QR Code Configuration
+qr:
+  code:
+    expiration-minutes: ${QR_CODE_EXPIRATION_MINUTES:5}  # QR code expires after 5 minutes
+    width: ${QR_CODE_WIDTH:300}  # QR code image width in pixels
+    height: ${QR_CODE_HEIGHT:300}  # QR code image height in pixels
+
 # Payment Service Specific Configuration
 payment:
   service:
@@ -163,7 +175,11 @@ payment:
             ttl: ${FRAUD_BLACKLIST_CACHE_TTL:3600}
 
 # Keycloak Configuration
+# Désactivé par défaut (développement sans service auth)
+# Sera activé en production quand le service auth sera disponible
+# Pour activer : KEYCLOAK_ENABLED=true
 keycloak:
+  enabled: ${KEYCLOAK_ENABLED:false}
   realm: ${KEYCLOAK_REALM:ebanking}
   auth-server-url: ${KEYCLOAK_AUTH_SERVER_URL:http://localhost:8180}
   resource: ${KEYCLOAK_CLIENT_ID:payment-service}

@@ -7,6 +7,7 @@ import com.ebanking.payment.entity.PaymentStatus;
 import com.ebanking.payment.entity.PaymentType;
 import com.ebanking.payment.entity.ReversalReason;
 import com.ebanking.payment.exception.PaymentNotFoundException;
+import com.ebanking.payment.kafka.PaymentEventProducer;
 import com.ebanking.payment.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

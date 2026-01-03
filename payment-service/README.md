@@ -109,23 +109,131 @@ Voir ARCHITECTURE.md pour plus de détails.
 
 ### Configuration
 
+### Variables d'environnement
+
+Voir [ENV_VARIABLES.md](./ENV_VARIABLES.md) pour la liste complète des variables d'environnement.
+
+### Configuration locale
+
 Copier `application.yml.example` vers `application.yml` et configurer:
 - Database connection
 - Kafka brokers
 - Account Service URL
 - Keycloak configuration
 
-### Exécution
+### Démarrage rapide
+
+1. **Prérequis locaux :**
+   ```bash
+   # Démarrer PostgreSQL
+   docker run -d --name postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=payment_db -p 5432:5432 postgres:14
+   
+   # Démarrer Kafka
+   docker-compose -f docker-compose.yml up kafka zookeeper
+   ```
+
+2. **Exécution avec Maven :**
+   ```bash
+   mvn clean install
+   mvn spring-boot:run -Dspring-boot.run.profiles=dev
+   ```
+
+3. **Exécution avec Docker :**
+   ```bash
+   docker build -f docker/Dockerfile -t payment-service:latest .
+   docker run -p 8080:8080 \
+     -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/payment_db \
+     -e KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092 \
+     payment-service:latest
+   ```
+
+### Profils disponibles
+
+- `dev` : Développement (SQL logging activé, Swagger activé)
+- `test` : Tests (H2 in-memory database)
+- `prod` : Production (optimisations activées, Swagger désactivé)
+
+## API Documentation
+
+Une fois le service démarré, accéder à la documentation Swagger :
+
+- **Swagger UI** : http://localhost:8080/swagger-ui.html
+- **OpenAPI JSON** : http://localhost:8080/v3/api-docs
+
+### Exemples d'utilisation API
+
+#### Initier un paiement
 
 ```bash
-# Avec Maven
-mvn spring-boot:run
+curl -X POST http://localhost:8080/api/payments \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "fromAccountId": "123e4567-e89b-12d3-a456-426614174000",
+    "toAccountId": "123e4567-e89b-12d3-a456-426614174001",
+    "amount": 100.50,
+    "currency": "EUR",
+    "paymentType": "STANDARD",
+    "reference": "PAY-001",
+    "description": "Payment for services"
+  }'
+```
 
-# Avec Gradle
-./gradlew bootRun
+#### Obtenir un paiement
 
-# Avec Docker
-docker-compose up
+```bash
+curl -X GET http://localhost:8080/api/payments/123e4567-e89b-12d3-a456-426614174000 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### Lister les paiements
+
+```bash
+curl -X GET "http://localhost:8080/api/payments?accountId=123e4567-e89b-12d3-a456-426614174000&status=COMPLETED&page=0&size=20" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### Annuler un paiement
+
+```bash
+curl -X POST http://localhost:8080/api/payments/123e4567-e89b-12d3-a456-426614174000/cancel \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### Reverser un paiement
+
+```bash
+curl -X POST "http://localhost:8080/api/payments/123e4567-e89b-12d3-a456-426614174000/reverse?reason=CUSTOMER_REQUEST" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+## Health Checks
+
+Le service expose des endpoints de santé via Spring Boot Actuator :
+
+- **Health Check** : `GET /actuator/health`
+- **Metrics** : `GET /actuator/metrics`
+- **Prometheus** : `GET /actuator/prometheus`
+
+### Vérification de santé
+
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+Réponse attendue :
+```json
+{
+  "status": "UP",
+  "components": {
+    "db": {
+      "status": "UP"
+    },
+    "kafka": {
+      "status": "UP"
+    }
+  }
+}
 ```
 
 ## Tests
@@ -136,9 +244,14 @@ mvn test
 
 # Tests d'intégration
 mvn verify
+
+# Tests avec couverture
+mvn test jacoco:report
 ```
 
 ## Documentation
 
-Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour l'architecture détaillée.
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Architecture détaillée du service
+- [ENV_VARIABLES.md](./ENV_VARIABLES.md) - Variables d'environnement
+- [STRUCTURE.md](./STRUCTURE.md) - Structure des dossiers et packages
 

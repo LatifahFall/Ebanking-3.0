@@ -35,8 +35,15 @@ springdoc:
   swagger-ui:
     enabled: true
 
+# Keycloak désactivé en développement (service auth non disponible)
+keycloak:
+  enabled: false
+
 # Payment Service Dev Configuration
+# Désactive la validation des comptes pour permettre les tests sans le service account
 payment:
+  validation:
+    skip-account-check: true
   service:
     fraud:
       detection:

@@ -132,6 +132,32 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    @ExceptionHandler(com.ebanking.payment.exception.BiometricVerificationException.class)
+    public ResponseEntity<ErrorResponse> handleBiometricVerificationException(
+            com.ebanking.payment.exception.BiometricVerificationException ex) {
+        log.error("Biometric verification failed: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("Biometric Verification Failed")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(com.ebanking.payment.client.faceplusplus.FacePlusPlusClient.FacePlusPlusException.class)
+    public ResponseEntity<ErrorResponse> handleFacePlusPlusException(
+            com.ebanking.payment.client.faceplusplus.FacePlusPlusClient.FacePlusPlusException ex) {
+        log.error("Face++ API error: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Face Recognition Error")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);

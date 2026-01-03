@@ -66,7 +66,7 @@ class AccountServiceTest {
                         AccountStatus.ACTIVE
                 );
 
-        assertThat(response.getAccountNumber()).startsWith("ACC-");
+        assertThat(response.getAccountNumber()).startsWith("FR76"); // Ton générateur amélioré
         assertThat(response.getCreatedAt()).isNotNull();
 
         verify(kafkaProducer, times(1)).publishAccountCreated(any(AccountCreatedEvent.class));
@@ -88,6 +88,7 @@ class AccountServiceTest {
         AccountResponse suspended = accountService.getAccountById(created.getId());
         assertThat(suspended.getStatus()).isEqualTo(AccountStatus.SUSPENDED);
         assertThat(suspended.getSuspendedAt()).isNotNull();
+        assertThat(suspended.getSuspensionReason()).isEqualTo("FRAUD_SUSPICION");
 
         verify(kafkaProducer, times(1)).publishAccountSuspended(any(AccountSuspendedEvent.class));
     }
@@ -105,7 +106,7 @@ class AccountServiceTest {
         // When / Then
         assertThatThrownBy(() -> accountService.closeAccount(account.getId(), "CLIENT_REQUEST", "client-3001"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("non-zero balance");
+                .hasMessageContaining("non-zero balance"); // Message lancé par freezeFinalBalance()
 
         verify(kafkaProducer, never()).publishAccountClosed(any(AccountClosedEvent.class));
     }
@@ -138,8 +139,10 @@ class AccountServiceTest {
 
         verify(kafkaProducer, times(1)).publishBalanceChanged(argThat(e ->
                 e.getChangeType() == ChangeType.CREDIT &&
-                        e.getChangeAmount().compareTo(BigDecimal.valueOf(750.50)) == 0
+                e.getChangeAmount().compareTo(BigDecimal.valueOf(750.50)) == 0
         ));
+
+        verify(kafkaProducer, times(1)).publishTransactionCompleted(any(TransactionCompletedEvent.class));
     }
 
     @Test
@@ -171,8 +174,10 @@ class AccountServiceTest {
 
         verify(kafkaProducer, times(1)).publishBalanceChanged(argThat(e ->
                 e.getChangeType() == ChangeType.DEBIT &&
-                        e.getChangeAmount().compareTo(BigDecimal.valueOf(300.00)) == 0
+                e.getChangeAmount().compareTo(BigDecimal.valueOf(300.00)) == 0
         ));
+
+        verify(kafkaProducer, times(1)).publishTransactionCompleted(any(TransactionCompletedEvent.class));
     }
 
     @Test
@@ -190,6 +195,7 @@ class AccountServiceTest {
                 .amount(BigDecimal.valueOf(1234.56))
                 .currency("EUR")
                 .transactionType("TRANSFER")
+                .completedAt(Instant.now())
                 .build();
         accountService.processPaymentCompleted(credit);
 
@@ -199,6 +205,7 @@ class AccountServiceTest {
                 .amount(BigDecimal.valueOf(200.00))
                 .currency("EUR")
                 .transactionType("PAYMENT")
+                .completedAt(Instant.now())
                 .build();
         accountService.processPaymentCompleted(debit);
 
@@ -234,17 +241,19 @@ class AccountServiceTest {
                 .amount(BigDecimal.TEN)
                 .currency("EUR")
                 .transactionType("TRANSFER")
+                .completedAt(Instant.now())
                 .build();
 
         // When / Then
         assertThatThrownBy(() -> accountService.processPaymentCompleted(event))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("suspended");
+                .hasMessageContaining("suspended"); // Message de assertOperational()
 
         BalanceResponse balance = accountService.getBalance(account.getId());
         assertThat(balance.getBalance()).isEqualByComparingTo(BigDecimal.ZERO);
 
         verify(kafkaProducer, never()).publishBalanceChanged(any());
+        verify(kafkaProducer, never()).publishTransactionCompleted(any());
     }
 
     @Test
@@ -256,20 +265,8 @@ class AccountServiceTest {
                 .currency("EUR")
                 .build());
 
-        FraudDetectedEvent fraudEvent = FraudDetectedEvent.builder()
-                .fraudId(UUID.randomUUID())
-                .paymentId(UUID.randomUUID())
-                .accountId(UUID.randomUUID())
-                .userId(UUID.randomUUID())
-                .amount(BigDecimal.valueOf(5000))
-                .fraudType("SUSPICIOUS_AMOUNT")
-                .reason("Transaction inhabituelle de 5000€ détectée")
-                .detectedAt(Instant.now())
-                .action("BLOCKED")
-                .build();
-
-        // When (simulé via méthode publique exposée pour test)
-        accountService.suspendAccountForFraud(account.getId(), fraudEvent.getReason());
+        // When
+        accountService.suspendAccountForFraud(account.getId(), "Transaction inhabituelle de 5000€ détectée");
 
         // Then
         AccountResponse updated = accountService.getAccountById(account.getId());

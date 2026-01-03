@@ -45,14 +45,23 @@ spec:
               name: app-config
               key: notification.db.password
         
-        # Kafka Configuration
-        - name: KAFKA_BOOTSTRAP_SERVERS
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
           valueFrom:
             configMapKeyRef:
               name: app-config
               key: kafka.bootstrap.servers
         - name: SPRING_KAFKA_CONSUMER_GROUP_ID
           value: "notification-service-group"
+
+        #  AUTORISER création des topics à la demande
+        - name: SPRING_KAFKA_LISTENER_MISSING_TOPICS_FATAL
+          value: "false"
+
+        - name: SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET
+          value: "earliest"
+        - name: MANAGEMENT_HEALTH_MAIL_ENABLED
+          value: "false"
+
         
         # Mail Configuration
         - name: MAIL_HOST
@@ -155,21 +164,21 @@ spec:
         # Health Checks
         livenessProbe:
           httpGet:
-            path: /actuator/health/liveness
+            path: /actuator/health
             port: 8084
-          initialDelaySeconds: 120
+          initialDelaySeconds: 300
           periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 3
+          timeoutSeconds: 10
+          failureThreshold: 5
         
         readinessProbe:
           httpGet:
-            path: /actuator/health/readiness
+            path: /actuator/health
             port: 8084
-          initialDelaySeconds: 90
+          initialDelaySeconds: 240
           periodSeconds: 10
-          timeoutSeconds: 3
-          failureThreshold: 3
+          timeoutSeconds: 10
+          failureThreshold: 5
         
         resources:
           requests:

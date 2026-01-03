@@ -23,7 +23,7 @@ public class CryptoWalletService {
         }
 
         CryptoWallet wallet = new CryptoWallet(userId);
-        wallet.setStatus(WalletStatus.ACTIVE);
+        wallet.setStatus(WalletStatus.INACTIVE);
         return walletRepository.save(wallet);
     }
 

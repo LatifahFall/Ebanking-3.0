@@ -2,10 +2,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: app-config
-  namespace: ebanking #Le ConfigMap est isolé dans le namespace ebanking.Seules les ressources de ce namespace peuvent l’utiliser.
-data:   #Tout ce qui est ici correspond à des variables de configuration injectées dans les pods (via variables d’environnement ou fichiers
+  namespace: ebanking
+data:
   # ================ DATABASES ================
-  postgres.host: "postgres" #nom du service Kubernetes PostgreSQL
+  postgres.host: "postgres"
   postgres.port: "5432"
   postgres.database: "account_db"
   
@@ -30,6 +30,29 @@ data:   #Tout ce qui est ici correspond à des variables de configuration inject
   
   # ================ APPLICATION SETTINGS ================
   app.default.currency: "EUR"
-  
-  # ================ ENVIRONMENT ================
   app.environment: "development"
+
+  # ================ NOTIFICATION SERVICE ================
+  notification.service.port: "8084"
+  notification.db.name: "notification_db"
+  notification.db.user: "postgres"
+  notification.db.password: "postgres123"
+  mail.host: "smtp.gmail.com"
+  mail.port: "587"
+  mail.username: "your-email@gmail.com"
+  mail.password: "your-gmail-app-password"
+  twilio.account.sid: "your-twilio-account-sid"
+  twilio.auth.token: "your-twilio-auth-token"
+  twilio.messaging.service.sid: "MGf2ad7488c8ce7fe52e3eff15ead9eaa4"
+  twilio.phone.number: "+18166769869"
+  kafka.topics.transaction.completed: "transaction-completed"
+  kafka.topics.payment.completed: "payment-completed"
+  kafka.topics.auth.events: "auth.events"
+  kafka.topics.fraud.detected: "fraud.detected"
+  kafka.topics.account.created: "account.created"
+  kafka.topics.kyc.status.changed: "kyc.status.changed"
+  kafka.topics.crypto.transaction: "crypto.transaction"
+  kafka.topics.notification.requested: "notification.requested"
+  kafka.topics.notification.status: "notification-status"
+  kafka.topics.notification.audit: "notification-audit"
+  kafka.topics.notification.metrics: "notification-metrics"

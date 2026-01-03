@@ -1,0 +1,203 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: ebanking
+  labels:
+    app: notification-service
+    version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: notification-service
+        image: notification-service:latest  # À changer avec ton registry
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8084
+        env:
+        # Database Configuration
+        - name: DB_HOST
+          value: "postgres-notification"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: notification.db.name
+        - name: DB_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: notification.db.user
+        - name: DB_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: notification.db.password
+        
+        # Kafka Configuration
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.bootstrap.servers
+        - name: SPRING_KAFKA_CONSUMER_GROUP_ID
+          value: "notification-service-group"
+        
+        # Mail Configuration
+        - name: MAIL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: mail.host
+        - name: MAIL_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: mail.port
+        - name: MAIL_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: mail.username
+        - name: MAIL_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: mail.password
+        
+        # Twilio Configuration (SMS)
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: twilio.account.sid
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: twilio.auth.token
+        - name: TWILIO_MESSAGING_SERVICE_SID
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: twilio.messaging.service.sid
+        - name: TWILIO_PHONE_NUMBER
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: twilio.phone.number
+        
+        # Application Settings
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: notification.service.port
+        - name: APP_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: app.environment
+        
+        # Kafka Topics (pour référence)
+        - name: KAFKA_TOPIC_TRANSACTION_COMPLETED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.transaction.completed
+        - name: KAFKA_TOPIC_PAYMENT_COMPLETED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.payment.completed
+        - name: KAFKA_TOPIC_AUTH_EVENTS
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.auth.events
+        - name: KAFKA_TOPIC_FRAUD_DETECTED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.fraud.detected
+        - name: KAFKA_TOPIC_ACCOUNT_CREATED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.account.created
+        - name: KAFKA_TOPIC_KYC_STATUS_CHANGED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.kyc.status.changed
+        - name: KAFKA_TOPIC_CRYPTO_TRANSACTION
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.crypto.transaction
+        - name: KAFKA_TOPIC_NOTIFICATION_REQUESTED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.notification.requested
+        
+        # Health Checks
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8084
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8084
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        
+      volumes:
+      - name: config-volume
+        configMap:
+          name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: ebanking
+spec:
+  selector:
+    app: notification-service
+  ports:
+  - port: 80
+    targetPort: 8084
+    protocol: TCP
+  type: ClusterIP

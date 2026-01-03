@@ -11,7 +11,7 @@
     <groupId>main</groupId>
     <artifactId>UserService</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <name>UserService</name>
     <description>UserService</description>
     <url/>

@@ -16,7 +16,6 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Stage 2: Runtime
-# Utiliser eclipse-temurin:17-jre-alpine (plus léger)
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
@@ -36,8 +35,7 @@ USER spring:spring
 # Expose port
 EXPOSE 8082
 
-# Health check (Spring Boot Actuator est inclus)
-# Utiliser wget au lieu de curl (plus léger dans Alpine)
+# Health check (Spring Boot Actuator)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
   CMD wget -q -O- http://localhost:8082/actuator/health || exit 1
 

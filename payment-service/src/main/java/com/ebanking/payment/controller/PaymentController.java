@@ -199,10 +199,10 @@ public class PaymentController {
             @Valid @RequestBody PaymentRequest request,
             Authentication authentication) {
         Long userId = extractUserId(authentication);
-        String qrCodeBase64 = paymentService.generateQRCodeForPayment(request, userId);
+        Map<String, Object> result = paymentService.generateQRCodeForPayment(request, userId);
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("qrCode", qrCodeBase64);
+        // Ajouter les métadonnées à la réponse
+        Map<String, Object> response = new HashMap<>(result);
         response.put("message", "QR code generated successfully");
         response.put("format", "PNG (base64)");
         

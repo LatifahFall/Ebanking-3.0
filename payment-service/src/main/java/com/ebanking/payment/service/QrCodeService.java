@@ -9,6 +9,8 @@ import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import lombok.Builder;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,10 +55,10 @@ public class QrCodeService {
      * @param currency Devise
      * @param fromAccountId Compte source
      * @param toAccountId Compte destination (optionnel)
-     * @return QR code en Base64 (image PNG)
+     * @return QrCodeGenerationResult contenant l'image PNG et le JSON qrCodeData
      */
     @Transactional
-    public String generateQrCode(Long paymentId, Long userId, BigDecimal amount, 
+    public QrCodeGenerationResult generateQrCode(Long paymentId, Long userId, BigDecimal amount, 
                                 String currency, Long fromAccountId, Long toAccountId) {
         log.info("Generating QR code for payment: {}, user: {}", paymentId, userId);
         
@@ -99,7 +101,14 @@ public class QrCodeService {
             String base64Image = imageToBase64(qrImage);
             
             log.info("QR code generated successfully for payment: {}", paymentId);
-            return base64Image;
+            
+            // Retourner l'image ET le JSON qrCodeData
+            return QrCodeGenerationResult.builder()
+                    .qrCodeImage(base64Image)
+                    .qrCodeData(qrCodeData)
+                    .qrToken(qrToken)
+                    .paymentId(paymentId)
+                    .build();
         } catch (Exception e) {
             log.error("Error generating QR code image for payment: {}", paymentId, e);
             throw new BiometricVerificationException("Failed to generate QR code: " + e.getMessage(), e);
@@ -220,5 +229,34 @@ public class QrCodeService {
      */
     public Optional<QrCodePayment> findByPaymentId(Long paymentId) {
         return qrCodePaymentRepository.findByPaymentId(paymentId);
+    }
+    
+    /**
+     * Résultat de la génération d'un QR code
+     * Contient l'image PNG et le JSON qrCodeData pour traitement automatique
+     */
+    @Data
+    @Builder
+    public static class QrCodeGenerationResult {
+        /**
+         * Image QR code en Base64 (PNG)
+         */
+        private String qrCodeImage;
+        
+        /**
+         * JSON contenant le token, paymentId, userId, amount, currency, timestamp
+         * Peut être utilisé directement pour traiter le paiement via /api/payments/qrcode
+         */
+        private String qrCodeData;
+        
+        /**
+         * Token unique du QR code (pour référence)
+         */
+        private String qrToken;
+        
+        /**
+         * ID du paiement associé
+         */
+        private Long paymentId;
     }
 }

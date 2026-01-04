@@ -1,14 +1,15 @@
 -- Migration: Create payments table
 -- Version: 1
 -- Description: Creates the payments table with all necessary fields and indexes
+-- Using BIGINT for IDs to align with account-service and user-service
 
 CREATE TABLE IF NOT EXISTS payments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    from_account_id UUID NOT NULL,
-    to_account_id UUID,
+    id BIGSERIAL PRIMARY KEY,
+    from_account_id BIGINT NOT NULL,
+    to_account_id BIGINT,
     amount DECIMAL(19, 2) NOT NULL CHECK (amount > 0),
     currency VARCHAR(3) NOT NULL,
-    payment_type VARCHAR(20) NOT NULL CHECK (payment_type IN ('STANDARD', 'INSTANT', 'RECURRING')),
+    payment_type VARCHAR(20) NOT NULL CHECK (payment_type IN ('STANDARD', 'INSTANT', 'RECURRING', 'QR_CODE', 'BIOMETRIC')),
     status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED', 'REVERSED')) DEFAULT 'PENDING',
     beneficiary_name VARCHAR(255),
     reference VARCHAR(255),
@@ -18,7 +19,7 @@ CREATE TABLE IF NOT EXISTS payments (
     completed_at TIMESTAMP,
     reversed_at TIMESTAMP,
     reversal_reason VARCHAR(255),
-    user_id UUID,
+    user_id BIGINT,
     description TEXT
 );
 
@@ -38,12 +39,12 @@ CREATE INDEX IF NOT EXISTS idx_payments_account_status ON payments(from_account_
 CREATE INDEX IF NOT EXISTS idx_payments_metadata ON payments USING GIN (metadata);
 
 COMMENT ON TABLE payments IS 'Stores all payment and transfer transactions';
-COMMENT ON COLUMN payments.id IS 'Unique identifier for the payment';
-COMMENT ON COLUMN payments.from_account_id IS 'Source account ID';
-COMMENT ON COLUMN payments.to_account_id IS 'Destination account ID (nullable for withdrawals)';
+COMMENT ON COLUMN payments.id IS 'Unique identifier for the payment (BIGINT)';
+COMMENT ON COLUMN payments.from_account_id IS 'Source account ID (BIGINT from account-service)';
+COMMENT ON COLUMN payments.to_account_id IS 'Destination account ID (BIGINT from account-service, nullable for withdrawals)';
 COMMENT ON COLUMN payments.amount IS 'Payment amount (must be positive)';
 COMMENT ON COLUMN payments.currency IS 'Currency code (ISO 4217)';
-COMMENT ON COLUMN payments.payment_type IS 'Type of payment: STANDARD, INSTANT, or RECURRING';
+COMMENT ON COLUMN payments.payment_type IS 'Type of payment: STANDARD, INSTANT, RECURRING, QR_CODE, or BIOMETRIC';
 COMMENT ON COLUMN payments.status IS 'Current status of the payment';
 COMMENT ON COLUMN payments.beneficiary_name IS 'Name of the beneficiary';
 COMMENT ON COLUMN payments.reference IS 'Payment reference number';
@@ -53,6 +54,5 @@ COMMENT ON COLUMN payments.updated_at IS 'Timestamp when payment was last update
 COMMENT ON COLUMN payments.completed_at IS 'Timestamp when payment was completed';
 COMMENT ON COLUMN payments.reversed_at IS 'Timestamp when payment was reversed';
 COMMENT ON COLUMN payments.reversal_reason IS 'Reason for payment reversal';
-COMMENT ON COLUMN payments.user_id IS 'ID of the user who initiated the payment';
+COMMENT ON COLUMN payments.user_id IS 'ID of the user who initiated the payment (BIGINT from user-service)';
 COMMENT ON COLUMN payments.description IS 'Payment description';
-

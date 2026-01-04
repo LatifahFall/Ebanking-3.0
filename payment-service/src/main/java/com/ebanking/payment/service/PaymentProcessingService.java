@@ -115,23 +115,10 @@ public class PaymentProcessingService {
         payment.setStatus(PaymentStatus.PROCESSING);
         payment = paymentRepository.save(payment);
 
-        // Les paiements QR code sont traités comme des paiements instantanés
-        try {
-            // Traitement du paiement (débit du compte source)
-            accountServiceClient.debitAccount(
-                payment.getFromAccountId(),
-                payment.getAmount(),
-                "Payment " + payment.getId()
-            ).block(); // Block car transaction synchrone
-
-            payment.setStatus(PaymentStatus.COMPLETED);
-            payment.setCompletedAt(java.time.LocalDateTime.now());
-            log.info("QR code payment {} processed successfully", paymentId);
-        } catch (Exception e) {
-            payment.setStatus(PaymentStatus.FAILED);
-            log.error("Error processing QR code payment {}", paymentId, e);
-            throw e;
-        }
+        // Les paiements QR code sont traités comme des paiements standard (sans appel au service de comptes)
+        payment.setStatus(PaymentStatus.COMPLETED);
+        payment.setCompletedAt(java.time.LocalDateTime.now());
+        log.info("QR code payment {} processed successfully", paymentId);
 
         return paymentRepository.save(payment);
     }

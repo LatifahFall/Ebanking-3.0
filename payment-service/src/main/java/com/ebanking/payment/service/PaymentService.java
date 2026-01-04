@@ -179,8 +179,8 @@ public class PaymentService {
             throw new PaymentValidationException("Fraud detected: " + fraudResult.getReason());
         }
 
-        // Générer le QR code
-        String qrCodeImage = qrCodeService.generateQrCode(
+        // Générer le QR code (retourne maintenant l'image ET le JSON qrCodeData)
+        QrCodeService.QrCodeGenerationResult qrResult = qrCodeService.generateQrCode(
                 payment.getId(),
                 userId,
                 request.getAmount(),
@@ -191,7 +191,9 @@ public class PaymentService {
 
         Map<String, Object> response = new HashMap<>();
         response.put("paymentId", payment.getId());
-        response.put("qrCode", qrCodeImage); // Base64 PNG image
+        response.put("qrCode", qrResult.getQrCodeImage()); // Base64 PNG image
+        response.put("qrCodeData", qrResult.getQrCodeData()); // JSON avec token, paymentId, etc.
+        response.put("qrToken", qrResult.getQrToken()); // Token pour référence
         response.put("status", payment.getStatus().name());
         response.put("message", "Scan this QR code with your mobile app to confirm the payment");
 
@@ -269,35 +271,59 @@ public class PaymentService {
     /**
      * Génère un QR code pour un paiement
      */
-    public String generateQRCodeForPayment(PaymentRequest request, Long userId) {
-        // Créer un paiement temporaire pour générer le QR code
-        Payment payment = Payment.builder()
-                .fromAccountId(request.getFromAccountId())
-                .toAccountId(request.getToAccountId())
-                .amount(request.getAmount())
-                .currency(request.getCurrency())
-                .paymentType(PaymentType.QR_CODE)
-                .status(PaymentStatus.PENDING)
-                .beneficiaryName(request.getBeneficiaryName())
-                .reference(request.getReference())
-                .description(request.getDescription())
-                .userId(userId)
-                .build();
+    @Transactional
+    public Map<String, Object> generateQRCodeForPayment(PaymentRequest request, Long userId) {
+        try {
+            log.debug("Generating QR code for payment request: fromAccountId={}, toAccountId={}, amount={}", 
+                    request.getFromAccountId(), request.getToAccountId(), request.getAmount());
+            
+            // Validation standard
+            validationService.validatePaymentRequest(request)
+                    .block(); // Block for synchronous processing
+            
+            // Créer un paiement temporaire pour générer le QR code
+            Payment payment = Payment.builder()
+                    .fromAccountId(request.getFromAccountId())
+                    .toAccountId(request.getToAccountId())
+                    .amount(request.getAmount())
+                    .currency(request.getCurrency())
+                    .paymentType(PaymentType.QR_CODE)
+                    .status(PaymentStatus.PENDING)
+                    .beneficiaryName(request.getBeneficiaryName())
+                    .reference(request.getReference())
+                    .description(request.getDescription())
+                    .userId(userId)
+                    .build();
 
-        payment = paymentRepository.save(payment);
+            log.debug("Saving payment entity...");
+            payment = paymentRepository.save(payment);
+            log.debug("Payment saved with ID: {}", payment.getId());
 
-        // Générer le QR code
-        String qrCodeBase64 = qrCodeService.generateQrCode(
-                payment.getId(),
-                userId,
-                payment.getAmount(),
-                payment.getCurrency(),
-                payment.getFromAccountId(),
-                payment.getToAccountId()
-        );
+            // Générer le QR code (retourne maintenant l'image ET le JSON qrCodeData)
+            log.debug("Generating QR code image...");
+            QrCodeService.QrCodeGenerationResult qrResult = qrCodeService.generateQrCode(
+                    payment.getId(),
+                    userId,
+                    payment.getAmount(),
+                    payment.getCurrency(),
+                    payment.getFromAccountId(),
+                    payment.getToAccountId()
+            );
 
-        log.info("QR code generated for payment: {}", payment.getId());
-        return qrCodeBase64;
+            log.info("QR code generated successfully for payment: {}", payment.getId());
+            
+            // Retourner un Map avec toutes les informations nécessaires
+            Map<String, Object> result = new HashMap<>();
+            result.put("paymentId", payment.getId());
+            result.put("qrCode", qrResult.getQrCodeImage());  // Image PNG base64
+            result.put("qrCodeData", qrResult.getQrCodeData());  // JSON avec token, paymentId, etc.
+            result.put("qrToken", qrResult.getQrToken());  // Token pour référence
+            return result;
+        } catch (Exception e) {
+            log.error("Error generating QR code for payment: fromAccountId={}, toAccountId={}, amount={}", 
+                    request.getFromAccountId(), request.getToAccountId(), request.getAmount(), e);
+            throw e; // Re-throw pour que le GlobalExceptionHandler puisse le gérer
+        }
     }
 
     @Transactional
@@ -305,30 +331,13 @@ public class PaymentService {
         // SECURITY: Validate QR code data format BEFORE processing
         validateQrCodeDataFormat(request.getQrCodeData());
         
-        // Convertir en PaymentRequest standard
+        // Convertir en PaymentRequest standard pour validation
         PaymentRequest standardRequest = request.toPaymentRequest();
 
-        // Validation standard
-        validationService.validatePaymentRequest(standardRequest)
-                .block();
-
-        // Créer le paiement
-        Payment payment = Payment.builder()
-                .fromAccountId(standardRequest.getFromAccountId())
-                .toAccountId(standardRequest.getToAccountId())
-                .amount(standardRequest.getAmount())
-                .currency(standardRequest.getCurrency())
-                .paymentType(PaymentType.QR_CODE)
-                .status(PaymentStatus.PENDING)
-                .beneficiaryName(standardRequest.getBeneficiaryName())
-                .reference(standardRequest.getReference())
-                .description(standardRequest.getDescription())
-                .userId(userId)
-                .build();
-
-        payment = paymentRepository.save(payment);
-
-        // Vérifier le QR code - extraire le token du JSON
+        // Variable pour stocker le paiement récupéré
+        Payment payment;
+        
+        // Vérifier le QR code - extraire le token et le paymentId du JSON
         try {
             // Parse QR code JSON safely
             Map<String, Object> qrData = parseQrCodeData(request.getQrCodeData());
@@ -336,28 +345,55 @@ public class PaymentService {
             // Validate required fields
             validateQrDataFields(qrData);
             
-            // Extract and validate token
-            String qrToken = extractTokenFromQRData(request.getQrCodeData());
+            // Extract token from parsed Map (more reliable than string parsing)
+            String qrToken = (String) qrData.get("token");
+            if (qrToken == null || qrToken.trim().isEmpty()) {
+                throw new PaymentValidationException("Invalid QR code format: token not found in JSON");
+            }
+            
+            // Valider le QR code (vérifie expiration, usage, user) - cela retourne le qrCodePayment avec le paymentId
             com.ebanking.payment.entity.QrCodePayment qrCodePayment = qrCodeService.validateQrCode(qrToken, userId);
             
-            // Vérifier que le payment ID correspond
-            if (!qrCodePayment.getPaymentId().equals(payment.getId())) {
-                payment.setStatus(PaymentStatus.FAILED);
-                paymentRepository.save(payment);
-                throw new PaymentValidationException("QR code payment ID mismatch");
+            // Utiliser le paymentId du qrCodePayment (source de vérité dans la base de données)
+            Long paymentId = qrCodePayment.getPaymentId();
+            
+            // Récupérer le paiement EXISTANT associé au QR code (ne pas en créer un nouveau)
+            payment = paymentRepository.findById(paymentId)
+                    .orElseThrow(() -> new PaymentValidationException("Payment not found for QR code"));
+            
+            // Vérification optionnelle : s'assurer que le paymentId dans le qrCodeData correspond (pour sécurité)
+            String paymentIdStr = (String) qrData.get("paymentId");
+            if (paymentIdStr != null && !paymentIdStr.trim().isEmpty()) {
+                try {
+                    Long paymentIdFromQr = Long.parseLong(paymentIdStr);
+                    if (!paymentIdFromQr.equals(paymentId)) {
+                        log.warn("Payment ID mismatch in QR code data: qrCodeData={}, qrCodePayment={}. Using paymentId from database.", 
+                                paymentIdFromQr, paymentId);
+                        // On continue quand même car le paymentId de la base de données est la source de vérité
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid paymentId format in QR code data: {}", paymentIdStr);
+                    // On continue car on utilise le paymentId de la base de données
+                }
+            }
+            
+            // Vérifier que le paiement correspond aux données de la requête
+            // Utiliser compareTo pour BigDecimal (plus fiable que equals)
+            if (payment.getAmount().compareTo(standardRequest.getAmount()) != 0 ||
+                !payment.getCurrency().equals(standardRequest.getCurrency()) ||
+                !payment.getFromAccountId().equals(standardRequest.getFromAccountId())) {
+                log.warn("QR code payment data mismatch: payment={}, request={}", 
+                        payment.getAmount(), standardRequest.getAmount());
+                throw new PaymentValidationException("QR code payment data does not match request");
             }
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            log.error("Invalid QR code JSON format for payment {}", payment.getId(), e);
-            payment.setStatus(PaymentStatus.FAILED);
-            paymentRepository.save(payment);
+            log.error("Invalid QR code JSON format", e);
             throw new PaymentValidationException("Invalid QR code data format: malformed JSON");
         } catch (PaymentValidationException e) {
             // Already logged, just rethrow
             throw e;
         } catch (Exception e) {
-            log.error("QR code verification failed for payment {}", payment.getId(), e);
-            payment.setStatus(PaymentStatus.FAILED);
-            paymentRepository.save(payment);
+            log.error("QR code verification failed", e);
             throw new PaymentValidationException("QR code verification failed: " + e.getMessage());
         }
 

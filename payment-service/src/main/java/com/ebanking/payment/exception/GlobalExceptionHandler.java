@@ -1,6 +1,7 @@
 package com.ebanking.payment.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -15,6 +16,9 @@ import java.util.Map;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
 
     @ExceptionHandler(PaymentNotFoundException.class)
     public ResponseEntity<ErrorResponse> handlePaymentNotFoundException(PaymentNotFoundException ex) {
@@ -161,11 +165,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);
+        log.error("Exception class: {}", ex.getClass().getName(), ex);
+        
+        // Toujours afficher le message d'erreur détaillé (sauf en production)
+        String errorMessage = "An unexpected error occurred";
+        boolean isDevMode = "dev".equals(activeProfile) || 
+                           activeProfile != null && activeProfile.contains("dev") ||
+                           System.getProperty("spring.profiles.active", "").contains("dev");
+        
+        if (isDevMode || !"prod".equals(activeProfile)) {
+            errorMessage = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+            if (ex.getCause() != null && ex.getCause().getMessage() != null) {
+                errorMessage += " - Cause: " + ex.getCause().getMessage();
+            }
+            // Ajouter le nom de la classe pour faciliter le débogage
+            if (errorMessage.equals(ex.getClass().getSimpleName())) {
+                errorMessage = ex.getClass().getSimpleName() + ": " + (ex.getMessage() != null ? ex.getMessage() : "No message");
+            }
+        }
+        
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
-                .message("An unexpected error occurred")
+                .message(errorMessage)
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }

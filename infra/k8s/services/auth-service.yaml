@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: ebanking
+  labels:
+    app: auth-service
+    version: "2.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        version: "2.0.0"
+    spec:
+      containers:
+      - name: auth-service
+        image: auth-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+        env:
+        # Database Configuration
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: postgres.auth.url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: postgres.auth.username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: postgres.auth.password
+        
+        # Keycloak Configuration
+        - name: KEYCLOAK_AUTH_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: keycloak.auth.server.url
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: keycloak.realm
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: keycloak.client.id
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: keycloak.client.secret
+        
+        # Kafka Configuration
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.bootstrap.servers
+        - name: SPRING_KAFKA_CONSUMER_GROUP_ID
+          value: "auth-service-group"
+        
+        # Application Settings
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: auth.service.port
+        - name: APP_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: app.environment
+        - name: SPRING_PROFILES_ACTIVE
+          value: "k8s"
+        
+        # Health Checks
+        livenessProbe:
+          tcpSocket:
+            port: 8081
+          initialDelaySeconds: 300
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        
+        readinessProbe:
+          tcpSocket:
+             port: 8081
+          initialDelaySeconds: 240
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 5
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        
+      volumes:
+      - name: config-volume
+        configMap:
+          name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: ebanking
+spec:
+  selector:
+    app: auth-service
+  ports:
+  - port: 80
+    targetPort: 8081
+    protocol: TCP
+  type: ClusterIP

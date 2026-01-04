@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-keycloak
+  namespace: ebanking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-keycloak
+  template:
+    metadata:
+      labels:
+        app: postgres-keycloak
+    spec:
+      containers:
+      - name: postgres-keycloak
+        image: postgres:15
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: postgres.keycloak.database
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: postgres.keycloak.username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: postgres.keycloak.password
+        ports:
+        - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-keycloak
+  namespace: ebanking
+spec:
+  selector:
+    app: postgres-keycloak
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP

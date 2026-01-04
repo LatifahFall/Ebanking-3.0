@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: ebanking
+  labels:
+    app: user-service
+    version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: user-service
+        image: user-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+        env:
+        # Database Configuration (Neon PostgreSQL EXTERNE)
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://ep-flat-waterfall-ab52j2gj-pooler.eu-west-2.aws.neon.tech:5432/neondb?sslmode=require"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "neondb_owner"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "npg_FyHukGZPb8v4"
+        
+        # Kafka Configuration
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.bootstrap.servers
+        - name: SPRING_KAFKA_PRODUCER_KEY_SERIALIZER
+          value: "org.apache.kafka.common.serialization.StringSerializer"
+        - name: SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER
+          value: "org.springframework.kafka.support.serializer.JsonSerializer"
+        
+        # Application Settings
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: user.service.port
+        - name: SPRING_APPLICATION_NAME
+          value: "UserService"
+        - name: APP_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: app.environment
+        
+        # Health Checks
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8081
+          initialDelaySeconds: 300
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8081
+          initialDelaySeconds: 240
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 5
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        
+      volumes:
+      - name: config-volume
+        configMap:
+          name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: ebanking
+spec:
+  selector:
+    app: user-service
+  ports:
+  - port: 80
+    targetPort: 8081
+    protocol: TCP
+  type: ClusterIP

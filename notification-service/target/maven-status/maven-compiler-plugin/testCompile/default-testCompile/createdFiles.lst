@@ -1,0 +1,10 @@
+com\ebanking\notificationservice\RealSmsTest.class
+com\ebanking\notificationservice\NotificationControllerTest.class
+com\ebanking\notificationservice\NotificationServiceTest.class
+com\ebanking\notificationservice\config\MetricsConfigTest.class
+com\ebanking\notificationservice\kafka\NotificationEventConsumerTest.class
+com\ebanking\notificationservice\config\TestConfig.class
+com\ebanking\notificationservice\kafka\NotificationEventProducerTest.class
+com\ebanking\notificationservice\NotificationServiceApplicationTests.class
+com\ebanking\notificationservice\RealEmailTest.class
+com\ebanking\notificationservice\EmailServiceTest.class

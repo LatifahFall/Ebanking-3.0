@@ -56,3 +56,56 @@ data:
   kafka.topics.notification.status: "notification-status"
   kafka.topics.notification.audit: "notification-audit"
   kafka.topics.notification.metrics: "notification-metrics"
+
+<<<<<<< Updated upstream
+    # ================ USER SERVICE ================
+=======
+  # ================ user service  ================
+>>>>>>> Stashed changes
+  user.service.port: "8081"
+  
+  # Topics Kafka spécifiques à user-service
+  kafka.topics.user.created: "user.created"
+  kafka.topics.user.updated: "user.updated"
+  kafka.topics.client.assigned: "client.assigned"
+  kafka.topics.client.unassigned: "client.unassigned"
+  kafka.topics.user.activated: "user.activated"
+  kafka.topics.user.deactivated: "user.deactivated"
+<<<<<<< Updated upstream
+
+
+  # ================ AUTH SERVICE CONFIG ================
+  # PostgreSQL Auth DB
+  postgres.auth.url: "jdbc:postgresql://postgres-auth:5432/authdb"
+  postgres.auth.database: "authdb"
+  postgres.auth.username: "postgres"
+  postgres.auth.password: "postgres123"
+  
+  # PostgreSQL Keycloak DB
+  postgres.keycloak.url: "jdbc:postgresql://postgres-keycloak:5432/keycloak"
+  postgres.keycloak.database: "keycloak"
+  postgres.keycloak.username: "postgres"
+  postgres.keycloak.password: "postgres123"
+  
+  # Keycloak
+  keycloak.auth.server.url: "http://keycloak:8080"
+  keycloak.realm: "ebanking-realm"
+  keycloak.client.id: "auth-service"
+  keycloak.client.secret: "client-secret-keycloak"
+  keycloak.admin.username: "admin"
+  keycloak.admin.password: "admin123"
+  
+  # Auth Service
+  auth.service.port: "8081"
+  
+  # Kafka Topics pour auth-service
+  kafka.topics.auth.login: "auth.login"
+  kafka.topics.auth.logout: "auth.logout"
+  kafka.topics.auth.token.refresh: "auth.token.refresh"
+  kafka.topics.auth.user.registered: "auth.user.registered"
+  kafka.topics.auth.password.changed: "auth.password.changed"
+  kafka.topics.auth.twofactor.enabled: "auth.twofactor.enabled"
+  kafka.topics.auth.twofactor.disabled: "auth.twofactor.disabled"
+=======
+  
+>>>>>>> Stashed changes

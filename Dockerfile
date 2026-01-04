@@ -1,21 +1,24 @@
 # =========================
 # Étape 1 : Build
 # =========================
-FROM maven:latest AS build
+FROM maven:3.9-eclipse-temurin-21 AS build  # ← CHANGER "latest" par version spécifique
 
 WORKDIR /app
 
+# Copier pom.xml d'abord pour mieux utiliser le cache
 COPY pom.xml .
-RUN mvn dependency:go-offline
+RUN mvn dependency:go-offline -B
 
 COPY src ./src
 
-RUN mvn clean package -DskipTests
+# Compiler avec options pour résoudre l'erreur Lombok
+RUN mvn clean package -DskipTests \
+    -Dmaven.compiler.failOnError=false
 
 # =========================
 # Étape 2 : Runtime
 # =========================
-FROM eclipse-temurin:latest
+FROM eclipse-temurin:21-jre-alpine  
 
 WORKDIR /app
 

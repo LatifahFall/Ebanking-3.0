@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crypto-service
+  namespace: ebanking
+  labels:
+    app: crypto-service
+    version: "1.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crypto-service
+  template:
+    metadata:
+      labels:
+        app: crypto-service
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: crypto-service
+        image: crypto-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+        env:
+        # Database Configuration (Neon PostgreSQL Cloud)
+        - name: DB_HOST
+          value: "ep-flat-waterfall-ab52j2gj-pooler.eu-west-2.aws.neon.tech"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "crypto"
+        - name: DB_USER
+          value: "neondb_owner"
+        - name: DB_PASSWORD
+          value: "npg_FyHukGZPb8v4"
+        
+        # Redis Configuration (Redis Cloud)
+        - name: REDIS_HOST
+          value: "redis-10733.crce202.eu-west-3-1.ec2.cloud.redislabs.com"
+        - name: REDIS_PORT
+          value: "10733"
+        - name: REDIS_PASSWORD
+          value: "0LsHm7k2Tha6ZUG9aB7mqHinpknluVHe"
+        
+        # Application Settings
+        - name: SERVER_PORT
+          value: "8081"
+        - name: APP_ENVIRONMENT
+          value: "production"
+        
+        # Health Checks
+        livenessProbe:
+          tcpSocket:
+            port: 8081
+          initialDelaySeconds: 300
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        
+        readinessProbe:
+          tcpSocket:
+            port: 8081
+          initialDelaySeconds: 240
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 5
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crypto-service
+  namespace: ebanking
+spec:
+  selector:
+    app: crypto-service
+  ports:
+  - port: 80
+    targetPort: 8081
+    protocol: TCP
+  type: ClusterIP

@@ -1,3 +1,4 @@
+@use '../../../themes/variables' as *;
 @use '../../../themes/mixins' as *;
 
 .navbar {
@@ -32,6 +33,9 @@
   .search-container {
     position: relative;
     width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 
     .search-icon {
       position: absolute;
@@ -43,12 +47,13 @@
       width: 18px;
       height: 18px;
       pointer-events: none;
+      z-index: 1;
     }
 
     .search-input {
-      width: 100%;
+      flex: 1;
       height: 40px;
-      padding: 0 1rem 0 2.75rem;
+      padding: 0 3.5rem 0 2.75rem;
       border: 1px solid #E2E8F0;
       border-radius: 10px;
       background: #FFFFFF;
@@ -66,6 +71,68 @@
         border-color: #1E6AE1;
         box-shadow: 0 0 0 3px rgba(30, 106, 225, 0.1);
       }
+    }
+
+    .search-btn {
+      height: 40px;
+      width: 40px;
+      min-width: 40px;
+      border-radius: 10px;
+      background: #1E6AE1;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #FFFFFF;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover:not(:disabled) {
+        background: #1557B8;
+      }
+
+      &:disabled {
+        background: #CBD5E1;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+}
+
+.feature-option {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-xs 0;
+
+  mat-icon {
+    color: #1E6AE1;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .feature-info {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    .feature-label {
+      font-weight: $font-semibold;
+      color: $gray-900;
+      font-size: $text-base;
+    }
+
+    .feature-desc {
+      font-size: $text-sm;
+      color: $gray-600;
     }
   }
 }

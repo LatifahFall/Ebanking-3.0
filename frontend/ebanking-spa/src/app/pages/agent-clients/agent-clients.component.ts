@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -74,14 +74,22 @@ export class AgentClientsComponent implements OnInit {
     private userService: UserService,
     private authService: AuthService,
     private dialog: MatDialog,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     const currentUser = this.authService.getCurrentUser();
     if (currentUser && currentUser.role === UserRole.AGENT) {
       this.currentAgentId = currentUser.id;
-      this.loadClients();
+      
+      // Check for search query parameter from navbar
+      this.route.queryParams.subscribe(params => {
+        if (params['search']) {
+          this.searchQuery = params['search'];
+        }
+        this.loadClients();
+      });
     } else {
       this.errorMessage = 'Access denied. Agent role required.';
     }

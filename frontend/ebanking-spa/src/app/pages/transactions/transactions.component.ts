@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { TransactionService } from '../../core/services/transaction.service';
 import { Transaction } from '../../models';
 
 @Component({
@@ -45,23 +46,65 @@ import { Transaction } from '../../models';
 })
 export class TransactionsComponent implements OnInit {
   transactions: Transaction[] = [];
+  searchQuery = '';
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private transactionService: TransactionService
+  ) {}
 
   ngOnInit(): void {
-    try {
-      const raw = localStorage.getItem('mock_transactions');
-      if (raw) {
-        const list = JSON.parse(raw) as any[];
-        // Normalize each item to Transaction shape (accept createdAt fallback)
-        this.transactions = list.map(it => {
-          const t: any = { ...it };
-          if (!t.date && t.createdAt) t.date = new Date(t.createdAt);
-          if (t.date && typeof t.date === 'string') t.date = new Date(t.date);
-          return t as Transaction;
-        });
+    // Check for search query parameter from navbar
+    this.route.queryParams.subscribe(params => {
+      if (params['search']) {
+        this.searchQuery = params['search'];
       }
-    } catch {}
+      this.loadTransactions();
+    });
+  }
+
+  loadTransactions(): void {
+    this.transactionService.getRecentTransactions(50).subscribe({
+      next: (transactions) => {
+        this.transactions = transactions;
+        
+        // Filter by search query if provided
+        if (this.searchQuery.trim()) {
+          const query = this.searchQuery.toLowerCase();
+          this.transactions = this.transactions.filter(t => 
+            t.description?.toLowerCase().includes(query) ||
+            t.category?.toLowerCase().includes(query) ||
+            t.id.toLowerCase().includes(query)
+          );
+        }
+      },
+      error: () => {
+        // Fallback to localStorage if service fails
+        try {
+          const raw = localStorage.getItem('mock_transactions');
+          if (raw) {
+            const list = JSON.parse(raw) as any[];
+            this.transactions = list.map(it => {
+              const t: any = { ...it };
+              if (!t.date && t.createdAt) t.date = new Date(t.createdAt);
+              if (t.date && typeof t.date === 'string') t.date = new Date(t.date);
+              return t as Transaction;
+            });
+            
+            // Filter by search query if provided
+            if (this.searchQuery.trim()) {
+              const query = this.searchQuery.toLowerCase();
+              this.transactions = this.transactions.filter(t => 
+                t.description?.toLowerCase().includes(query) ||
+                t.category?.toLowerCase().includes(query) ||
+                t.id.toLowerCase().includes(query)
+              );
+            }
+          }
+        } catch {}
+      }
+    });
   }
 
   review(id: string) {

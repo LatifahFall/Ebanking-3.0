@@ -6,8 +6,35 @@
       <input 
         type="text" 
         class="search-input" 
-        placeholder="Search transactions, accounts..." 
+        [(ngModel)]="searchQuery"
+        [matAutocomplete]="featureAutocomplete"
+        (keyup.enter)="onSearch()"
+        placeholder="Search features..."
         autocomplete="off">
+      <mat-autocomplete 
+        #featureAutocomplete="matAutocomplete"
+        [displayWith]="displayFeature"
+        (optionSelected)="onFeatureSelected($event.option.value)">
+        @for (feature of filterFeatures(searchQuery); track feature.route) {
+          <mat-option [value]="feature">
+            <div class="feature-option">
+              <mat-icon>{{ feature.icon }}</mat-icon>
+              <div class="feature-info">
+                <span class="feature-label">{{ feature.label }}</span>
+                <span class="feature-desc">{{ feature.description }}</span>
+              </div>
+            </div>
+          </mat-option>
+        }
+        @if (filterFeatures(searchQuery).length === 0 && searchQuery.trim()) {
+          <mat-option disabled>
+            <span>No features found matching "{{ searchQuery }}"</span>
+          </mat-option>
+        }
+      </mat-autocomplete>
+      <button class="search-btn" (click)="onSearch()" [disabled]="!searchQuery.trim()">
+        <mat-icon>search</mat-icon>
+      </button>
     </div>
   </div>
 

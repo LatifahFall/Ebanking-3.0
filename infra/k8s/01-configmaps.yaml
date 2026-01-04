@@ -57,11 +57,7 @@ data:
   kafka.topics.notification.audit: "notification-audit"
   kafka.topics.notification.metrics: "notification-metrics"
 
-<<<<<<< Updated upstream
     # ================ USER SERVICE ================
-=======
-  # ================ user service  ================
->>>>>>> Stashed changes
   user.service.port: "8081"
   
   # Topics Kafka spécifiques à user-service
@@ -71,7 +67,6 @@ data:
   kafka.topics.client.unassigned: "client.unassigned"
   kafka.topics.user.activated: "user.activated"
   kafka.topics.user.deactivated: "user.deactivated"
-<<<<<<< Updated upstream
 
 
   # ================ AUTH SERVICE CONFIG ================
@@ -106,6 +101,25 @@ data:
   kafka.topics.auth.password.changed: "auth.password.changed"
   kafka.topics.auth.twofactor.enabled: "auth.twofactor.enabled"
   kafka.topics.auth.twofactor.disabled: "auth.twofactor.disabled"
-=======
+ 
+
   
->>>>>>> Stashed changes
+  # ================ PAYMENT SERVICE ================
+
+# Payment Service Configuration
+  payment.service.port: "8082"
+
+# PostgreSQL Payment DB
+  postgres.payment.host: "postgres-payment"
+  postgres.payment.port: "5432"
+  postgres.payment.database: "ebanking_payment"
+
+# Account Service URL
+  account.service.url: "http://account-service:80"
+
+# Kafka Topics pour payment-service
+  kafka.topics.payment.completed: "payment.completed"
+  kafka.topics.payment.reversed: "payment.reversed"
+  kafka.topics.fraud.detected: "fraud.detected"
+  kafka.topics.account.created: "account.created"
+  kafka.topics.account.updated: "account.updated"

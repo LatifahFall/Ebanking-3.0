@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: ebanking
+  labels:
+    app: payment-service
+    version: "1.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: payment-service
+        image: payment-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8082
+        env:
+        # Database Configuration
+        - name: DATABASE_URL
+          value: "jdbc:postgresql://postgres-payment:5432/ebanking_payment"
+        - name: DATABASE_USERNAME
+          value: "postgres"
+        - name: DATABASE_PASSWORD
+          value: "postgres123"
+        - name: DATABASE_POOL_SIZE
+          value: "10"
+        
+        # Kafka Configuration
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.bootstrap.servers
+        - name: SPRING_KAFKA_ENABLED
+          value: "true"
+        
+        # Application Settings
+        - name: SERVER_PORT
+          value: "8082"
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: app.environment
+        - name: ACCOUNT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: account.service.url
+        
+        # Kafka Topics (depuis ConfigMap)
+        - name: KAFKA_TOPIC_PAYMENT_COMPLETED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.payment.completed
+        - name: KAFKA_TOPIC_PAYMENT_REVERSED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.payment.reversed
+        - name: KAFKA_TOPIC_FRAUD_DETECTED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.fraud.detected
+        - name: KAFKA_TOPIC_ACCOUNT_CREATED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.account.created
+        - name: KAFKA_TOPIC_ACCOUNT_UPDATED
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: kafka.topics.account.updated
+        
+        # Payment Configuration
+        - name: PAYMENT_INSTANT_ENABLED
+          value: "true"
+        - name: PAYMENT_MAX_AMOUNT
+          value: "100000"
+        - name: PAYMENT_MIN_AMOUNT
+          value: "0.01"
+        
+        # Fraud Detection
+        - name: FRAUD_DETECTION_ENABLED
+          value: "true"
+        - name: FRAUD_BLACKLIST_CACHE_TTL
+          value: "3600"
+        
+        # JPA & Logging
+        - name: JPA_SHOW_SQL
+          value: "false"
+        - name: JPA_FORMAT_SQL
+          value: "false"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: LOG_LEVEL_PAYMENT
+          value: "DEBUG"
+        
+        # Actuator
+        - name: ACTUATOR_HEALTH_SHOW_DETAILS
+          value: "always"
+        
+        # Keycloak (désactivé)
+        - name: KEYCLOAK_ENABLED
+          value: "false"
+        
+        # Health Checks (Actuator)
+        livenessProbe:
+          tcpSocket:
+            port: 8082
+          initialDelaySeconds: 300
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        
+        readinessProbe:
+          tcpSocket:
+            port: 8082
+          initialDelaySeconds: 240
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 5
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: ebanking
+spec:
+  selector:
+    app: payment-service
+  ports:
+  - port: 80
+    targetPort: 8082
+    protocol: TCP
+  type: ClusterIP

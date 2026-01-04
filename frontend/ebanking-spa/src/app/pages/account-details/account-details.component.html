@@ -1,0 +1,86 @@
+<div class="account-details-page">
+  <app-page-header
+    [title]="account ? account.accountName : 'Account Details'"
+    subtitle="View account information and transaction history"
+    [breadcrumbs]="['Home', 'Accounts', account?.accountName || 'Details']">
+  </app-page-header>
+
+  @if (!account) {
+    <div class="loading-state">
+      <p>Loading account details...</p>
+    </div>
+  } @else {
+    <div class="account-details-content">
+      <!-- Account Overview Card -->
+      <div class="details-card">
+        <div class="card-header">
+          <div class="account-icon-large" [style.background]="account.color">
+            <mat-icon>{{ account.icon || 'account_balance_wallet' }}</mat-icon>
+          </div>
+          <div class="account-info">
+            <h2>{{ account.accountName }}</h2>
+            <p class="account-number">{{ account.accountNumber }}</p>
+            <span class="account-status" [class.active]="account.status === 'ACTIVE'">
+              {{ account.status }}
+            </span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Account Type</span>
+              <span class="value">{{ account.accountType }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Currency</span>
+              <span class="value">{{ account.currency }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Balance</span>
+              <span class="value balance">{{ formatCurrency(account.balance, account.currency) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Available Balance</span>
+              <span class="value">{{ formatCurrency(account.availableBalance, account.currency) }}</span>
+            </div>
+            @if (account.iban) {
+              <div class="info-item">
+                <span class="label">IBAN</span>
+                <span class="value">{{ account.iban }}</span>
+              </div>
+            }
+            @if (account.bic) {
+              <div class="info-item">
+                <span class="label">BIC</span>
+                <span class="value">{{ account.bic }}</span>
+              </div>
+            }
+            <div class="info-item">
+              <span class="label">Created</span>
+              <span class="value">{{ account.createdAt | date:'medium' }}</span>
+            </div>
+            @if (account.lastActivity) {
+              <div class="info-item">
+                <span class="label">Last Activity</span>
+                <span class="value">{{ account.lastActivity | date:'medium' }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <button mat-stroked-button (click)="onBack()">
+            <mat-icon>arrow_back</mat-icon>
+            Back to Accounts
+          </button>
+          <button mat-raised-button color="primary" (click)="onTransfer()">
+            <mat-icon>swap_horiz</mat-icon>
+            Transfer Money
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+

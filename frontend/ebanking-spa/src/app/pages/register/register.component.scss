@@ -1,0 +1,129 @@
+@use '../../themes/mixins' as *;
+
+.register-form {
+  /* Desktop-friendly container */
+  max-width: 900px;
+  margin: 2.5rem auto;
+  padding: 2rem 2.5rem;
+  background: var(--card-bg);
+  border-radius: $radius-lg;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+
+  .form-header {
+    text-align: center;
+    margin-bottom: $spacing-xl;
+
+    h2 {
+      font-size: $text-3xl;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+      margin: 0 0 0.5rem;
+    }
+
+    p {
+      margin: 0;
+      font-size: $text-base;
+      color: var(--text-secondary);
+    }
+  }
+
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: $spacing-md;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error-color);
+    border-radius: $radius-md;
+    color: var(--error-color);
+    margin-bottom: $spacing-lg;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  form {
+    .full-width {
+      width: 100%;
+      margin-bottom: $spacing-md;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: $spacing-md;
+      margin-bottom: $spacing-md;
+
+      mat-form-field {
+        margin-bottom: 0;
+      }
+    }
+
+    .terms-section {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-sm;
+      padding: $spacing-md;
+      background: var(--hover-bg);
+      border-radius: $radius-md;
+      margin-bottom: $spacing-lg;
+
+      ::ng-deep {
+        .mat-mdc-checkbox .mdc-label {
+          font-size: $text-sm;
+          color: var(--text-primary);
+        }
+      }
+
+      .link {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: $font-semibold;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .submit-btn {
+      margin-bottom: $spacing-lg;
+    }
+  }
+
+  .form-footer {
+    text-align: center;
+    margin-top: $spacing-xl;
+    padding-top: $spacing-lg;
+    border-top: 1px solid var(--border-color);
+
+    p {
+      margin: 0;
+      font-size: $text-sm;
+      color: var(--text-secondary);
+
+      a {
+        color: var(--primary-color);
+        font-weight: $font-semibold;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 900px) {
+  .register-form {
+    padding: 1rem 1rem;
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+}

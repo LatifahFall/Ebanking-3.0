@@ -1,0 +1,63 @@
+<div class="mfa-form">
+  <div class="form-header">
+    <div class="mfa-icon">
+      <mat-icon>verified_user</mat-icon>
+    </div>
+    <h2>Two-Factor Authentication</h2>
+    <p>Enter the 6-digit code sent to your registered device</p>
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-message">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+  }
+
+  <div class="code-inputs">
+    @for (digit of code; track $index) {
+      <input
+        type="text"
+        maxlength="1"
+        class="code-input"
+        [(ngModel)]="code[$index]"
+        (input)="onCodeInput($index, $event)"
+        (keydown)="onKeyDown($index, $event)"
+        [disabled]="loading"
+        autocomplete="off">
+    }
+  </div>
+
+  <div *ngIf="devCode" class="dev-code">
+    <p><strong>Dev MFA code:</strong> {{ devCode }} <small>(visible in dev only)</small></p>
+  </div>
+
+  <div class="form-actions">
+    <app-custom-button
+      label="Verify"
+      variant="primary"
+      [fullWidth]="true"
+      [loading]="loading"
+      [disabled]="!isCodeComplete()"
+      (clicked)="verifyCode()">
+    </app-custom-button>
+  </div>
+
+  <div class="resend-section">
+    @if (resendTimer > 0) {
+      <p>Resend code in {{ resendTimer }}s</p>
+    } @else {
+      <button class="resend-btn" (click)="resendCode()">
+        <mat-icon>refresh</mat-icon>
+        Resend Code
+      </button>
+    }
+  </div>
+
+  <div class="form-footer">
+    <a href="/auth/login" class="back-link">
+      <mat-icon>arrow_back</mat-icon>
+      Back to Login
+    </a>
+  </div>
+</div>

@@ -1,0 +1,78 @@
+<header class="navbar" [class.sidebar-collapsed]="isSidebarCollapsed()">
+  <div class="navbar-left">
+    <!-- Premium Search Bar -->
+    <div class="search-container">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Search transactions, accounts..." 
+        autocomplete="off">
+    </div>
+  </div>
+
+  <div class="navbar-right">
+
+    <!-- Theme Toggle -->
+    <button 
+      class="icon-btn theme-toggle" 
+      (click)="toggleTheme()"
+      [matTooltip]="themeService.isDarkMode() ? 'Light Mode' : 'Dark Mode'"
+      [matTooltipPosition]="'below'">
+      <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
+
+    <!-- Notifications -->
+    <app-notification-bell></app-notification-bell>
+
+    <!-- User Profile Menu -->
+    <button class="profile-btn" [matMenuTriggerFor]="profileMenu">
+      <div class="profile-avatar">
+        <img *ngIf="currentUser?.avatar" [src]="currentUser!.avatar" [alt]="currentUser!.fullName">
+        <span *ngIf="!currentUser?.avatar" class="avatar-initials">{{ getUserInitials() }}</span>
+      </div>
+      <div class="profile-info">
+        <span class="profile-name">{{ currentUser?.fullName }}</span>
+        <span class="profile-role">{{ currentUser?.role }}</span>
+      </div>
+      <mat-icon class="dropdown-icon">expand_more</mat-icon>
+    </button>
+
+    <mat-menu #profileMenu="matMenu" class="profile-menu">
+      <div class="profile-menu-header">
+        <div class="profile-avatar-large">
+          <img *ngIf="currentUser?.avatar" [src]="currentUser!.avatar" [alt]="currentUser!.fullName">
+          <span *ngIf="!currentUser?.avatar" class="avatar-initials">{{ getUserInitials() }}</span>
+        </div>
+        <div class="profile-details">
+          <h4>{{ currentUser?.fullName }}</h4>
+          <p>{{ currentUser?.email }}</p>
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <button mat-menu-item routerLink="/profile">
+        <mat-icon>person</mat-icon>
+        <span>My Profile</span>
+      </button>
+
+      <button mat-menu-item routerLink="/profile/security">
+        <mat-icon>security</mat-icon>
+        <span>Security Settings</span>
+      </button>
+
+      <button mat-menu-item routerLink="/profile/preferences">
+        <mat-icon>settings</mat-icon>
+        <span>Preferences</span>
+      </button>
+
+      <mat-divider></mat-divider>
+
+      <button mat-menu-item (click)="onLogout()" class="logout-btn">
+        <mat-icon>logout</mat-icon>
+        <span>Logout</span>
+      </button>
+    </mat-menu>
+  </div>
+</header>

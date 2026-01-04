@@ -1,0 +1,250 @@
+@use '../../themes/variables' as *;
+@use '../../themes/mixins' as *;
+
+.analytics-page {
+  padding: $spacing-lg;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-md;
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-3xl;
+  gap: $spacing-lg;
+
+  p {
+    color: var(--text-secondary);
+    font-size: $text-base;
+  }
+}
+
+.analytics-content {
+  margin-top: $spacing-xl;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+// Summary Cards
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: $spacing-lg;
+
+  @media (max-width: $breakpoint-sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  @include card;
+  padding: $spacing-lg;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  transition: transform $transition-base, box-shadow $transition-base;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  .stat-content {
+    flex: 1;
+    min-width: 0;
+
+    h3 {
+      margin: 0 0 $spacing-xs;
+      font-size: $text-sm;
+      font-weight: $font-medium;
+      color: var(--text-secondary);
+    }
+
+    .stat-value {
+      margin: 0 0 $spacing-xs;
+      font-size: $text-2xl;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+
+      &.income {
+        color: #10B981;
+      }
+
+      &.expense {
+        color: #EF4444;
+      }
+
+      &.positive {
+        color: #10B981;
+      }
+
+      &.negative {
+        color: #EF4444;
+      }
+    }
+
+    .stat-label {
+      font-size: $text-xs;
+      color: var(--text-tertiary);
+    }
+  }
+}
+
+// Charts Section
+.charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: $spacing-lg;
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chart-card {
+  @include card;
+  padding: $spacing-xl;
+
+  mat-card-header {
+    margin-bottom: $spacing-lg;
+
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      font-size: $text-lg;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+
+      mat-icon {
+        color: var(--primary-color);
+      }
+    }
+  }
+
+  .no-data {
+    padding: $spacing-3xl;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: $text-base;
+  }
+}
+
+// Category Section
+.category-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-lg;
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.category-card {
+  @include card;
+  padding: $spacing-xl;
+
+  mat-card-header {
+    margin-bottom: $spacing-lg;
+
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      font-size: $text-lg;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+
+      mat-icon {
+        color: var(--primary-color);
+      }
+    }
+  }
+
+  .category-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+  }
+
+  .category-item {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+
+    .category-info {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+
+      .category-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .category-name {
+        font-size: $text-sm;
+        font-weight: $font-medium;
+        color: var(--text-primary);
+      }
+    }
+
+    .category-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .category-amount {
+        font-size: $text-base;
+        font-weight: $font-semibold;
+        color: var(--text-primary);
+      }
+
+      .category-percentage {
+        font-size: $text-sm;
+        color: var(--text-secondary);
+      }
+    }
+
+    .category-bar {
+      width: 100%;
+      height: 6px;
+      background: var(--bg-secondary);
+      border-radius: $radius-sm;
+      overflow: hidden;
+
+      .category-bar-fill {
+        height: 100%;
+        border-radius: $radius-sm;
+        transition: width $transition-base;
+      }
+    }
+  }
+}
+

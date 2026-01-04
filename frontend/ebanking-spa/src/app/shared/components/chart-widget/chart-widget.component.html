@@ -1,0 +1,105 @@
+<div class="chart-widget">
+  <div class="chart-header">
+    <h3>{{ title() }}</h3>
+  </div>
+  <div class="chart-container" [style.height.px]="height()">
+    @if (type() === 'bar' || type() === 'line') {
+      <svg [attr.width]="chartWidth" [attr.height]="chartHeight()" class="chart-svg">
+        <!-- Grid lines -->
+        <defs>
+          <linearGradient id="incomeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#10B981;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#10B981;stop-opacity:0.3" />
+          </linearGradient>
+          <linearGradient id="expenseGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#EF4444;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#EF4444;stop-opacity:0.3" />
+          </linearGradient>
+        </defs>
+
+        <!-- Y-axis grid lines -->
+        @for (tick of [0, 0.25, 0.5, 0.75, 1]; track tick) {
+          <line
+            [attr.x1]="padding.left"
+            [attr.x2]="chartWidth - padding.right"
+            [attr.y1]="padding.top + (tick * (chartHeight() - padding.top - padding.bottom))"
+            [attr.y2]="padding.top + (tick * (chartHeight() - padding.top - padding.bottom))"
+            class="grid-line"
+          />
+          <text
+            [attr.x]="padding.left - 10"
+            [attr.y]="padding.top + (tick * (chartHeight() - padding.top - padding.bottom)) + 4"
+            class="axis-label"
+            text-anchor="end"
+          >
+            {{ formatCurrency(maxValue() * (1 - tick)) }}
+          </text>
+        }
+
+        <!-- Chart data -->
+        @for (dataset of chartData().datasets; track dataset.label) {
+          @if (type() === 'bar') {
+            <!-- Bar chart -->
+            @for (point of dataset.data; track $index) {
+              <rect
+                [attr.x]="getXPosition($index) - (barWidth() / 2)"
+                [attr.y]="padding.top + getYScale(point)"
+                [attr.width]="barWidth()"
+                [attr.height]="(chartHeight() - padding.top - padding.bottom) - getYScale(point)"
+                [attr.fill]="dataset.color || '#1E6AE1'"
+                class="chart-bar"
+                [attr.data-label]="formatCurrency(point)"
+              />
+            }
+          } @else {
+            <!-- Line chart -->
+            <polyline
+              [attr.points]="getLinePoints(dataset.data)"
+              [attr.fill]="'none'"
+              [attr.stroke]="dataset.color || '#1E6AE1'"
+              [attr.stroke-width]="3"
+              class="chart-line"
+            />
+            @for (point of dataset.data; track $index) {
+              <circle
+                [attr.cx]="getXPosition($index)"
+                [attr.cy]="padding.top + getYScale(point)"
+                [attr.r]="4"
+                [attr.fill]="dataset.color || '#1E6AE1'"
+                class="chart-point"
+              />
+            }
+          }
+        }
+
+        <!-- X-axis labels -->
+        @for (label of chartData().labels; track $index) {
+          <text
+            [attr.x]="getXPosition($index)"
+            [attr.y]="chartHeight() - padding.bottom + 20"
+            class="axis-label"
+            text-anchor="middle"
+          >
+            {{ label }}
+          </text>
+        }
+
+        <!-- Legend -->
+        <g class="legend" [attr.transform]="'translate(' + (chartWidth - 150) + ', 20)'">
+          @for (dataset of chartData().datasets; track dataset.label) {
+            <g [attr.transform]="'translate(0, ' + ($index * 25) + ')'">
+              <rect width="12" height="12" [attr.fill]="dataset.color || '#1E6AE1'" />
+              <text x="18" y="9" class="legend-text">{{ dataset.label }}</text>
+            </g>
+          }
+        </g>
+      </svg>
+    } @else {
+      <!-- Placeholder for pie/donut charts -->
+      <div class="chart-placeholder">
+        <p>{{ type() | titlecase }} Chart</p>
+        <span>Pie/Donut charts coming soon</span>
+      </div>
+    }
+  </div>
+</div>

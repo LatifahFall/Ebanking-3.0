@@ -1,0 +1,54 @@
+<div class="client-form-dialog">
+  <h2 mat-dialog-title>
+    <mat-icon>{{ isEditMode ? 'edit' : 'person_add' }}</mat-icon>
+    {{ isEditMode ? 'Edit Client' : 'Create New Client' }}
+  </h2>
+
+  <mat-dialog-content>
+    <form (ngSubmit)="onSave()" #clientForm="ngForm">
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>First Name</mat-label>
+          <input matInput [(ngModel)]="formData.firstName" name="firstName" required>
+          <mat-icon matPrefix>person</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Last Name</mat-label>
+          <input matInput [(ngModel)]="formData.lastName" name="lastName" required>
+          <mat-icon matPrefix>person_outline</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email</mat-label>
+        <input matInput [(ngModel)]="formData.email" name="email" type="email" required>
+        <mat-icon matPrefix>email</mat-icon>
+        <mat-hint>Valid email address required</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Phone Number</mat-label>
+        <input matInput [(ngModel)]="formData.phoneNumber" name="phoneNumber" type="tel">
+        <mat-icon matPrefix>phone</mat-icon>
+        <mat-hint>Optional</mat-hint>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()" type="button">
+      <mat-icon>close</mat-icon>
+      Cancel
+    </button>
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="onSave()" 
+      [disabled]="!isFormValid()"
+      type="button">
+      <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+      {{ isEditMode ? 'Save' : 'Create' }}
+    </button>
+  </mat-dialog-actions>
+</div>

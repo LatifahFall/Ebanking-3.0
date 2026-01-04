@@ -1,0 +1,106 @@
+@use '../../../themes/mixins' as *;
+
+.custom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  &.full-width {
+    width: 100%;
+  }
+
+  .btn-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  // Sizes
+  &.custom-btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+
+    .btn-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &.custom-btn-large {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+
+    .btn-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  // Variants
+  &.custom-btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+    @include elevation-small;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      @include elevation-medium;
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+  }
+
+  &.custom-btn-secondary {
+    background: var(--secondary-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+
+    &:hover:not(:disabled) {
+      background: var(--hover-bg);
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+  }
+
+  &.custom-btn-danger {
+    background: var(--error-color);
+    color: white;
+    @include elevation-small;
+
+    &:hover:not(:disabled) {
+      background: #dc2626;
+      transform: translateY(-2px);
+      @include elevation-medium;
+    }
+  }
+
+  &.custom-btn-ghost {
+    background: transparent;
+    color: var(--primary-color);
+
+    &:hover:not(:disabled) {
+      background: var(--primary-light);
+    }
+  }
+}

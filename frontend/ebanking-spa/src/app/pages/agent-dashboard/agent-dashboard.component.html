@@ -1,0 +1,208 @@
+<div class="agent-dashboard-page">
+  <app-page-header
+    title="Agent Dashboard"
+    subtitle="Overview of your clients, activity, and performance"
+    [breadcrumbs]="['Home', 'Dashboard']">
+  </app-page-header>
+
+  @if (loading) {
+    <app-loader [fullScreen]="false" message="Loading dashboard..."></app-loader>
+  } @else {
+    <div class="dashboard-content">
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <mat-card class="stat-card">
+          <div class="stat-icon" style="background: #EBF5FF;">
+            <mat-icon style="color: #1E6AE1;">people</mat-icon>
+          </div>
+          <div class="stat-content">
+            <h3>Total Clients</h3>
+            <p class="stat-value">{{ stats?.totalClients || 0 }}</p>
+            <span class="stat-label">All assigned clients</span>
+          </div>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <div class="stat-icon" style="background: #D1FAE5;">
+            <mat-icon style="color: #10B981;">check_circle</mat-icon>
+          </div>
+          <div class="stat-content">
+            <h3>Active Clients</h3>
+            <p class="stat-value">{{ stats?.activeClients || 0 }}</p>
+            <span class="stat-label">{{ stats ? ((stats.activeClients / stats.totalClients) * 100).toFixed(1) : 0 }}% of total</span>
+          </div>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <div class="stat-icon" style="background: #FEF3C7;">
+            <mat-icon style="color: #F59E0B;">person_add</mat-icon>
+          </div>
+          <div class="stat-content">
+            <h3>New This Month</h3>
+            <p class="stat-value">{{ stats?.newClientsThisMonth || 0 }}</p>
+            <span class="stat-label">Clients registered this month</span>
+          </div>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <div class="stat-icon" style="background: #FEE2E2;">
+            <mat-icon style="color: #EF4444;">pending_actions</mat-icon>
+          </div>
+          <div class="stat-content">
+            <h3>KYC Pending</h3>
+            <p class="stat-value">{{ stats?.pendingKyc || 0 }}</p>
+            <span class="stat-label">Requires attention</span>
+          </div>
+        </mat-card>
+      </div>
+
+      <!-- Main Content Grid -->
+      <div class="main-grid">
+        <!-- Recent Activity -->
+        <mat-card class="activity-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>history</mat-icon>
+              Recent Activity
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (recentActivity.length > 0) {
+              <div class="activity-list">
+                @for (activity of recentActivity; track activity.clientId + activity.timestamp) {
+                  <div class="activity-item">
+                    <div class="activity-icon" [style.background]="activity.color + '20'">
+                      <mat-icon [style.color]="activity.color">{{ activity.icon }}</mat-icon>
+                    </div>
+                    <div class="activity-content">
+                      <h4>{{ activity.clientName }}</h4>
+                      <p>{{ activity.description }}</p>
+                      <span class="activity-time">{{ formatTimeAgo(activity.timestamp) }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>inbox</mat-icon>
+                <p>No recent activity</p>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Alerts & Tasks -->
+        <mat-card class="alerts-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>notifications_active</mat-icon>
+              Alerts & Tasks
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (alerts.length > 0) {
+              <div class="alerts-list">
+                @for (alert of alerts; track alert.id) {
+                  <div class="alert-item" [class.high-priority]="alert.priority === 'high'">
+                    <div class="alert-priority" [style.background]="getPriorityColor(alert.priority)"></div>
+                    <div class="alert-icon">
+                      <mat-icon>{{ getAlertIcon(alert.type) }}</mat-icon>
+                    </div>
+                    <div class="alert-content">
+                      <h4>{{ alert.title }}</h4>
+                      <p>{{ alert.description }}</p>
+                      @if (alert.clientName) {
+                        <span class="alert-client">{{ alert.clientName }}</span>
+                      }
+                    </div>
+                    @if (alert.actionUrl) {
+                      <button mat-icon-button [routerLink]="alert.actionUrl" class="alert-action">
+                        <mat-icon>arrow_forward</mat-icon>
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+              <div class="alerts-footer">
+                <button mat-button routerLink="/agent/clients" class="view-all-btn">
+                  View All Clients
+                </button>
+              </div>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>check_circle</mat-icon>
+                <p>No alerts or pending tasks</p>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Performance Section -->
+      <div class="performance-section">
+        <mat-card class="performance-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>trending_up</mat-icon>
+              Performance Metrics
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (performance) {
+              <div class="performance-metrics">
+                <div class="metric-item">
+                  <div class="metric-icon" style="background: #EBF5FF;">
+                    <mat-icon style="color: #1E6AE1;">trending_up</mat-icon>
+                  </div>
+                  <div class="metric-content">
+                    <h4>Client Growth</h4>
+                    <p class="metric-value" [class.positive]="performance.clientGrowth >= 0" [class.negative]="performance.clientGrowth < 0">
+                      {{ performance.clientGrowth >= 0 ? '+' : '' }}{{ performance.clientGrowth.toFixed(1) }}%
+                    </p>
+                  </div>
+                </div>
+
+                <div class="metric-item">
+                  <div class="metric-icon" style="background: #D1FAE5;">
+                    <mat-icon style="color: #10B981;">check_circle</mat-icon>
+                  </div>
+                  <div class="metric-content">
+                    <h4>Active Client Rate</h4>
+                    <p class="metric-value">{{ performance.activeClientRate.toFixed(1) }}%</p>
+                  </div>
+                </div>
+
+                <div class="metric-item">
+                  <div class="metric-icon" style="background: #FEF3C7;">
+                    <mat-icon style="color: #F59E0B;">verified</mat-icon>
+                  </div>
+                  <div class="metric-content">
+                    <h4>KYC Completion</h4>
+                    <p class="metric-value">{{ performance.kycCompletionRate.toFixed(1) }}%</p>
+                  </div>
+                </div>
+              </div>
+
+              @if (performanceChart) {
+                <div class="performance-chart">
+                  <app-chart-widget
+                    title="Client Growth Trend"
+                    type="line"
+                    [height]="250"
+                    [data]="performanceChart">
+                  </app-chart-widget>
+                </div>
+              }
+            } @else {
+              <div class="empty-state">
+                <mat-icon>bar_chart</mat-icon>
+                <p>No performance data available</p>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  }
+</div>
+

@@ -1,0 +1,115 @@
+@use '../../themes/variables' as *;
+@use '../../themes/mixins' as *;
+
+.security-settings-page {
+  padding: $spacing-lg;
+  max-width: 900px;
+  margin: 0 auto;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-md;
+  }
+}
+
+.security-content {
+  margin-top: $spacing-xl;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+.security-card {
+  @include card;
+  padding: $spacing-xl;
+
+  mat-card-header {
+    margin-bottom: $spacing-lg;
+
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      font-size: $text-xl;
+      font-weight: $font-bold;
+    }
+  }
+
+  .password-form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+
+    mat-form-field {
+      width: 100%;
+    }
+
+    .password-requirements {
+      padding: $spacing-md;
+      background: var(--bg-secondary);
+      border-radius: $radius-md;
+      margin-top: $spacing-md;
+
+      h4 {
+        margin: 0 0 $spacing-sm;
+        font-size: $text-base;
+        font-weight: $font-semibold;
+        color: var(--text-primary);
+      }
+
+      ul {
+        margin: 0;
+        padding-left: $spacing-lg;
+        color: var(--text-secondary);
+        font-size: $text-sm;
+
+        li {
+          margin-bottom: $spacing-xs;
+        }
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: $spacing-md;
+
+      @media (max-width: $breakpoint-sm) {
+        app-custom-button {
+          width: 100%;
+        }
+      }
+    }
+  }
+
+  .security-info {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: $spacing-md;
+      padding: $spacing-md;
+
+      mat-icon {
+        color: var(--primary-color);
+        margin-top: $spacing-xs;
+      }
+
+      h4 {
+        margin: 0 0 $spacing-xs;
+        font-size: $text-base;
+        font-weight: $font-semibold;
+        color: var(--text-primary);
+      }
+
+      p {
+        margin: 0;
+        font-size: $text-sm;
+        color: var(--text-secondary);
+      }
+    }
+  }
+}
+

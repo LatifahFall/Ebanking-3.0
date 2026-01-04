@@ -1,0 +1,311 @@
+@use '../../themes/variables' as *;
+@use '../../themes/mixins' as *;
+
+.crypto-page {
+  padding: $spacing-lg;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-md;
+  }
+}
+
+// Error State
+.error-state {
+  @include flex-center;
+  flex-direction: column;
+  padding: $spacing-3xl;
+  text-align: center;
+  background: var(--card-bg);
+  border-radius: $radius-lg;
+  box-shadow: var(--shadow-card);
+
+  .error-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: var(--error-color);
+    margin-bottom: $spacing-lg;
+  }
+
+  h3 {
+    font-size: $text-xl;
+    font-weight: $font-bold;
+    color: var(--text-primary);
+    margin: 0 0 $spacing-md;
+  }
+
+  p {
+    font-size: $text-base;
+    color: var(--text-secondary);
+    margin: 0 0 $spacing-xl;
+    max-width: 500px;
+  }
+}
+
+// Portfolio Overview
+.portfolio-overview {
+  margin-bottom: $spacing-xl;
+
+  .portfolio-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: $spacing-lg;
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// Tabs
+.crypto-tabs {
+  margin-top: $spacing-xl;
+
+  ::ng-deep .mat-mdc-tab-body-wrapper {
+    padding: $spacing-lg 0;
+  }
+}
+
+.tab-content {
+  min-height: 400px;
+}
+
+// Holdings Section
+.holdings-section {
+  background: var(--card-bg);
+  border-radius: $radius-lg;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.holdings-table {
+  width: 100%;
+
+  .crypto-info {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+
+    .crypto-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+
+    .crypto-icon-placeholder {
+      width: 40px;
+      height: 40px;
+      color: var(--text-tertiary);
+    }
+
+    .crypto-symbol {
+      font-weight: $font-semibold;
+      color: var(--text-primary);
+    }
+
+    .crypto-name {
+      font-size: $text-sm;
+      color: var(--text-secondary);
+    }
+  }
+
+  .positive {
+    color: var(--success-color);
+    font-weight: $font-semibold;
+  }
+
+  .negative {
+    color: var(--error-color);
+    font-weight: $font-semibold;
+  }
+}
+
+// Trading Section
+.trading-section {
+  .trading-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: $spacing-xl;
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .trading-card {
+    @include card;
+    padding: $spacing-xl;
+
+    &.buy-card {
+      border-left: 4px solid var(--success-color);
+    }
+
+    &.sell-card {
+      border-left: 4px solid var(--error-color);
+    }
+
+    mat-card-header {
+      margin-bottom: $spacing-lg;
+
+      mat-card-title {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        font-size: $text-xl;
+        font-weight: $font-bold;
+      }
+    }
+  }
+
+  .trading-form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+
+    mat-form-field {
+      width: 100%;
+    }
+  }
+
+  .holding-info {
+    padding: $spacing-md;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+    font-size: $text-sm;
+    color: var(--text-secondary);
+  }
+
+  .preview-info {
+    padding: $spacing-md;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+    text-align: center;
+
+    p {
+      margin: $spacing-xs 0;
+      color: var(--text-secondary);
+      font-size: $text-sm;
+    }
+
+    .preview-amount {
+      font-size: $text-xl;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+      margin: $spacing-sm 0;
+    }
+
+    .preview-price {
+      font-size: $text-xs;
+      color: var(--text-tertiary);
+    }
+  }
+}
+
+// Analytics Section
+.analytics-section {
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: $spacing-xl;
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .chart-card {
+    @include card;
+    padding: $spacing-xl;
+
+    mat-card-header {
+      margin-bottom: $spacing-lg;
+    }
+  }
+}
+
+// Transactions Section
+.transactions-section {
+  background: var(--card-bg);
+  border-radius: $radius-lg;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.transactions-table {
+  width: 100%;
+
+  mat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    color: white;
+    font-weight: $font-medium;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $radius-sm;
+    font-size: $text-xs;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// Empty State
+.empty-state {
+  @include flex-center;
+  flex-direction: column;
+  padding: $spacing-3xl;
+  text-align: center;
+  color: var(--text-tertiary);
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: $spacing-lg;
+  }
+
+  h3 {
+    font-size: $text-xl;
+    font-weight: $font-bold;
+    color: var(--text-primary);
+    margin: 0 0 $spacing-md;
+  }
+
+  p {
+    font-size: $text-base;
+    margin: 0;
+  }
+}
+
+// Material Table Overrides
+::ng-deep {
+  .mat-mdc-table {
+    background: transparent;
+  }
+
+  .mat-mdc-header-row {
+    background: var(--bg-secondary);
+  }
+
+  .mat-mdc-row {
+    &:hover {
+      background: var(--bg-secondary);
+    }
+  }
+
+  .mat-mdc-tab-group {
+    .mat-mdc-tab-header {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .mat-mdc-tab-label {
+      min-width: 120px;
+    }
+  }
+}
+

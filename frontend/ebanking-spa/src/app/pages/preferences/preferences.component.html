@@ -1,0 +1,101 @@
+<div class="preferences-page">
+  <app-page-header
+    title="Preferences"
+    subtitle="Customize your language, theme, and notification settings"
+    [breadcrumbs]="['Home', 'Profile', 'Preferences']">
+  </app-page-header>
+
+  @if (loading) {
+    <app-loader [fullScreen]="false" message="Loading your preferences..."></app-loader>
+  } @else {
+    <div class="preferences-content">
+      <!-- Language & Theme Section -->
+      <mat-card class="preferences-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>settings</mat-icon>
+            General Settings
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="form-section">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Language</mat-label>
+              <mat-select [(ngModel)]="form.language" name="language">
+                @for (lang of languages; track lang.value) {
+                  <mat-option [value]="lang.value">{{ lang.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Theme</mat-label>
+              <mat-select [(ngModel)]="form.theme" name="theme">
+                @for (theme of themes; track theme.value) {
+                  <mat-option [value]="theme.value">{{ theme.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Notifications Section -->
+      <mat-card class="preferences-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>notifications</mat-icon>
+            Notification Preferences
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="notifications-section">
+            <div class="notification-item">
+              <div class="notification-info">
+                <h4>Email Notifications</h4>
+                <p>Receive notifications via email</p>
+              </div>
+              <mat-slide-toggle [(ngModel)]="form.notificationEmail" name="notificationEmail"></mat-slide-toggle>
+            </div>
+
+            <div class="notification-item">
+              <div class="notification-info">
+                <h4>SMS Notifications</h4>
+                <p>Receive notifications via SMS</p>
+              </div>
+              <mat-slide-toggle [(ngModel)]="form.notificationSms" name="notificationSms"></mat-slide-toggle>
+            </div>
+
+            <div class="notification-item">
+              <div class="notification-info">
+                <h4>Push Notifications</h4>
+                <p>Receive push notifications on your device</p>
+              </div>
+              <mat-slide-toggle [(ngModel)]="form.notificationPush" name="notificationPush"></mat-slide-toggle>
+            </div>
+
+            <div class="notification-item">
+              <div class="notification-info">
+                <h4>In-App Notifications</h4>
+                <p>Show notifications in the application</p>
+              </div>
+              <mat-slide-toggle [(ngModel)]="form.notificationInApp" name="notificationInApp"></mat-slide-toggle>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Actions -->
+      <div class="actions-section">
+        <app-custom-button
+          label="Save Preferences"
+          icon="save"
+          variant="primary"
+          [loading]="saving"
+          (clicked)="onSave()">
+        </app-custom-button>
+      </div>
+    </div>
+  }
+</div>
+

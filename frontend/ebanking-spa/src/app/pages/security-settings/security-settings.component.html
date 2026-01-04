@@ -1,0 +1,127 @@
+<div class="security-settings-page">
+  <app-page-header
+    title="Security Settings"
+    subtitle="Manage your password and security preferences"
+    [breadcrumbs]="['Home', 'Profile', 'Security']">
+  </app-page-header>
+
+  <div class="security-content">
+    <!-- Change Password Section -->
+    <mat-card class="security-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>lock</mat-icon>
+          Change Password
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form (ngSubmit)="onChangePassword()" class="password-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Current Password</mat-label>
+            <input
+              matInput
+              [type]="showCurrentPassword ? 'text' : 'password'"
+              [(ngModel)]="passwordForm.currentPassword"
+              name="currentPassword"
+              required>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="togglePasswordVisibility('current')"
+              aria-label="Toggle password visibility">
+              <mat-icon>{{ showCurrentPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>New Password</mat-label>
+            <input
+              matInput
+              [type]="showNewPassword ? 'text' : 'password'"
+              [(ngModel)]="passwordForm.newPassword"
+              name="newPassword"
+              required
+              minlength="8">
+            <mat-hint>Must be at least 8 characters</mat-hint>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="togglePasswordVisibility('new')"
+              aria-label="Toggle password visibility">
+              <mat-icon>{{ showNewPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Confirm New Password</mat-label>
+            <input
+              matInput
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              [(ngModel)]="passwordForm.confirmPassword"
+              name="confirmPassword"
+              required>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="togglePasswordVisibility('confirm')"
+              aria-label="Toggle password visibility">
+              <mat-icon>{{ showConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </mat-form-field>
+
+          <div class="password-requirements">
+            <h4>Password Requirements:</h4>
+            <ul>
+              <li>At least 8 characters long</li>
+              <li>Different from your current password</li>
+            </ul>
+          </div>
+
+          <div class="form-actions">
+            <app-custom-button
+              label="Change Password"
+              icon="lock"
+              variant="primary"
+              type="submit"
+              [loading]="changingPassword"
+              [disabled]="!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword">
+            </app-custom-button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Security Information Section -->
+    <mat-card class="security-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>security</mat-icon>
+          Security Information
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="security-info">
+          <div class="info-item">
+            <mat-icon>check_circle</mat-icon>
+            <div>
+              <h4>Two-Factor Authentication</h4>
+              <p>Your account is protected with 2FA</p>
+            </div>
+          </div>
+          <mat-divider></mat-divider>
+          <div class="info-item">
+            <mat-icon>history</mat-icon>
+            <div>
+              <h4>Last Password Change</h4>
+              <p>We recommend changing your password regularly</p>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
+

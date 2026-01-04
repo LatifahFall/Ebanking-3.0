@@ -1,0 +1,142 @@
+@use '../../themes/variables' as *;
+@use '../../themes/mixins' as *;
+
+.account-details-page {
+  padding: $spacing-lg;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-md;
+  }
+}
+
+.loading-state {
+  @include flex-center;
+  padding: $spacing-3xl;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.account-details-content {
+  margin-top: $spacing-xl;
+}
+
+.details-card {
+  @include card;
+  padding: $spacing-xl;
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
+    padding-bottom: $spacing-lg;
+    border-bottom: 1px solid var(--border-color);
+
+    .account-icon-large {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      @include flex-center;
+      background: var(--primary-color);
+
+      mat-icon {
+        font-size: 40px;
+        width: 40px;
+        height: 40px;
+        color: white;
+      }
+    }
+
+    .account-info {
+      flex: 1;
+
+      h2 {
+        font-size: $text-2xl;
+        font-weight: $font-bold;
+        color: var(--text-primary);
+        margin: 0 0 $spacing-xs;
+      }
+
+      .account-number {
+        font-size: $text-base;
+        color: var(--text-secondary);
+        font-family: $font-family-mono;
+        margin: 0 0 $spacing-sm;
+      }
+
+      .account-status {
+        display: inline-block;
+        padding: $spacing-xs $spacing-sm;
+        border-radius: $radius-sm;
+        font-size: $text-sm;
+        font-weight: $font-semibold;
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+
+        &.active {
+          background: var(--success-color);
+          color: white;
+        }
+      }
+    }
+  }
+
+  .card-body {
+    margin-bottom: $spacing-xl;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: $spacing-lg;
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-xs;
+      padding: $spacing-md;
+      background: var(--bg-secondary);
+      border-radius: $radius-md;
+
+      .label {
+        font-size: $text-sm;
+        color: var(--text-secondary);
+        font-weight: $font-medium;
+      }
+
+      .value {
+        font-size: $text-base;
+        color: var(--text-primary);
+        font-weight: $font-semibold;
+
+        &.balance {
+          font-size: $text-xl;
+          font-weight: $font-bold;
+          color: var(--primary-color);
+        }
+      }
+    }
+  }
+
+  .card-footer {
+    display: flex;
+    gap: $spacing-md;
+    padding-top: $spacing-lg;
+    border-top: 1px solid var(--border-color);
+
+    @media (max-width: $breakpoint-sm) {
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
+

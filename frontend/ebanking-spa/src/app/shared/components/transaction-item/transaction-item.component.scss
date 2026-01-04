@@ -1,0 +1,168 @@
+@use '../../../themes/mixins' as *;
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1rem;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      transform: translateX(2px);
+      border-color: #CBD5E1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  .transaction-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #1E6AE1;
+
+    &[data-category="shopping"],
+    &[data-category="purchase"] {
+      background: #1565C0;
+    }
+
+    &[data-category="income"],
+    &[data-category="salary"] {
+      background: #3B82F6;
+    }
+
+    &[data-category="food"],
+    &[data-category="restaurant"] {
+      background: #0EA5E9;
+    }
+
+    &[data-category="transfer"] {
+      background: #2563EB;
+    }
+
+    &[data-category="bills"],
+    &[data-category="utilities"] {
+      background: #1E40AF;
+    }
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+      color: white;
+    }
+  }
+
+  .transaction-details {
+    flex: 1;
+    min-width: 0;
+
+    .transaction-description {
+      margin: 0 0 0.25rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #0F172A;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+
+    .transaction-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: #64748B;
+      line-height: 1.4;
+
+      .separator {
+        color: #94A3B8;
+      }
+
+      .merchant,
+      .date,
+      .location {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  .transaction-amount {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-align: right;
+
+    &.positive {
+      color: #10B981;
+    }
+
+    &.negative {
+      color: #0F172A;
+    }
+  }
+
+  .transaction-status {
+    flex-shrink: 0;
+
+    .status-badge {
+      padding: 0.25rem 0.625rem;
+      border-radius: 6px;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      &.pending {
+        background: #FEF3C7;
+        color: #D97706;
+      }
+
+      &.completed {
+        background: #D1FAE5;
+        color: #059669;
+      }
+
+      &.failed {
+        background: #FEE2E2;
+        color: #DC2626;
+      }
+    }
+  }
+}
+
+// Mobile responsive
+@media (max-width: 768px) {
+  .transaction-item {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    .transaction-details {
+      flex-basis: 100%;
+      order: 2;
+    }
+
+    .transaction-amount {
+      order: 1;
+      margin-left: auto;
+    }
+
+    .transaction-status {
+      order: 3;
+      flex-basis: 100%;
+    }
+  }
+}

@@ -1,0 +1,37 @@
+<div class="auth-layout">
+  <!-- Background Gradient -->
+  <div class="auth-background">
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+    <div class="gradient-orb orb-3"></div>
+  </div>
+
+  <!-- Auth Container -->
+  <div class="auth-container">
+    <!-- Brand Logo -->
+    <div class="auth-brand">
+      <div class="brand-icon">
+        <span class="material-icons">account_balance</span>
+      </div>
+      <h1 class="brand-name">E-Banking 3.0</h1>
+      <p class="brand-tagline">Secure. Modern. Efficient.</p>
+    </div>
+
+    <!-- Auth Content -->
+    <div class="auth-content">
+      <router-outlet></router-outlet>
+    </div>
+
+    <!-- Footer -->
+    <div class="auth-footer">
+      <p>&copy; {{ currentYear }} E-Banking 3.0. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <span>•</span>
+        <a href="#">Terms</a>
+        <span>•</span>
+        <a href="#">Help</a>
+      </div>
+    </div>
+  </div>
+</div>

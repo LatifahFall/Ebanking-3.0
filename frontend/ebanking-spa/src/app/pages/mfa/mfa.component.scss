@@ -1,0 +1,161 @@
+@use '../../themes/mixins' as *;
+
+.mfa-form {
+  .form-header {
+    text-align: center;
+    margin-bottom: $spacing-xl;
+
+    .mfa-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1rem;
+      border-radius: 50%;
+      background: var(--gradient-primary);
+      @include flex-center;
+
+      mat-icon {
+        font-size: 40px;
+        width: 40px;
+        height: 40px;
+        color: white;
+      }
+    }
+
+    h2 {
+      font-size: $text-2xl;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+      margin: 0 0 0.5rem;
+    }
+
+    p {
+      margin: 0;
+      font-size: $text-base;
+      color: var(--text-secondary);
+    }
+  }
+
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: $spacing-md;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error-color);
+    border-radius: $radius-md;
+    color: var(--error-color);
+    margin-bottom: $spacing-lg;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .code-inputs {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-xl;
+
+    .code-input {
+      width: 48px;
+      height: 56px;
+      text-align: center;
+      font-size: $text-2xl;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+      background: var(--secondary-bg);
+      border: 2px solid var(--border-color);
+      border-radius: $radius-md;
+      transition: all $transition-base;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        background: var(--card-bg);
+        @include elevation-small;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      gap: $spacing-sm;
+
+      .code-input {
+        width: 40px;
+        height: 48px;
+        font-size: $text-xl;
+      }
+    }
+  }
+
+  .form-actions {
+    margin-bottom: $spacing-lg;
+  }
+
+  .resend-section {
+    text-align: center;
+    margin-bottom: $spacing-lg;
+
+    p {
+      margin: 0;
+      font-size: $text-sm;
+      color: var(--text-secondary);
+    }
+
+    .resend-btn {
+      @include button-reset;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--primary-color);
+      font-size: $text-sm;
+      font-weight: $font-semibold;
+      padding: 0.5rem 1rem;
+      border-radius: $radius-md;
+      transition: all $transition-base;
+
+      &:hover {
+        background: var(--primary-light);
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+
+  .form-footer {
+    text-align: center;
+    padding-top: $spacing-lg;
+    border-top: 1px solid var(--border-color);
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      font-size: $text-sm;
+      font-weight: $font-medium;
+      transition: color $transition-base;
+
+      &:hover {
+        color: var(--primary-color);
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+}

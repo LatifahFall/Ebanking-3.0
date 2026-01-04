@@ -1,0 +1,20 @@
+<div class="page-header">
+  @if (breadcrumbs().length > 0) {
+    <nav class="breadcrumbs">
+      @for (crumb of breadcrumbs(); track $index; let isLast = $last) {
+        <span class="breadcrumb-item" [class.active]="isLast">
+          {{ crumb }}
+        </span>
+        @if (!isLast) {
+          <mat-icon class="breadcrumb-separator">chevron_right</mat-icon>
+        }
+      }
+    </nav>
+  }
+
+  <h1 class="page-title">{{ title() }}</h1>
+  
+  @if (subtitle()) {
+    <p class="page-subtitle">{{ subtitle() }}</p>
+  }
+</div>

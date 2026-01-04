@@ -5,9 +5,6 @@ WORKDIR /app
 
 # Copy pom.xml first (for dependency caching)
 COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw .
-COPY mvnw.cmd .
 
 # Download dependencies (this layer will be cached if pom.xml doesn't change)
 RUN mvn dependency:go-offline -B || true
@@ -19,9 +16,12 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Stage 2: Runtime
-FROM openjdk:latest
+FROM eclipse-temurin:latest
 
 WORKDIR /app
+
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
 RUN groupadd -r spring && useradd -r -g spring spring
@@ -35,12 +35,17 @@ RUN chown spring:spring payment-service.jar
 # Switch to non-root user
 USER spring:spring
 
-# Expose port
-EXPOSE 8080
+# Expose port (default is 8082, but can be changed via SERVER_PORT env var)
+EXPOSE 8082
 
-# Health check
+# Health check (using curl which is installed)
+# Note: Uses default port 8082, can be changed via SERVER_PORT env var
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+  CMD curl -f http://localhost:8082/actuator/health || exit 1
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "payment-service.jar"]
+# Run the application with JVM optimizations for containers
+ENTRYPOINT ["java", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75.0", \
+  "-Djava.security.egd=file:/dev/./urandom", \
+  "-jar", "payment-service.jar"]

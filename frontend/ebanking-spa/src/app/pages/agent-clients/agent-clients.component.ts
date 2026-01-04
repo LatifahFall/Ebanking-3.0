@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,6 +12,9 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/services/auth.service';
 import { User, UserRole } from '../../models';
@@ -37,6 +40,9 @@ import { ClientFormDialogComponent, ClientFormData } from '../../shared/componen
     MatPaginatorModule,
     MatChipsModule,
     MatTooltipModule,
+    MatSelectModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
     PageHeaderComponent,
     CustomButtonComponent,
     LoaderComponent
@@ -46,10 +52,16 @@ import { ClientFormDialogComponent, ClientFormData } from '../../shared/componen
 })
 export class AgentClientsComponent implements OnInit {
   clients: User[] = [];
-  displayedColumns: string[] = ['name', 'email', 'phone', 'status', 'kycStatus', 'actions'];
+  filteredClients: User[] = [];
+  displayedColumns: string[] = ['name', 'email', 'phone', 'status', 'kycStatus', 'createdAt', 'actions'];
   loading = false;
   errorMessage = '';
   searchQuery = '';
+  
+  // Filters
+  statusFilter: string = 'ALL';
+  kycFilter: string = 'ALL';
+  dateFilter: string = 'ALL';
   
   // Pagination
   page = 0;
@@ -61,7 +73,8 @@ export class AgentClientsComponent implements OnInit {
   constructor(
     private userService: UserService,
     private authService: AuthService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -88,7 +101,8 @@ export class AgentClientsComponent implements OnInit {
     ).subscribe({
       next: (result) => {
         this.clients = result.clients;
-        this.totalClients = result.total;
+        this.applyFilters();
+        this.totalClients = this.filteredClients.length;
         this.loading = false;
       },
       error: () => {
@@ -96,6 +110,86 @@ export class AgentClientsComponent implements OnInit {
         this.errorMessage = 'Failed to load clients. Please try again.';
       }
     });
+  }
+
+  applyFilters(): void {
+    this.filteredClients = [...this.clients];
+    
+    // Status filter
+    if (this.statusFilter !== 'ALL') {
+      this.filteredClients = this.filteredClients.filter(c => c.status === this.statusFilter);
+    }
+    
+    // KYC filter
+    if (this.kycFilter !== 'ALL') {
+      this.filteredClients = this.filteredClients.filter(c => c.kycStatus === this.kycFilter);
+    }
+    
+    // Date filter
+    if (this.dateFilter !== 'ALL') {
+      const now = new Date();
+      const filterDate = new Date();
+      
+      switch (this.dateFilter) {
+        case 'TODAY':
+          filterDate.setHours(0, 0, 0, 0);
+          this.filteredClients = this.filteredClients.filter(c => 
+            new Date(c.createdAt) >= filterDate
+          );
+          break;
+        case 'WEEK':
+          filterDate.setDate(now.getDate() - 7);
+          this.filteredClients = this.filteredClients.filter(c => 
+            new Date(c.createdAt) >= filterDate
+          );
+          break;
+        case 'MONTH':
+          filterDate.setMonth(now.getMonth() - 1);
+          this.filteredClients = this.filteredClients.filter(c => 
+            new Date(c.createdAt) >= filterDate
+          );
+          break;
+        case 'YEAR':
+          filterDate.setFullYear(now.getFullYear() - 1);
+          this.filteredClients = this.filteredClients.filter(c => 
+            new Date(c.createdAt) >= filterDate
+          );
+          break;
+      }
+    }
+    
+    // Pagination
+    const start = this.page * this.pageSize;
+    const end = start + this.pageSize;
+    this.filteredClients = this.filteredClients.slice(start, end);
+  }
+
+  onFilterChange(): void {
+    this.page = 0;
+    this.applyFilters();
+    this.totalClients = this.clients.filter(c => {
+      if (this.statusFilter !== 'ALL' && c.status !== this.statusFilter) return false;
+      if (this.kycFilter !== 'ALL' && c.kycStatus !== this.kycFilter) return false;
+      if (this.dateFilter !== 'ALL') {
+        const now = new Date();
+        const filterDate = new Date();
+        switch (this.dateFilter) {
+          case 'TODAY':
+            filterDate.setHours(0, 0, 0, 0);
+            return new Date(c.createdAt) >= filterDate;
+          case 'WEEK':
+            filterDate.setDate(now.getDate() - 7);
+            return new Date(c.createdAt) >= filterDate;
+          case 'MONTH':
+            filterDate.setMonth(now.getMonth() - 1);
+            return new Date(c.createdAt) >= filterDate;
+          case 'YEAR':
+            filterDate.setFullYear(now.getFullYear() - 1);
+            return new Date(c.createdAt) >= filterDate;
+        }
+      }
+      return true;
+    }).length;
   }
 
   onSearch(): void {
@@ -169,7 +263,11 @@ export class AgentClientsComponent implements OnInit {
   onPageChange(event: PageEvent): void {
     this.page = event.pageIndex;
     this.pageSize = event.pageSize;
-    this.loadClients();
+    this.applyFilters();
+  }
+
+  onViewClientDetails(client: User): void {
+    this.router.navigate(['/agent/clients', client.id, 'details']);
   }
 
   getStatusColor(status: string): string {

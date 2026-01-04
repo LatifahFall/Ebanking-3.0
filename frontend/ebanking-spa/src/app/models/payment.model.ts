@@ -3,12 +3,13 @@
  */
 
 export enum PaymentType {
-  TRANSFER = 'TRANSFER',
-  BILL_PAYMENT = 'BILL_PAYMENT',
-  MOBILE_TOP_UP = 'MOBILE_TOP_UP',
-  CARD_PAYMENT = 'CARD_PAYMENT',
-  QR_CODE = 'QR_CODE',
-  BIOMETRIC = 'BIOMETRIC'
+  STANDARD = 'STANDARD',
+  INSTANT = 'INSTANT',
+  RECURRING = 'RECURRING',
+  BIOMETRIC = 'BIOMETRIC',
+  QR_CODE = 'QR_CODE'
+  // Note: Backend PaymentType enum only has these values
+  // TRANSFER, BILL_PAYMENT, MOBILE_TOP_UP, CARD_PAYMENT are not in backend enum
 }
 
 export enum PaymentStatus {

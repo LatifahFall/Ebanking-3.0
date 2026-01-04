@@ -1,0 +1,219 @@
+<div class="agent-payments-page">
+  <app-page-header
+    title="Client Operations"
+    subtitle="Perform deposit, withdrawal, or transfer operations for your clients"
+    [breadcrumbs]="['Home', 'Client Operations']">
+  </app-page-header>
+
+  @if (loading && clients.length === 0) {
+    <app-loader [fullScreen]="false" message="Loading clients..."></app-loader>
+  } @else {
+    <div class="operations-content">
+      <!-- Client Selection with Autocomplete -->
+      <mat-card class="client-selector-card">
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="client-selector">
+            <mat-label>Search Client</mat-label>
+            <input 
+              matInput 
+              [formControl]="clientSearchControl"
+              [matAutocomplete]="clientAutocomplete"
+              placeholder="Type to search by name or email...">
+            <mat-icon matSuffix>search</mat-icon>
+            <mat-autocomplete 
+              #clientAutocomplete="matAutocomplete"
+              [displayWith]="displayClient"
+              (optionSelected)="onClientSelected($event.option.value)">
+              @for (client of filteredClients$ | async; track client.id) {
+                <mat-option [value]="client">
+                  <div class="client-option">
+                    <span class="client-name">{{ client.fullName }}</span>
+                    <span class="client-email">{{ client.email }}</span>
+                  </div>
+                </mat-option>
+              }
+              @if ((filteredClients$ | async)?.length === 0 && clientSearchControl.value) {
+                <mat-option disabled>
+                  <span>No clients found matching "{{ clientSearchControl.value }}"</span>
+                </mat-option>
+              }
+            </mat-autocomplete>
+            @if (selectedClient) {
+              <mat-hint>Selected: {{ selectedClient.fullName }}</mat-hint>
+            }
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Operation Form -->
+      @if (selectedClientId) {
+        @if (loading) {
+          <app-loader [fullScreen]="false" message="Loading accounts..."></app-loader>
+        } @else if (clientAccounts.length > 0) {
+          <mat-card class="operation-card">
+            <mat-card-header>
+              <mat-card-title>New Operation</mat-card-title>
+              <mat-card-subtitle>Select operation type and fill in the details</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <form [formGroup]="operationForm" (ngSubmit)="onSubmit()" class="operation-form">
+                <!-- Operation Type -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Operation Type</mat-label>
+                  <mat-select [(ngModel)]="operationType" (selectionChange)="onOperationTypeChange()" [ngModelOptions]="{standalone: true}">
+                    <mat-option [value]="OperationType.DEPOSIT">
+                      <mat-icon>arrow_downward</mat-icon>
+                      Deposit
+                    </mat-option>
+                    <mat-option [value]="OperationType.WITHDRAWAL">
+                      <mat-icon>arrow_upward</mat-icon>
+                      Withdrawal
+                    </mat-option>
+                    <mat-option [value]="OperationType.TRANSFER">
+                      <mat-icon>swap_horiz</mat-icon>
+                      Transfer
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <!-- Account Selection -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>
+                    @if (operationType === OperationType.DEPOSIT) {
+                      Target Account
+                    } @else {
+                      From Account
+                    }
+                  </mat-label>
+                  <mat-select formControlName="accountId">
+                    @for (account of clientAccounts; track account.id) {
+                      <mat-option [value]="account.id">
+                        {{ account.accountName }} ({{ account.accountNumber }}) - 
+                        {{ account.currency }} {{ account.balance | number:'1.2-2' }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                  @if (operationForm.get('accountId')?.hasError('required') && operationForm.get('accountId')?.touched) {
+                    <mat-error>Account is required</mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- To Account (for Transfer) -->
+                @if (operationType === OperationType.TRANSFER) {
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>To Account</mat-label>
+                    <mat-select formControlName="toAccountId">
+                      @for (account of clientAccounts; track account.id) {
+                        <mat-option [value]="account.id">
+                          {{ account.accountName }} ({{ account.accountNumber }}) - 
+                          {{ account.currency }} {{ account.balance | number:'1.2-2' }}
+                        </mat-option>
+                      }
+                    </mat-select>
+                    @if (operationForm.get('toAccountId')?.hasError('required') && operationForm.get('toAccountId')?.touched) {
+                      <mat-error>Destination account is required</mat-error>
+                    }
+                  </mat-form-field>
+                }
+
+                <!-- Amount -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Amount</mat-label>
+                  <input matInput type="number" formControlName="amount" step="0.01" min="0.01">
+                  @if (operationForm.get('amount')?.hasError('required') && operationForm.get('amount')?.touched) {
+                    <mat-error>Amount is required</mat-error>
+                  }
+                  @if (operationForm.get('amount')?.hasError('min') && operationForm.get('amount')?.touched) {
+                    <mat-error>Amount must be at least 0.01</mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- Currency -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Currency</mat-label>
+                  <mat-select formControlName="currency">
+                    <mat-option value="USD">USD</mat-option>
+                    <mat-option value="EUR">EUR</mat-option>
+                    <mat-option value="GBP">GBP</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <!-- Reference -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Reference (Optional)</mat-label>
+                  <input matInput formControlName="reference" placeholder="Payment reference">
+                </mat-form-field>
+
+                <!-- Description -->
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Description</mat-label>
+                  <textarea matInput formControlName="description" rows="3" placeholder="Operation description"></textarea>
+                  @if (operationForm.get('description')?.hasError('required') && operationForm.get('description')?.touched) {
+                    <mat-error>Description is required</mat-error>
+                  }
+                </mat-form-field>
+
+                <!-- Account Balance Info -->
+                @if (getSelectedAccount()) {
+                  <div class="account-info">
+                    <p><strong>Current Balance:</strong> 
+                      {{ getSelectedAccount()!.currency }} {{ getSelectedAccount()!.balance | number:'1.2-2' }}
+                    </p>
+                    <p><strong>Available Balance:</strong> 
+                      {{ getSelectedAccount()!.currency }} {{ getSelectedAccount()!.availableBalance | number:'1.2-2' }}
+                    </p>
+                  </div>
+                }
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                  <button 
+                    mat-raised-button 
+                    color="primary" 
+                    type="submit"
+                    [disabled]="operationForm.invalid || processing">
+                    @if (processing) {
+                      <ng-container>
+                        <mat-icon class="spinning">refresh</mat-icon>
+                        <span>Processing...</span>
+                      </ng-container>
+                    } @else {
+                      <ng-container>
+                        <mat-icon>send</mat-icon>
+                        <span>Execute Operation</span>
+                      </ng-container>
+                    }
+                  </button>
+                  <button 
+                    mat-button 
+                    type="button"
+                    (click)="operationForm.reset({ currency: 'USD', accountId: clientAccounts.length > 0 ? clientAccounts[0].id : '' })">
+                    Reset
+                  </button>
+                </div>
+              </form>
+            </mat-card-content>
+          </mat-card>
+        } @else {
+          <mat-card class="empty-card">
+            <mat-card-content>
+              <div class="empty-state">
+                <mat-icon>account_balance</mat-icon>
+                <p>No accounts found for this client</p>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      } @else {
+        <mat-card class="empty-card">
+          <mat-card-content>
+            <div class="empty-state">
+              <mat-icon>person_outline</mat-icon>
+              <p>Please select a client to perform operations</p>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</div>

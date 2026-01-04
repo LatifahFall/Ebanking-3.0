@@ -20,24 +20,22 @@
   <nav class="sidebar-nav">
     <ul class="menu-list">
       @for (item of menuItems; track item.route) {
-        @if (canShowItem(item)) {
-          <li class="menu-item">
-            <a 
-              [routerLink]="item.route" 
-              routerLinkActive="active"
-              class="menu-link"
-              [matTooltip]="isCollapsed() ? item.label : ''"
-              matTooltipPosition="right">
-              <mat-icon class="menu-icon">{{ item.icon }}</mat-icon>
-              @if (!isCollapsed()) {
-                <span class="menu-label">{{ item.label }}</span>
-              }
-              @if (item.badge && !isCollapsed()) {
-                <span class="badge">{{ item.badge }}</span>
-              }
-            </a>
-          </li>
-        }
+        <li class="menu-item">
+          <a 
+            [routerLink]="item.route" 
+            routerLinkActive="active"
+            class="menu-link"
+            [matTooltip]="isCollapsed() ? item.label : ''"
+            matTooltipPosition="right">
+            <mat-icon class="menu-icon">{{ item.icon }}</mat-icon>
+            @if (!isCollapsed()) {
+              <span class="menu-label">{{ item.label }}</span>
+            }
+            @if (item.badge && !isCollapsed()) {
+              <span class="badge">{{ item.badge }}</span>
+            }
+          </a>
+        </li>
       }
     </ul>
   </nav>

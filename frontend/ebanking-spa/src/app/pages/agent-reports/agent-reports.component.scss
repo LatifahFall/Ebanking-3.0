@@ -1,0 +1,127 @@
+@use '../../themes/variables' as *;
+@use '../../themes/mixins' as *;
+
+.agent-reports-page {
+  padding: $spacing-lg;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.reports-content {
+  margin-top: $spacing-xl;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.controls-card,
+.report-card,
+.stats-card,
+.chart-card {
+  @include card;
+  padding: $spacing-xl;
+}
+
+.controls-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-lg;
+  flex-wrap: wrap;
+
+  .export-buttons {
+    display: flex;
+    gap: $spacing-md;
+  }
+}
+
+.report-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $spacing-lg;
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: $radius-md;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .stat-content {
+      flex: 1;
+
+      h3 {
+        margin: 0 0 $spacing-xs;
+        font-size: $text-sm;
+        font-weight: $font-medium;
+        color: var(--text-secondary);
+      }
+
+      .stat-value {
+        margin: 0;
+        font-size: $text-xl;
+        font-weight: $font-bold;
+        color: var(--text-primary);
+      }
+    }
+  }
+}
+
+.conversion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $spacing-lg;
+
+  .conversion-item {
+    padding: $spacing-lg;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+    text-align: center;
+
+    h4 {
+      margin: 0 0 $spacing-md;
+      font-size: $text-base;
+      font-weight: $font-medium;
+      color: var(--text-secondary);
+    }
+
+    .conversion-value {
+      margin: 0;
+      font-size: $text-2xl;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+
+      &.positive {
+        color: #10B981;
+      }
+
+      &.negative {
+        color: #EF4444;
+      }
+    }
+  }
+}
+
+.chart-card {
+  mat-card-content {
+    padding: $spacing-lg 0;
+  }
+}
+

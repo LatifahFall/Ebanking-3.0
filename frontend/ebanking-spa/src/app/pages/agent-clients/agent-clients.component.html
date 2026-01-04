@@ -37,10 +37,46 @@
         <div class="error-message">{{ errorMessage }}</div>
       }
 
+      <!-- Filters -->
+      <div class="filters-section">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Status</mat-label>
+          <mat-select [(ngModel)]="statusFilter" (selectionChange)="onFilterChange()">
+            <mat-option value="ALL">All Statuses</mat-option>
+            <mat-option value="ACTIVE">Active</mat-option>
+            <mat-option value="INACTIVE">Inactive</mat-option>
+            <mat-option value="SUSPENDED">Suspended</mat-option>
+            <mat-option value="PENDING">Pending</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>KYC Status</mat-label>
+          <mat-select [(ngModel)]="kycFilter" (selectionChange)="onFilterChange()">
+            <mat-option value="ALL">All KYC Statuses</mat-option>
+            <mat-option value="VERIFIED">Verified</mat-option>
+            <mat-option value="IN_PROGRESS">In Progress</mat-option>
+            <mat-option value="NOT_STARTED">Not Started</mat-option>
+            <mat-option value="REJECTED">Rejected</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Registration Date</mat-label>
+          <mat-select [(ngModel)]="dateFilter" (selectionChange)="onFilterChange()">
+            <mat-option value="ALL">All Time</mat-option>
+            <mat-option value="TODAY">Today</mat-option>
+            <mat-option value="WEEK">Last 7 Days</mat-option>
+            <mat-option value="MONTH">Last Month</mat-option>
+            <mat-option value="YEAR">Last Year</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
       <!-- Clients Table -->
       @if (clients.length > 0) {
         <div class="table-container">
-          <table mat-table [dataSource]="clients" class="clients-table">
+          <table mat-table [dataSource]="filteredClients" class="clients-table">
             
             <!-- Name Column -->
             <ng-container matColumnDef="name">
@@ -85,11 +121,22 @@
               </td>
             </ng-container>
 
+            <!-- Created At Column -->
+            <ng-container matColumnDef="createdAt">
+              <th mat-header-cell *matHeaderCellDef>Registered</th>
+              <td mat-cell *matCellDef="let client">
+                {{ client.createdAt | date:'short' }}
+              </td>
+            </ng-container>
+
             <!-- Actions Column -->
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let client">
+              <td mat-cell *matCellDef="let client" (click)="$event.stopPropagation()">
                 <div class="action-buttons">
+                  <button mat-icon-button color="primary" (click)="onViewClientDetails(client)" matTooltip="View Details">
+                    <mat-icon>visibility</mat-icon>
+                  </button>
                   <button mat-icon-button color="primary" (click)="onEditClient(client)" matTooltip="Edit">
                     <mat-icon>edit</mat-icon>
                   </button>
@@ -105,7 +152,7 @@
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onViewClientDetails(row)" class="clickable-row"></tr>
           </table>
 
           <mat-paginator

@@ -1,0 +1,212 @@
+<div class="client-details-page">
+  @if (loading && !client) {
+    <app-loader [fullScreen]="false" message="Loading client details..."></app-loader>
+  } @else if (client) {
+    <app-page-header
+      [title]="client.fullName"
+      [subtitle]="'Client ID: ' + client.id"
+      [breadcrumbs]="['Home', 'My Clients', client.fullName]">
+    </app-page-header>
+
+    <div class="details-content">
+      <!-- Client Info Card -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <div class="header-content">
+            <div>
+              <h2>{{ client.fullName }}</h2>
+              <p class="client-email">{{ client.email }}</p>
+            </div>
+            <div class="status-badges">
+              <mat-chip [color]="getStatusColor(client.status)">
+                {{ client.status }}
+              </mat-chip>
+              <mat-chip [color]="getKycStatusColor(client.kycStatus)">
+                KYC: {{ client.kycStatus }}
+              </mat-chip>
+            </div>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-grid">
+            <div class="info-item">
+              <mat-icon>phone</mat-icon>
+              <div>
+                <span class="label">Phone</span>
+                <span class="value">{{ client.phoneNumber || 'N/A' }}</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>calendar_today</mat-icon>
+              <div>
+                <span class="label">Registered</span>
+                <span class="value">{{ client.createdAt | date:'medium' }}</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>login</mat-icon>
+              <div>
+                <span class="label">Last Login</span>
+                <span class="value">{{ client.lastLogin ? (client.lastLogin | date:'medium') : 'Never' }}</span>
+              </div>
+            </div>
+            <div class="info-item">
+              <mat-icon>account_circle</mat-icon>
+              <div>
+                <span class="label">Client ID</span>
+                <span class="value">{{ client.id }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions-section">
+            <button mat-button color="primary" (click)="onBack()">
+              <mat-icon>arrow_back</mat-icon>
+              Back to Clients
+            </button>
+            @if (client.status === 'ACTIVE') {
+              <button mat-button color="warn" (click)="onDeactivateClient()">
+                <mat-icon>block</mat-icon>
+                Deactivate
+              </button>
+            } @else {
+              <button mat-button color="primary" (click)="onActivateClient()">
+                <mat-icon>check_circle</mat-icon>
+                Activate
+              </button>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Tabs -->
+      <mat-tab-group [(selectedIndex)]="selectedTab" class="details-tabs">
+        <!-- Accounts Tab -->
+        <mat-tab label="Accounts">
+          <div class="tab-content">
+            <div class="accounts-header">
+              <h3>Client Accounts</h3>
+              <button mat-raised-button color="primary" (click)="onCreateAccount()">
+                <mat-icon>add</mat-icon>
+                Add Account
+              </button>
+            </div>
+            @if (accounts.length > 0) {
+              <div class="accounts-grid">
+                @for (account of accounts; track account.id) {
+                  <mat-card class="account-card">
+                    <mat-card-content>
+                      <div class="account-header">
+                        <div>
+                          <h3>{{ account.accountName }}</h3>
+                          <p class="account-number">{{ account.accountNumber }}</p>
+                        </div>
+                        <div class="account-balance">
+                          <span class="balance-amount">{{ account.balance | currency:account.currency }}</span>
+                          <span class="balance-label">Available: {{ account.availableBalance | currency:account.currency }}</span>
+                        </div>
+                      </div>
+                      <div class="account-info">
+                        <span class="account-type">{{ account.accountType }}</span>
+                        <span class="account-status">{{ account.status }}</span>
+                      </div>
+                    </mat-card-content>
+                  </mat-card>
+                }
+              </div>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>account_balance</mat-icon>
+                <p>No accounts found</p>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- Transactions Tab -->
+        <mat-tab label="Transactions">
+          <div class="tab-content">
+            @if (transactions.length > 0) {
+              <table mat-table [dataSource]="transactions" class="transactions-table">
+                <ng-container matColumnDef="date">
+                  <th mat-header-cell *matHeaderCellDef>Date</th>
+                  <td mat-cell *matCellDef="let transaction">{{ transaction.date | date:'short' }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="description">
+                  <th mat-header-cell *matHeaderCellDef>Description</th>
+                  <td mat-cell *matCellDef="let transaction">
+                    <div class="transaction-desc">
+                      <mat-icon>{{ transaction.icon }}</mat-icon>
+                      <span>{{ transaction.description }}</span>
+                    </div>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="amount">
+                  <th mat-header-cell *matHeaderCellDef>Amount</th>
+                  <td mat-cell *matCellDef="let transaction">
+                    <span [class.positive]="transaction.amount > 0" [class.negative]="transaction.amount < 0">
+                      {{ transaction.amount | currency:transaction.currency }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let transaction">
+                    <mat-chip>{{ transaction.status }}</mat-chip>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="category">
+                  <th mat-header-cell *matHeaderCellDef>Category</th>
+                  <td mat-cell *matCellDef="let transaction">{{ transaction.category }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+              </table>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>receipt_long</mat-icon>
+                <p>No transactions found</p>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- History Tab -->
+        <mat-tab label="History">
+          <div class="tab-content">
+            <div class="history-timeline">
+              <div class="timeline-item">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <h4>Account Created</h4>
+                  <p>{{ client.createdAt | date:'medium' }}</p>
+                </div>
+              </div>
+              @if (client.lastLogin) {
+                <div class="timeline-item">
+                  <div class="timeline-marker"></div>
+                  <div class="timeline-content">
+                    <h4>Last Login</h4>
+                    <p>{{ client.lastLogin | date:'medium' }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  } @else if (errorMessage) {
+    <div class="error-state">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ errorMessage }}</p>
+      <button mat-button (click)="onBack()">Back to Clients</button>
+    </div>
+  }
+</div>
+

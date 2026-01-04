@@ -22,7 +22,7 @@ export class PaymentService {
         toAccountId: 'acc-002',
         amount: 150.5,
         currency: 'USD',
-        paymentType: PaymentType.TRANSFER,
+        paymentType: PaymentType.STANDARD, // Backend enum: STANDARD, INSTANT, RECURRING, BIOMETRIC, QR_CODE
         status: PaymentStatus.COMPLETED,
         beneficiaryName: 'Alice',
         reference: 'INV-1001',
@@ -36,7 +36,7 @@ export class PaymentService {
         toAccountId: 'acc-003',
         amount: 25.0,
         currency: 'USD',
-        paymentType: PaymentType.MOBILE_TOP_UP,
+        paymentType: PaymentType.STANDARD, // Backend enum: STANDARD, INSTANT, RECURRING, BIOMETRIC, QR_CODE
         status: PaymentStatus.PENDING,
         beneficiaryName: 'Mobile Topup',
         reference: 'TOPUP-01',

@@ -1,0 +1,153 @@
+@use '../../themes/variables' as *;
+@use '../../themes/mixins' as *;
+
+.agent-support-page {
+  padding: $spacing-lg;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.support-content {
+  margin-top: $spacing-xl;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-lg;
+
+  @media (min-width: 1200px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.tickets-card,
+.ticket-details-card {
+  @include card;
+  padding: $spacing-xl;
+}
+
+.filters-section {
+  display: flex;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+  flex-wrap: wrap;
+
+  .filter-field {
+    min-width: 180px;
+    flex: 1;
+  }
+}
+
+.tickets-table {
+  width: 100%;
+}
+
+.ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+
+  h2 {
+    margin: 0 0 $spacing-xs;
+    font-size: $text-xl;
+    font-weight: $font-bold;
+  }
+
+  .ticket-meta {
+    margin: 0;
+    font-size: $text-sm;
+    color: var(--text-secondary);
+  }
+
+  .ticket-badges {
+    display: flex;
+    gap: $spacing-sm;
+  }
+}
+
+.tab-content {
+  padding: $spacing-lg 0;
+  min-height: 200px;
+}
+
+.notes-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+
+  .note-item {
+    padding: $spacing-md;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: $spacing-xs;
+      font-size: $text-sm;
+
+      strong {
+        color: var(--text-primary);
+      }
+
+      .note-date {
+        color: var(--text-tertiary);
+      }
+    }
+
+    .note-content {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+  }
+
+  .no-notes {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: $spacing-xl;
+  }
+}
+
+.add-note-section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  .full-width {
+    width: 100%;
+  }
+}
+
+.actions-section {
+  h3 {
+    margin: 0 0 $spacing-md;
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+  }
+
+  .status-buttons {
+    display: flex;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: $spacing-3xl;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: $spacing-md;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: $text-base;
+  }
+}
+

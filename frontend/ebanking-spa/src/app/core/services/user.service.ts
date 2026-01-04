@@ -405,10 +405,21 @@ export class UserService {
   }
 
   // AGENT: GET /agent/clients/{agentId}?clientId={clientId}
-  getClientProfile(agentId: string, clientId: string): Observable<User | null> {
-    const assigned = this.clientAssignments[agentId] || [];
-    if (!assigned.includes(clientId)) return of(null).pipe(delay(200));
-    return this.getUserById(clientId);
+  getClientProfile(agentId: string, clientId: string): Observable<User> {
+    return this.http.get<User>(`${this.base}/agent/clients/${agentId}?clientId=${clientId}`).pipe(
+      catchError(() => {
+        // Fallback to mock
+        const assigned = this.clientAssignments[agentId] || [];
+        if (!assigned.includes(clientId)) {
+          return throwError(() => new Error('Client not found or not assigned to this agent'));
+        }
+        const client = this.users.find(u => u.id === clientId);
+        if (!client) {
+          return throwError(() => new Error('Client not found'));
+        }
+        return of(client).pipe(delay(200));
+      })
+    );
   }
 
   // AGENT: GET /agent/clients/{agentId}/search

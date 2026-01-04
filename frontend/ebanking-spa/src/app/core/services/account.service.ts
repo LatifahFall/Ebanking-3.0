@@ -13,9 +13,12 @@ export class AccountService {
 
   /**
    * Get user accounts (mock data)
+   * @param userId Optional - if provided, returns accounts for that user
    */
-  getAccounts(): Observable<Account[]> {
-    const mockAccounts: Account[] = [
+  getAccounts(userId?: string): Observable<Account[]> {
+    // Generate mock accounts for different users
+    const allMockAccounts: Account[] = [
+      // Accounts for user '3' (Fatima Client)
       {
         id: 'acc-001',
         accountNumber: '****4521',
@@ -29,7 +32,7 @@ export class AccountService {
         bic: 'WESTGB22',
         createdAt: new Date('2022-03-15'),
         lastActivity: new Date(),
-        userId: 'usr-123456',
+        userId: '3',
         color: '#4F46E5',
         icon: 'account_balance_wallet'
       },
@@ -44,7 +47,7 @@ export class AccountService {
         status: 'ACTIVE' as any,
         iban: 'GB82WEST12345698765433',
         createdAt: new Date('2022-03-15'),
-        userId: 'usr-123456',
+        userId: '3',
         color: '#10B981',
         icon: 'savings'
       },
@@ -58,13 +61,36 @@ export class AccountService {
         availableBalance: 89234.75,
         status: 'ACTIVE' as any,
         createdAt: new Date('2023-01-10'),
-        userId: 'usr-123456',
+        userId: '3',
         color: '#F59E0B',
         icon: 'trending_up'
+      },
+      // Accounts for other users (fallback)
+      {
+        id: 'acc-004',
+        accountNumber: '****1234',
+        accountType: AccountType.CHECKING,
+        accountName: 'Main Checking',
+        currency: 'USD',
+        balance: 10000.00,
+        availableBalance: 10000.00,
+        status: 'ACTIVE' as any,
+        iban: 'GB82WEST12345698765434',
+        bic: 'WESTGB22',
+        createdAt: new Date('2022-03-15'),
+        lastActivity: new Date(),
+        userId: 'usr-123456',
+        color: '#4F46E5',
+        icon: 'account_balance_wallet'
       }
     ];
 
-    return of(mockAccounts).pipe(delay(300));
+    // Filter by userId if provided
+    const filteredAccounts = userId 
+      ? allMockAccounts.filter(acc => acc.userId === userId)
+      : allMockAccounts;
+
+    return of(filteredAccounts).pipe(delay(300));
   }
 
   /**
@@ -133,5 +159,51 @@ export class AccountService {
         observer.complete();
       });
     });
+  }
+
+  /**
+   * Create account for a user
+   * POST /api/accounts
+   */
+  createAccount(userId: string, accountType: AccountType, currency: string, initialBalance?: number): Observable<Account> {
+    // TODO: When backend supports it, use POST /api/accounts
+    // For now, create mock account
+    const newAccount: Account = {
+      id: `acc-${Date.now()}`,
+      accountNumber: `****${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      accountType: accountType,
+      accountName: `${accountType} Account`,
+      currency: currency,
+      balance: initialBalance || 0,
+      availableBalance: initialBalance || 0,
+      status: 'ACTIVE' as any,
+      createdAt: new Date(),
+      lastActivity: new Date(),
+      userId: userId,
+      color: this.getAccountColor(accountType),
+      icon: this.getAccountIcon(accountType)
+    };
+
+    return of(newAccount).pipe(delay(300));
+  }
+
+  private getAccountColor(accountType: AccountType): string {
+    switch (accountType) {
+      case AccountType.CHECKING: return '#4F46E5';
+      case AccountType.SAVINGS: return '#10B981';
+      case AccountType.INVESTMENT: return '#F59E0B';
+      case AccountType.CRYPTO: return '#F7931A';
+      default: return '#64748B';
+    }
+  }
+
+  private getAccountIcon(accountType: AccountType): string {
+    switch (accountType) {
+      case AccountType.CHECKING: return 'account_balance_wallet';
+      case AccountType.SAVINGS: return 'savings';
+      case AccountType.INVESTMENT: return 'trending_up';
+      case AccountType.CRYPTO: return 'currency_bitcoin';
+      default: return 'account_balance';
+    }
   }
 }

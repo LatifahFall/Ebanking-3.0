@@ -1,0 +1,141 @@
+<div class="agent-reports-page">
+  <app-page-header
+    title="Agent Reports"
+    subtitle="Monthly activity reports and statistics"
+    [breadcrumbs]="['Home', 'Reports']">
+  </app-page-header>
+
+  @if (loading) {
+    <app-loader [fullScreen]="false" message="Loading report..."></app-loader>
+  } @else {
+    <div class="reports-content">
+      <!-- Report Controls -->
+      <mat-card class="controls-card">
+        <mat-card-content>
+          <div class="controls-section">
+            <mat-form-field appearance="outline">
+              <mat-label>Select Month</mat-label>
+              <input matInput [matDatepicker]="picker" [(ngModel)]="selectedMonth" (dateChange)="onMonthChange()">
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+            </mat-form-field>
+
+            <div class="export-buttons">
+              <button mat-raised-button color="primary" (click)="onExportReport()">
+                <mat-icon>download</mat-icon>
+                Export JSON
+              </button>
+              <button mat-raised-button color="accent" (click)="onExportCSV()">
+                <mat-icon>file_download</mat-icon>
+                Export CSV
+              </button>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Monthly Report -->
+      @if (monthlyReport) {
+        <mat-card class="report-card">
+          <mat-card-header>
+            <mat-card-title>Monthly Report - {{ monthlyReport.month }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="report-stats">
+              <div class="stat-item">
+                <div class="stat-icon" style="background: #EBF5FF;">
+                  <mat-icon style="color: #1E6AE1;">person_add</mat-icon>
+                </div>
+                <div class="stat-content">
+                  <h3>New Clients</h3>
+                  <p class="stat-value">{{ monthlyReport.newClients }}</p>
+                </div>
+              </div>
+
+              <div class="stat-item">
+                <div class="stat-icon" style="background: #D1FAE5;">
+                  <mat-icon style="color: #10B981;">check_circle</mat-icon>
+                </div>
+                <div class="stat-content">
+                  <h3>Active Clients</h3>
+                  <p class="stat-value">{{ monthlyReport.activeClients }}</p>
+                </div>
+              </div>
+
+              <div class="stat-item">
+                <div class="stat-icon" style="background: #FEF3C7;">
+                  <mat-icon style="color: #F59E0B;">verified</mat-icon>
+                </div>
+                <div class="stat-content">
+                  <h3>KYC Completed</h3>
+                  <p class="stat-value">{{ monthlyReport.kycCompleted }}</p>
+                </div>
+              </div>
+
+              <div class="stat-item">
+                <div class="stat-icon" style="background: #FEE2E2;">
+                  <mat-icon style="color: #EF4444;">pending_actions</mat-icon>
+                </div>
+                <div class="stat-content">
+                  <h3>KYC Pending</h3>
+                  <p class="stat-value">{{ monthlyReport.kycPending }}</p>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Conversion Statistics -->
+      @if (conversionStats) {
+        <mat-card class="stats-card">
+          <mat-card-header>
+            <mat-card-title>Conversion Statistics</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="conversion-grid">
+              <div class="conversion-item">
+                <h4>Client Growth</h4>
+                <p class="conversion-value" [class.positive]="conversionStats.clientGrowth >= 0" [class.negative]="conversionStats.clientGrowth < 0">
+                  {{ conversionStats.clientGrowth >= 0 ? '+' : '' }}{{ conversionStats.clientGrowth.toFixed(1) }}%
+                </p>
+              </div>
+
+              <div class="conversion-item">
+                <h4>Active Client Rate</h4>
+                <p class="conversion-value">{{ conversionStats.activeClientRate.toFixed(1) }}%</p>
+              </div>
+
+              <div class="conversion-item">
+                <h4>KYC Completion Rate</h4>
+                <p class="conversion-value">{{ conversionStats.kycCompletionRate.toFixed(1) }}%</p>
+              </div>
+
+              <div class="conversion-item">
+                <h4>Total Clients</h4>
+                <p class="conversion-value">{{ conversionStats.totalClients }}</p>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Chart -->
+      @if (reportChart) {
+        <mat-card class="chart-card">
+          <mat-card-header>
+            <mat-card-title>Client Growth Trend</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <app-chart-widget
+              type="line"
+              [height]="300"
+              [data]="reportChart">
+            </app-chart-widget>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</div>
+

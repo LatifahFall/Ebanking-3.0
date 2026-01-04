@@ -21,6 +21,10 @@ import { AccountDetailsComponent } from './pages/account-details/account-details
 import { PreferencesComponent } from './pages/preferences/preferences.component';
 import { SecuritySettingsComponent } from './pages/security-settings/security-settings.component';
 import { AgentDashboardComponent } from './pages/agent-dashboard/agent-dashboard.component';
+import { AgentClientDetailsComponent } from './pages/agent-client-details/agent-client-details.component';
+import { AgentSupportComponent } from './pages/agent-support/agent-support.component';
+import { AgentReportsComponent } from './pages/agent-reports/agent-reports.component';
+import { AgentPaymentsComponent } from './pages/agent-payments/agent-payments.component';
 
 export const routes: Routes = [
   // Redirect root to dashboard or login
@@ -143,6 +147,30 @@ export const routes: Routes = [
           component: AgentClientsComponent,
           canActivate: [agentGuard],
           title: 'My Clients - E-Banking 3.0'
+        },
+        {
+          path: 'agent/clients/:id/details',
+          component: AgentClientDetailsComponent,
+          canActivate: [agentGuard],
+          title: 'Client Details - E-Banking 3.0'
+        },
+        {
+          path: 'agent/support',
+          component: AgentSupportComponent,
+          canActivate: [agentGuard],
+          title: 'Client Support - E-Banking 3.0'
+        },
+        {
+          path: 'agent/reports',
+          component: AgentReportsComponent,
+          canActivate: [agentGuard],
+          title: 'Agent Reports - E-Banking 3.0'
+        },
+        {
+          path: 'agent/payments',
+          component: AgentPaymentsComponent,
+          canActivate: [agentGuard],
+          title: 'Client Operations - E-Banking 3.0'
         },
       // Add more routes as needed
       // {

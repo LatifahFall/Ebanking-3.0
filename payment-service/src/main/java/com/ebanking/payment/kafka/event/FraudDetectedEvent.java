@@ -17,9 +17,9 @@ import java.util.UUID;
 public class FraudDetectedEvent {
 
     private UUID fraudId;
-    private UUID paymentId;
-    private UUID accountId;
-    private UUID userId;
+    private Long paymentId;
+    private Long accountId;
+    private Long userId;
     private BigDecimal amount;
     private String fraudType;
     private String reason;

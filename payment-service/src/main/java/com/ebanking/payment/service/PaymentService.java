@@ -47,7 +47,7 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public PaymentResponse initiatePayment(PaymentRequest request, UUID userId) {
+    public PaymentResponse initiatePayment(PaymentRequest request, Long userId) {
         // Validate payment request
         validationService.validatePaymentRequest(request)
                 .block(); // Block for synchronous processing
@@ -93,7 +93,7 @@ public class PaymentService {
                     .detectedAt(LocalDateTime.now())
                     .action("BLOCKED")
                     .build();
-            eventProducer.publishFraudDetected(fraudEvent);
+            safePublishFraudDetected(fraudEvent);
             
             throw new PaymentValidationException("Fraud detected: " + fraudResult.getReason());
         }
@@ -119,7 +119,7 @@ public class PaymentService {
                 .status(payment.getStatus().name())
                 .completedAt(payment.getCompletedAt())
                 .build();
-        eventProducer.publishPaymentCompleted(event);
+        safePublishPaymentCompleted(event);
 
         return mapToResponse(payment);
     }
@@ -129,7 +129,7 @@ public class PaymentService {
      * L'utilisateur doit scanner ce QR code avec son app mobile pour confirmer le paiement
      */
     @Transactional
-    public Map<String, Object> generateBiometricPaymentQrCode(PaymentRequest request, UUID userId) {
+    public Map<String, Object> generateBiometricPaymentQrCode(PaymentRequest request, Long userId) {
         // Validation standard
         validationService.validatePaymentRequest(request)
                 .block(); // Block for synchronous processing
@@ -174,7 +174,7 @@ public class PaymentService {
                     .detectedAt(LocalDateTime.now())
                     .action("BLOCKED")
                     .build();
-            eventProducer.publishFraudDetected(fraudEvent);
+            safePublishFraudDetected(fraudEvent);
 
             throw new PaymentValidationException("Fraud detected: " + fraudResult.getReason());
         }
@@ -202,7 +202,7 @@ public class PaymentService {
      * Valide un QR code et traite le paiement biométrique
      */
     @Transactional
-    public PaymentResponse initiateBiometricPayment(BiometricPaymentRequest request, UUID userId) {
+    public PaymentResponse initiateBiometricPayment(BiometricPaymentRequest request, Long userId) {
         // Vérifier les données biométriques (QR code token) - cela valide aussi le QR code
         biometricVerificationService.verifyBiometric(userId, request.getBiometricData());
 
@@ -261,7 +261,7 @@ public class PaymentService {
                 .status(payment.getStatus().name())
                 .completedAt(payment.getCompletedAt())
                 .build();
-        eventProducer.publishPaymentCompleted(event);
+        safePublishPaymentCompleted(event);
 
         return mapToResponse(payment);
     }
@@ -269,7 +269,7 @@ public class PaymentService {
     /**
      * Génère un QR code pour un paiement
      */
-    public String generateQRCodeForPayment(PaymentRequest request, UUID userId) {
+    public String generateQRCodeForPayment(PaymentRequest request, Long userId) {
         // Créer un paiement temporaire pour générer le QR code
         Payment payment = Payment.builder()
                 .fromAccountId(request.getFromAccountId())
@@ -301,7 +301,10 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse initiateQRCodePayment(QRCodePaymentRequest request, UUID userId) {
+    public PaymentResponse initiateQRCodePayment(QRCodePaymentRequest request, Long userId) {
+        // SECURITY: Validate QR code data format BEFORE processing
+        validateQrCodeDataFormat(request.getQrCodeData());
+        
         // Convertir en PaymentRequest standard
         PaymentRequest standardRequest = request.toPaymentRequest();
 
@@ -327,7 +330,13 @@ public class PaymentService {
 
         // Vérifier le QR code - extraire le token du JSON
         try {
-            // Le QR code contient un JSON avec un token
+            // Parse QR code JSON safely
+            Map<String, Object> qrData = parseQrCodeData(request.getQrCodeData());
+            
+            // Validate required fields
+            validateQrDataFields(qrData);
+            
+            // Extract and validate token
             String qrToken = extractTokenFromQRData(request.getQrCodeData());
             com.ebanking.payment.entity.QrCodePayment qrCodePayment = qrCodeService.validateQrCode(qrToken, userId);
             
@@ -337,7 +346,16 @@ public class PaymentService {
                 paymentRepository.save(payment);
                 throw new PaymentValidationException("QR code payment ID mismatch");
             }
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            log.error("Invalid QR code JSON format for payment {}", payment.getId(), e);
+            payment.setStatus(PaymentStatus.FAILED);
+            paymentRepository.save(payment);
+            throw new PaymentValidationException("Invalid QR code data format: malformed JSON");
+        } catch (PaymentValidationException e) {
+            // Already logged, just rethrow
+            throw e;
         } catch (Exception e) {
+            log.error("QR code verification failed for payment {}", payment.getId(), e);
             payment.setStatus(PaymentStatus.FAILED);
             paymentRepository.save(payment);
             throw new PaymentValidationException("QR code verification failed: " + e.getMessage());
@@ -381,7 +399,7 @@ public class PaymentService {
                     .detectedAt(LocalDateTime.now())
                     .action("BLOCKED")
                     .build();
-            eventProducer.publishFraudDetected(fraudEvent);
+            safePublishFraudDetected(fraudEvent);
 
             throw new PaymentValidationException("Fraud detected: " + fraudResult.getReason());
         }
@@ -399,13 +417,13 @@ public class PaymentService {
                 .status(payment.getStatus().name())
                 .completedAt(payment.getCompletedAt())
                 .build();
-        eventProducer.publishPaymentCompleted(event);
+        safePublishPaymentCompleted(event);
 
         return mapToResponse(payment);
     }
 
     @Transactional
-    public PaymentResponse processPayment(UUID paymentId) {
+    public PaymentResponse processPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found: " + paymentId));
 
@@ -424,13 +442,13 @@ public class PaymentService {
                 .status(payment.getStatus().name())
                 .completedAt(payment.getCompletedAt())
                 .build();
-        eventProducer.publishPaymentCompleted(event);
+        safePublishPaymentCompleted(event);
 
         return mapToResponse(payment);
     }
 
     @Transactional
-    public PaymentResponse cancelPayment(UUID paymentId) {
+    public PaymentResponse cancelPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found: " + paymentId));
 
@@ -445,7 +463,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse reversePayment(UUID paymentId, ReversalReason reason) {
+    public PaymentResponse reversePayment(Long paymentId, ReversalReason reason) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found: " + paymentId));
 
@@ -467,18 +485,18 @@ public class PaymentService {
                 .originalPaymentDate(payment.getCompletedAt())
                 .reversedAt(payment.getReversedAt())
                 .build();
-        eventProducer.publishPaymentReversed(event);
+        safePublishPaymentReversed(event);
 
         return mapToResponse(payment);
     }
 
-    public PaymentResponse getPayment(UUID paymentId) {
+    public PaymentResponse getPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found: " + paymentId));
         return mapToResponse(payment);
     }
 
-    public List<PaymentResponse> getPaymentsByAccount(UUID accountId, PaymentStatus status, Pageable pageable) {
+    public List<PaymentResponse> getPaymentsByAccount(Long accountId, PaymentStatus status, Pageable pageable) {
         List<Payment> payments;
         if (status != null) {
             payments = paymentRepository.findByFromAccountIdAndStatus(accountId, status);
@@ -513,6 +531,122 @@ public class PaymentService {
     }
 
     /**
+     * SECURITY: Validates QR code data format before parsing
+     * Prevents JSON injection and malformed data attacks
+     */
+    private void validateQrCodeDataFormat(String qrCodeData) {
+        if (qrCodeData == null || qrCodeData.trim().isEmpty()) {
+            throw new PaymentValidationException("QR code data cannot be null or empty");
+        }
+        
+        // Check length limits (prevent DoS via large payloads)
+        if (qrCodeData.length() > 10000) {
+            throw new PaymentValidationException("QR code data exceeds maximum allowed size");
+        }
+        
+        // Basic JSON structure validation
+        qrCodeData = qrCodeData.trim();
+        if (!qrCodeData.startsWith("{") || !qrCodeData.endsWith("}")) {
+            throw new PaymentValidationException("QR code data must be valid JSON object");
+        }
+        
+        // Check for required fields presence (basic validation)
+        if (!qrCodeData.contains("\"token\"") || !qrCodeData.contains("\"paymentId\"")) {
+            throw new PaymentValidationException("QR code data missing required fields (token, paymentId)");
+        }
+        
+        log.debug("QR code data format validation passed");
+    }
+    
+    /**
+     * Parses QR code JSON data using Jackson ObjectMapper for secure parsing
+     */
+    private Map<String, Object> parseQrCodeData(String qrCodeData) throws com.fasterxml.jackson.core.JsonProcessingException {
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        
+        // Configure mapper for security
+        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION, true);
+        
+        // Parse JSON to Map
+        @SuppressWarnings("unchecked")
+        Map<String, Object> qrData = mapper.readValue(qrCodeData, Map.class);
+        
+        return qrData;
+    }
+    
+    /**
+     * Validates required fields in parsed QR data
+     */
+    private void validateQrDataFields(Map<String, Object> qrData) {
+        // Validate token field
+        if (!qrData.containsKey("token") || !(qrData.get("token") instanceof String)) {
+            throw new PaymentValidationException("QR code data must contain valid 'token' field");
+        }
+        
+        String token = (String) qrData.get("token");
+        if (token.trim().isEmpty()) {
+            throw new PaymentValidationException("QR code token cannot be empty");
+        }
+        
+        // Validate token format (should be UUID-like or secure random string)
+        if (token.length() < 32 || token.length() > 256) {
+            throw new PaymentValidationException("QR code token has invalid length");
+        }
+        
+        // Validate paymentId field
+        if (!qrData.containsKey("paymentId")) {
+            throw new PaymentValidationException("QR code data must contain 'paymentId' field");
+        }
+        
+        // PaymentId can be string or number
+        Object paymentId = qrData.get("paymentId");
+        if (paymentId == null) {
+            throw new PaymentValidationException("QR code paymentId cannot be null");
+        }
+        
+        log.debug("QR code data fields validation passed");
+    }
+    
+    /**
+     * KAFKA ERROR HANDLING: Safely publishes events with error handling
+     * Prevents silent failures and logs all Kafka errors
+     */
+    private void safePublishPaymentCompleted(PaymentCompletedEvent event) {
+        try {
+            eventProducer.publishPaymentCompleted(event);
+            log.info("Successfully published PaymentCompletedEvent for payment {}", event.getPaymentId());
+        } catch (Exception e) {
+            log.error("CRITICAL: Failed to publish PaymentCompletedEvent for payment {}. Event data: {}", 
+                    event.getPaymentId(), event, e);
+            // TODO: Implement outbox pattern for retry - store in outbox table for async retry
+            // For now, log the failure but don't block the payment transaction
+        }
+    }
+    
+    private void safePublishFraudDetected(FraudDetectedEvent event) {
+        try {
+            eventProducer.publishFraudDetected(event);
+            log.warn("Successfully published FraudDetectedEvent for payment {}", event.getPaymentId());
+        } catch (Exception e) {
+            log.error("CRITICAL: Failed to publish FraudDetectedEvent for payment {}. Fraud type: {}, Event data: {}", 
+                    event.getPaymentId(), event.getFraudType(), event, e);
+            // TODO: Implement outbox pattern - fraud events MUST be delivered for security monitoring
+        }
+    }
+    
+    private void safePublishPaymentReversed(PaymentReversedEvent event) {
+        try {
+            eventProducer.publishPaymentReversed(event);
+            log.info("Successfully published PaymentReversedEvent for payment {}", event.getPaymentId());
+        } catch (Exception e) {
+            log.error("CRITICAL: Failed to publish PaymentReversedEvent for payment {}. Event data: {}", 
+                    event.getPaymentId(), event, e);
+            // TODO: Implement outbox pattern for retry
+        }
+    }
+
+    /**
      * Extrait le token du JSON du QR code
      */
     private String extractTokenFromQRData(String qrCodeData) {
@@ -528,4 +662,6 @@ public class PaymentService {
         throw new PaymentValidationException("Invalid QR code format: token not found");
     }
 }
+
+
 

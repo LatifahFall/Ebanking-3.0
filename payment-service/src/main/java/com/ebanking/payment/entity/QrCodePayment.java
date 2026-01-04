@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "qr_code_payment")
@@ -19,14 +18,14 @@ import java.util.UUID;
 public class QrCodePayment {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
     @Column(name = "payment_id", nullable = false, unique = true)
-    private UUID paymentId;
+    private Long paymentId;
     
     @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    private Long userId;
     
     @Column(name = "qr_token", nullable = false, unique = true, length = 255)
     private String qrToken;
@@ -41,10 +40,10 @@ public class QrCodePayment {
     private String currency;
     
     @Column(name = "from_account_id", nullable = false)
-    private UUID fromAccountId;
+    private Long fromAccountId;
     
     @Column(name = "to_account_id")
-    private UUID toAccountId;
+    private Long toAccountId;
     
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;

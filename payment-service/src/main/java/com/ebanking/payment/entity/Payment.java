@@ -13,7 +13,6 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "payments", indexes = {
@@ -31,15 +30,15 @@ import java.util.UUID;
 public class Payment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "from_account_id", nullable = false)
     @NotNull
-    private UUID fromAccountId;
+    private Long fromAccountId;
 
     @Column(name = "to_account_id")
-    private UUID toAccountId;
+    private Long toAccountId;
 
     @Column(nullable = false, precision = 19, scale = 2)
     @NotNull
@@ -91,7 +90,7 @@ public class Payment {
     private String reversalReason;
 
     @Column(name = "user_id")
-    private UUID userId;
+    private Long userId;
 
     @Column(columnDefinition = "TEXT")
     private String description;

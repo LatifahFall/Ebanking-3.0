@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +35,7 @@ public class PaymentValidationService {
                 .then(Mono.fromRunnable(() -> log.debug("Payment request validated: {}", request.getFromAccountId())));
     }
 
-    public Mono<Account> validateAccount(UUID accountId) {
+    public Mono<Account> validateAccount(Long accountId) {
         if (skipAccountCheck) {
             log.warn("Account validation is DISABLED (dev mode). Creating mock account.");
             Account mockAccount = Account.builder()
@@ -57,7 +56,7 @@ public class PaymentValidationService {
                 .switchIfEmpty(Mono.error(new AccountNotFoundException("Account not found: " + accountId)));
     }
 
-    public Mono<Void> validateBalance(UUID accountId, BigDecimal amount) {
+    public Mono<Void> validateBalance(Long accountId, BigDecimal amount) {
         if (skipAccountCheck) {
             log.warn("Balance validation is DISABLED (dev mode). Skipping balance check.");
             return Mono.empty();

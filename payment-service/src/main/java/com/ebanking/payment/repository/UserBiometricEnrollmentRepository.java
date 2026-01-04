@@ -10,10 +10,10 @@ import java.util.UUID;
 @Repository
 public interface UserBiometricEnrollmentRepository extends JpaRepository<UserBiometricEnrollment, UUID> {
     
-    Optional<UserBiometricEnrollment> findByUserIdAndIsActiveTrue(UUID userId);
+    Optional<UserBiometricEnrollment> findByUserIdAndIsActiveTrue(Long userId);
     
-    Optional<UserBiometricEnrollment> findByUserId(UUID userId);
+    Optional<UserBiometricEnrollment> findByUserId(Long userId);
     
-    boolean existsByUserIdAndIsActiveTrue(UUID userId);
+    boolean existsByUserIdAndIsActiveTrue(Long userId);
 }
 

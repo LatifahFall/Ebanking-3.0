@@ -7,7 +7,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Component
 public class AccountServiceClient {
@@ -18,7 +17,7 @@ public class AccountServiceClient {
         this.webClient = webClient;
     }
 
-    public Mono<Account> getAccount(UUID accountId) {
+    public Mono<Account> getAccount(Long accountId) {
         return webClient.get()
                 .uri("/api/accounts/{accountId}", accountId)
                 .retrieve()
@@ -27,7 +26,7 @@ public class AccountServiceClient {
                 .timeout(java.time.Duration.ofSeconds(10));
     }
 
-    public Mono<BigDecimal> checkBalance(UUID accountId) {
+    public Mono<BigDecimal> checkBalance(Long accountId) {
         return webClient.get()
                 .uri("/api/accounts/{accountId}/balance", accountId)
                 .retrieve()
@@ -36,7 +35,7 @@ public class AccountServiceClient {
                 .timeout(java.time.Duration.ofSeconds(10));
     }
 
-    public Mono<Boolean> validateAccountStatus(UUID accountId) {
+    public Mono<Boolean> validateAccountStatus(Long accountId) {
         return webClient.get()
                 .uri("/api/accounts/{accountId}/status", accountId)
                 .retrieve()
@@ -45,6 +44,42 @@ public class AccountServiceClient {
                 .onErrorMap(WebClientResponseException.class, this::mapException)
                 .timeout(java.time.Duration.ofSeconds(10));
     }
+
+    /**
+     * Débite un compte avec le montant spécifié
+     * POST /api/accounts/{accountId}/debit
+     */
+    public Mono<Account> debitAccount(Long accountId, BigDecimal amount, String reference) {
+        DebitRequest request = new DebitRequest(amount, reference);
+        
+        return webClient.post()
+                .uri("/api/accounts/{accountId}/debit", accountId)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(Account.class)
+                .onErrorMap(WebClientResponseException.class, this::mapException)
+                .timeout(java.time.Duration.ofSeconds(10));
+    }
+
+    /**
+     * Crédite un compte avec le montant spécifié
+     * POST /api/accounts/{accountId}/credit
+     */
+    public Mono<Account> creditAccount(Long accountId, BigDecimal amount, String reference) {
+        CreditRequest request = new CreditRequest(amount, reference);
+        
+        return webClient.post()
+                .uri("/api/accounts/{accountId}/credit", accountId)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(Account.class)
+                .onErrorMap(WebClientResponseException.class, this::mapException)
+                .timeout(java.time.Duration.ofSeconds(10));
+    }
+
+    // DTOs pour les opérations de débit/crédit
+    private record DebitRequest(BigDecimal amount, String reference) {}
+    private record CreditRequest(BigDecimal amount, String reference) {}
 
     private RuntimeException mapException(WebClientResponseException ex) {
         if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {

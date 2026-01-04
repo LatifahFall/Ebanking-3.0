@@ -18,7 +18,7 @@ import java.util.*;
 public class FraudDetectionService {
 
     private final PaymentRepository paymentRepository;
-    private final Set<UUID> blacklist = new HashSet<>(); // In-memory cache (can be replaced with Redis)
+    private final Set<Long> blacklist = new HashSet<>(); // In-memory cache (can be replaced with Redis)
 
     public FraudAnalysisResult analyzeTransaction(Payment payment) {
         if (checkBlacklist(payment.getFromAccountId())) {
@@ -42,16 +42,16 @@ public class FraudDetectionService {
                 .build();
     }
 
-    public boolean checkBlacklist(UUID accountId) {
+    public boolean checkBlacklist(Long accountId) {
         return blacklist.contains(accountId);
     }
 
-    public void addToBlacklist(UUID accountId) {
+    public void addToBlacklist(Long accountId) {
         blacklist.add(accountId);
         log.warn("Account {} added to blacklist", accountId);
     }
 
-    public void removeFromBlacklist(UUID accountId) {
+    public void removeFromBlacklist(Long accountId) {
         blacklist.remove(accountId);
         log.info("Account {} removed from blacklist", accountId);
     }

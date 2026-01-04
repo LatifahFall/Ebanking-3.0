@@ -1,5 +1,6 @@
 package com.ebanking.payment.service;
 
+import com.ebanking.payment.client.AccountServiceClient;
 import com.ebanking.payment.entity.Payment;
 import com.ebanking.payment.entity.PaymentStatus;
 import com.ebanking.payment.entity.PaymentType;
@@ -11,17 +12,16 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentProcessingService {
 
     private final PaymentRepository paymentRepository;
+    private final AccountServiceClient accountServiceClient;
 
     @Transactional
-    public Payment processStandardPayment(UUID paymentId) {
+    public Payment processStandardPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found: " + paymentId));
 
@@ -37,7 +37,7 @@ public class PaymentProcessingService {
 
     @Transactional
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public Payment processInstantPayment(UUID paymentId) {
+    public Payment processInstantPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found: " + paymentId));
 
@@ -65,7 +65,7 @@ public class PaymentProcessingService {
 
     @Transactional
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public Payment processBiometricPayment(UUID paymentId) {
+    public Payment processBiometricPayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found: " + paymentId));
 
@@ -81,8 +81,12 @@ public class PaymentProcessingService {
         // Les paiements biométriques sont traités comme des paiements instantanés
         // mais avec une validation supplémentaire
         try {
-            // Traitement du paiement (débit du compte)
-            // TODO: Appel au Account Service pour débit
+            // Traitement du paiement (débit du compte source)
+            accountServiceClient.debitAccount(
+                payment.getFromAccountId(),
+                payment.getAmount(),
+                "Payment " + payment.getId()
+            ).block(); // Block car transaction synchrone
 
             payment.setStatus(PaymentStatus.COMPLETED);
             payment.setCompletedAt(java.time.LocalDateTime.now());
@@ -98,7 +102,7 @@ public class PaymentProcessingService {
 
     @Transactional
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
-    public Payment processQRCodePayment(UUID paymentId) {
+    public Payment processQRCodePayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found: " + paymentId));
 
@@ -113,8 +117,12 @@ public class PaymentProcessingService {
 
         // Les paiements QR code sont traités comme des paiements instantanés
         try {
-            // Traitement du paiement (débit du compte)
-            // TODO: Appel au Account Service pour débit
+            // Traitement du paiement (débit du compte source)
+            accountServiceClient.debitAccount(
+                payment.getFromAccountId(),
+                payment.getAmount(),
+                "Payment " + payment.getId()
+            ).block(); // Block car transaction synchrone
 
             payment.setStatus(PaymentStatus.COMPLETED);
             payment.setCompletedAt(java.time.LocalDateTime.now());
@@ -129,7 +137,7 @@ public class PaymentProcessingService {
     }
 
     @Transactional
-    public Payment updatePaymentStatus(UUID paymentId, PaymentStatus status) {
+    public Payment updatePaymentStatus(Long paymentId, PaymentStatus status) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new RuntimeException("Payment not found: " + paymentId));
 

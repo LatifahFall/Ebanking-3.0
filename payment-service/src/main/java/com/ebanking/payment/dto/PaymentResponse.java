@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -17,9 +16,9 @@ import java.util.UUID;
 @Builder
 public class PaymentResponse {
 
-    private UUID id;
-    private UUID fromAccountId;
-    private UUID toAccountId;
+    private Long id;
+    private Long fromAccountId;
+    private Long toAccountId;
     private BigDecimal amount;
     private String currency;
     private PaymentType paymentType;
@@ -32,6 +31,6 @@ public class PaymentResponse {
     private LocalDateTime completedAt;
     private LocalDateTime reversedAt;
     private String reversalReason;
-    private UUID userId;
+    private Long userId;
 }
 

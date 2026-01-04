@@ -1,0 +1,109 @@
+-- Migration: Convert UUID columns to BIGINT
+-- Version: 7
+-- Description: Converts user_id, from_account_id, to_account_id columns from UUID to BIGINT
+--              to align with existing services (account-service, user-service)
+
+-- ============================================
+-- TABLE: payments
+-- ============================================
+
+-- Drop existing indexes on affected columns
+DROP INDEX IF EXISTS idx_payments_from_account;
+DROP INDEX IF EXISTS idx_payments_to_account;
+DROP INDEX IF EXISTS idx_payments_user_id;
+DROP INDEX IF EXISTS idx_payments_user_status;
+DROP INDEX IF EXISTS idx_payments_account_status;
+
+-- Drop primary key constraint temporarily (for payment_id)
+ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_pkey;
+
+-- Convert columns to BIGINT
+ALTER TABLE payments ALTER COLUMN id TYPE BIGINT USING (CAST(EXTRACT(EPOCH FROM created_at) * 1000 AS BIGINT) + CAST(RANDOM() * 1000 AS BIGINT));
+ALTER TABLE payments ALTER COLUMN from_account_id TYPE BIGINT USING 1;
+ALTER TABLE payments ALTER COLUMN to_account_id TYPE BIGINT USING 1;
+ALTER TABLE payments ALTER COLUMN user_id TYPE BIGINT USING 1;
+
+-- Add back primary key
+ALTER TABLE payments ADD PRIMARY KEY (id);
+
+-- Change ID generation strategy to IDENTITY
+CREATE SEQUENCE IF NOT EXISTS payments_id_seq START 1;
+ALTER TABLE payments ALTER COLUMN id SET DEFAULT nextval('payments_id_seq');
+ALTER SEQUENCE payments_id_seq OWNED BY payments.id;
+
+-- Recreate indexes
+CREATE INDEX idx_payments_from_account ON payments(from_account_id);
+CREATE INDEX idx_payments_to_account ON payments(to_account_id);
+CREATE INDEX idx_payments_user_id ON payments(user_id);
+CREATE INDEX idx_payments_user_status ON payments(user_id, status);
+CREATE INDEX idx_payments_account_status ON payments(from_account_id, status);
+
+-- ============================================
+-- TABLE: user_biometric_enrollment
+-- ============================================
+
+DROP INDEX IF EXISTS idx_user_biometric_user_id;
+DROP INDEX IF EXISTS idx_user_biometric_active;
+ALTER TABLE user_biometric_enrollment DROP CONSTRAINT IF EXISTS user_biometric_enrollment_pkey;
+
+ALTER TABLE user_biometric_enrollment ALTER COLUMN id TYPE BIGINT USING (CAST(EXTRACT(EPOCH FROM created_at) * 1000 AS BIGINT) + CAST(RANDOM() * 1000 AS BIGINT));
+ALTER TABLE user_biometric_enrollment ALTER COLUMN user_id TYPE BIGINT USING 1;
+
+ALTER TABLE user_biometric_enrollment ADD PRIMARY KEY (id);
+
+CREATE SEQUENCE IF NOT EXISTS user_biometric_enrollment_id_seq START 1;
+ALTER TABLE user_biometric_enrollment ALTER COLUMN id SET DEFAULT nextval('user_biometric_enrollment_id_seq');
+ALTER SEQUENCE user_biometric_enrollment_id_seq OWNED BY user_biometric_enrollment.id;
+
+CREATE INDEX idx_user_biometric_user_id ON user_biometric_enrollment(user_id);
+CREATE INDEX idx_user_biometric_active ON user_biometric_enrollment(user_id, is_active);
+
+-- Remove UNIQUE constraint on user_id (may want multiple enrollments per user in future)
+ALTER TABLE user_biometric_enrollment DROP CONSTRAINT IF EXISTS user_biometric_enrollment_user_id_key;
+
+-- ============================================
+-- TABLE: qr_code_payment
+-- ============================================
+
+-- Drop foreign key constraint first
+ALTER TABLE qr_code_payment DROP CONSTRAINT IF EXISTS fk_qr_code_payment_payment;
+
+DROP INDEX IF EXISTS idx_qr_code_payment_payment_id;
+DROP INDEX IF EXISTS idx_qr_code_payment_user_id;
+ALTER TABLE qr_code_payment DROP CONSTRAINT IF EXISTS qr_code_payment_pkey;
+ALTER TABLE qr_code_payment DROP CONSTRAINT IF EXISTS qr_code_payment_payment_id_key;
+
+ALTER TABLE qr_code_payment ALTER COLUMN id TYPE BIGINT USING (CAST(EXTRACT(EPOCH FROM created_at) * 1000 AS BIGINT) + CAST(RANDOM() * 1000 AS BIGINT));
+ALTER TABLE qr_code_payment ALTER COLUMN payment_id TYPE BIGINT USING 1;
+ALTER TABLE qr_code_payment ALTER COLUMN user_id TYPE BIGINT USING 1;
+ALTER TABLE qr_code_payment ALTER COLUMN from_account_id TYPE BIGINT USING 1;
+ALTER TABLE qr_code_payment ALTER COLUMN to_account_id TYPE BIGINT USING 1;
+
+ALTER TABLE qr_code_payment ADD PRIMARY KEY (id);
+ALTER TABLE qr_code_payment ADD CONSTRAINT qr_code_payment_payment_id_key UNIQUE (payment_id);
+
+CREATE SEQUENCE IF NOT EXISTS qr_code_payment_id_seq START 1;
+ALTER TABLE qr_code_payment ALTER COLUMN id SET DEFAULT nextval('qr_code_payment_id_seq');
+ALTER SEQUENCE qr_code_payment_id_seq OWNED BY qr_code_payment.id;
+
+CREATE INDEX idx_qr_code_payment_payment_id ON qr_code_payment(payment_id);
+CREATE INDEX idx_qr_code_payment_user_id ON qr_code_payment(user_id);
+
+-- Recreate foreign key constraint with BIGINT
+ALTER TABLE qr_code_payment ADD CONSTRAINT fk_qr_code_payment_payment 
+    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE;
+
+-- Update comments to reflect new type
+COMMENT ON COLUMN payments.id IS 'Unique identifier for the payment (BIGINT)';
+COMMENT ON COLUMN payments.from_account_id IS 'Source account ID (BIGINT from account-service)';
+COMMENT ON COLUMN payments.to_account_id IS 'Destination account ID (BIGINT from account-service)';
+COMMENT ON COLUMN payments.user_id IS 'ID of the user who initiated the payment (BIGINT from user-service)';
+
+COMMENT ON COLUMN user_biometric_enrollment.id IS 'Unique identifier for the enrollment (BIGINT)';
+COMMENT ON COLUMN user_biometric_enrollment.user_id IS 'ID of the user who enrolled (BIGINT from user-service)';
+
+COMMENT ON COLUMN qr_code_payment.id IS 'Unique identifier (BIGINT)';
+COMMENT ON COLUMN qr_code_payment.payment_id IS 'Payment ID (BIGINT references payments.id)';
+COMMENT ON COLUMN qr_code_payment.user_id IS 'User ID (BIGINT from user-service)';
+COMMENT ON COLUMN qr_code_payment.from_account_id IS 'Source account ID (BIGINT from account-service)';
+COMMENT ON COLUMN qr_code_payment.to_account_id IS 'Destination account ID (BIGINT from account-service)';

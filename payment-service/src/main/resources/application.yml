@@ -7,9 +7,9 @@ spring:
   
   # PostgreSQL Configuration
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/ebanking_payment}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/ebanking_payment}
     username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:root}
+    password: ${DATABASE_PASSWORD:aabir}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: ${DATABASE_POOL_SIZE:10}
@@ -22,7 +22,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
@@ -38,7 +38,7 @@ spring:
   
   # Flyway Configuration
   flyway:
-    enabled: ${FLYWAY_ENABLED:true}
+    enabled: ${FLYWAY_ENABLED:false}
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true

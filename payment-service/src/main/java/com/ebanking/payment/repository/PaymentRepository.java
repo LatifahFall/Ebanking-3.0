@@ -7,19 +7,18 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Repository
-public interface PaymentRepository extends JpaRepository<Payment, UUID> {
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
-    List<Payment> findByFromAccountId(UUID fromAccountId);
+    List<Payment> findByFromAccountId(Long fromAccountId);
 
     List<Payment> findByStatus(PaymentStatus status);
 
     List<Payment> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 
-    List<Payment> findByUserId(UUID userId);
+    List<Payment> findByUserId(Long userId);
 
-    List<Payment> findByFromAccountIdAndStatus(UUID fromAccountId, PaymentStatus status);
+    List<Payment> findByFromAccountIdAndStatus(Long fromAccountId, PaymentStatus status);
 }
 

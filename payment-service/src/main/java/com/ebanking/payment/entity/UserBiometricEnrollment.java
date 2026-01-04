@@ -22,7 +22,7 @@ public class UserBiometricEnrollment {
     private UUID id;
     
     @Column(name = "user_id", nullable = false, unique = true)
-    private UUID userId;
+    private Long userId;
     
     @Column(name = "face_token", nullable = false, length = 255)
     private String faceToken;

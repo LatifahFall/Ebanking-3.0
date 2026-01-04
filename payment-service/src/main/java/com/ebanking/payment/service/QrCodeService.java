@@ -56,8 +56,8 @@ public class QrCodeService {
      * @return QR code en Base64 (image PNG)
      */
     @Transactional
-    public String generateQrCode(UUID paymentId, UUID userId, BigDecimal amount, 
-                                String currency, UUID fromAccountId, UUID toAccountId) {
+    public String generateQrCode(Long paymentId, Long userId, BigDecimal amount, 
+                                String currency, Long fromAccountId, Long toAccountId) {
         log.info("Generating QR code for payment: {}, user: {}", paymentId, userId);
         
         // Générer un token unique et sécurisé
@@ -115,7 +115,7 @@ public class QrCodeService {
      * @throws BiometricVerificationException si invalide
      */
     @Transactional
-    public QrCodePayment validateQrCode(String qrToken, UUID userId) {
+    public QrCodePayment validateQrCode(String qrToken, Long userId) {
         log.info("Validating QR code token: {} for user: {}", qrToken, userId);
         
         QrCodePayment qrCodePayment = qrCodePaymentRepository.findByQrToken(qrToken)
@@ -218,7 +218,7 @@ public class QrCodeService {
     /**
      * Récupère un QR code payment par payment ID
      */
-    public Optional<QrCodePayment> findByPaymentId(UUID paymentId) {
+    public Optional<QrCodePayment> findByPaymentId(Long paymentId) {
         return qrCodePaymentRepository.findByPaymentId(paymentId);
     }
 }

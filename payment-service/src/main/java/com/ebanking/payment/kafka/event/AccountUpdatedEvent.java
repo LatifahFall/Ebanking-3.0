@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -18,10 +17,10 @@ import java.util.UUID;
 public class AccountUpdatedEvent {
 
     @JsonProperty("accountId")
-    private UUID accountId;
+    private Long accountId;
 
     @JsonProperty("userId")
-    private UUID userId;
+    private Long userId;
 
     @JsonProperty("accountNumber")
     private String accountNumber;

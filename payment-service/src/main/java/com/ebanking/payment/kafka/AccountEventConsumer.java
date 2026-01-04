@@ -25,7 +25,7 @@ public class AccountEventConsumer {
     private final FraudDetectionService fraudDetectionService;
     
     // Local cache for account status
-    private final Map<UUID, AccountCacheEntry> accountCache = new ConcurrentHashMap<>();
+    private final Map<Long, AccountCacheEntry> accountCache = new ConcurrentHashMap<>();
 
     @KafkaListener(
             topics = "${payment.service.kafka.topics.consumer.account-created}",
@@ -99,15 +99,15 @@ public class AccountEventConsumer {
         }
     }
 
-    public AccountCacheEntry getAccountFromCache(UUID accountId) {
+    public AccountCacheEntry getAccountFromCache(Long accountId) {
         return accountCache.get(accountId);
     }
 
     @lombok.Data
     @lombok.Builder
     public static class AccountCacheEntry {
-        private UUID accountId;
-        private UUID userId;
+        private Long accountId;
+        private Long userId;
         private String accountNumber;
         private AccountStatus status;
     }

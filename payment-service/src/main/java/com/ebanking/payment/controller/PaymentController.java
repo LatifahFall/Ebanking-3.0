@@ -31,7 +31,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -77,7 +76,7 @@ public class PaymentController {
     public ResponseEntity<PaymentResponse> initiatePayment(
             @Valid @RequestBody PaymentRequest request,
             Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+        Long userId = extractUserId(authentication);
         PaymentResponse response = paymentService.initiatePayment(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -114,7 +113,7 @@ public class PaymentController {
     public ResponseEntity<Map<String, Object>> generateBiometricQrCode(
             @Valid @RequestBody PaymentRequest request,
             Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+        Long userId = extractUserId(authentication);
         Map<String, Object> response = paymentService.generateBiometricPaymentQrCode(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -160,7 +159,7 @@ public class PaymentController {
     public ResponseEntity<PaymentResponse> initiateBiometricPayment(
             @Valid @RequestBody BiometricPaymentRequest request,
             Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+        Long userId = extractUserId(authentication);
         PaymentResponse response = paymentService.initiateBiometricPayment(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -199,7 +198,7 @@ public class PaymentController {
     public ResponseEntity<Map<String, Object>> generateQRCode(
             @Valid @RequestBody PaymentRequest request,
             Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+        Long userId = extractUserId(authentication);
         String qrCodeBase64 = paymentService.generateQRCodeForPayment(request, userId);
         
         Map<String, Object> response = new HashMap<>();
@@ -246,7 +245,7 @@ public class PaymentController {
     public ResponseEntity<PaymentResponse> initiateQRCodePayment(
             @Valid @RequestBody QRCodePaymentRequest request,
             Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+        Long userId = extractUserId(authentication);
         PaymentResponse response = paymentService.initiateQRCodePayment(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -261,8 +260,8 @@ public class PaymentController {
             @ApiResponse(responseCode = "404", description = "Payment not found")
     })
     public ResponseEntity<PaymentResponse> getPayment(
-            @Parameter(description = "Payment UUID", required = true, example = "123e4567-e89b-12d3-a456-426614174000")
-            @PathVariable UUID id) {
+            @Parameter(description = "Payment ID", required = true, example = "1")
+            @PathVariable Long id) {
         PaymentResponse response = paymentService.getPayment(id);
         return ResponseEntity.ok(response);
     }
@@ -275,8 +274,8 @@ public class PaymentController {
             @ApiResponse(responseCode = "400", description = "Invalid request parameters")
     })
     public ResponseEntity<PaymentListResponse> getPayments(
-            @Parameter(description = "Account ID to filter by", example = "123e4567-e89b-12d3-a456-426614174000")
-            @RequestParam(required = false) UUID accountId,
+            @Parameter(description = "Account ID to filter by", example = "1")
+            @RequestParam(required = false) Long accountId,
             @Parameter(description = "Payment status filter", example = "COMPLETED")
             @RequestParam(required = false) PaymentStatus status,
             @Parameter(description = "Page number (0-indexed)", example = "0")
@@ -317,8 +316,8 @@ public class PaymentController {
             @ApiResponse(responseCode = "409", description = "Payment cannot be cancelled in current status")
     })
     public ResponseEntity<PaymentResponse> cancelPayment(
-            @Parameter(description = "Payment UUID", required = true)
-            @PathVariable UUID id) {
+            @Parameter(description = "Payment ID", required = true)
+            @PathVariable Long id) {
         PaymentResponse response = paymentService.cancelPayment(id);
         return ResponseEntity.ok(response);
     }
@@ -331,32 +330,64 @@ public class PaymentController {
             @ApiResponse(responseCode = "409", description = "Payment cannot be reversed in current status")
     })
     public ResponseEntity<PaymentResponse> reversePayment(
-            @Parameter(description = "Payment UUID", required = true)
-            @PathVariable UUID id,
+            @Parameter(description = "Payment ID", required = true)
+            @PathVariable Long id,
             @Parameter(description = "Reason for reversal", required = true, example = "CUSTOMER_REQUEST")
             @RequestParam ReversalReason reason) {
         PaymentResponse response = paymentService.reversePayment(id, reason);
         return ResponseEntity.ok(response);
     }
 
-    private UUID extractUserId(Authentication authentication) {
-        // En développement (sans Keycloak), authentication peut être null
+    /**
+     * Extracts user ID from authentication token
+     * 
+     * SECURITY: In production (Keycloak enabled), this method MUST throw exception
+     * if authentication is invalid. Never use default userId in production.
+     * 
+     * @param authentication Spring Security authentication object
+     * @return userId as Long
+     * @throws org.springframework.security.access.AccessDeniedException if auth invalid in production
+     */
+    private Long extractUserId(Authentication authentication) {
+        // Check if authentication is missing or invalid
         if (authentication == null || authentication.getName() == null) {
-            // En dev, on utilise un UUID fixe pour permettre les tests
-            // Cela permet de garder le même userId entre l'enregistrement et le paiement
-            // En production avec Keycloak, ce cas ne devrait jamais arriver
-            UUID devUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-            log.debug("No authentication provided, using fixed dev UUID: {}", devUserId);
+            // PRODUCTION MODE: Reject request with 401 Unauthorized
+            // Check if Keycloak is enabled via environment variable
+            String keycloakEnabled = System.getenv("KEYCLOAK_ENABLED");
+            if ("true".equalsIgnoreCase(keycloakEnabled)) {
+                log.error("Authentication required but not provided (Keycloak enabled)");
+                throw new org.springframework.security.access.AccessDeniedException(
+                    "Authentication required. Please provide valid Bearer token."
+                );
+            }
+            
+            // DEVELOPMENT MODE ONLY: Use fixed userId for testing
+            Long devUserId = 1L;
+            log.warn("[DEV MODE] No authentication provided, using fixed dev userId: {}", devUserId);
+            log.warn("[DEV MODE] This behavior is DISABLED in production (KEYCLOAK_ENABLED=true)");
             return devUserId;
         }
         
+        // Extract userId from authentication.getName() (Keycloak subject claim)
         try {
             String userIdString = authentication.getName();
-            return UUID.fromString(userIdString);
-        } catch (Exception e) {
-            log.warn("Could not extract userId from authentication: {}", e.getMessage());
-            // En dev, on continue avec un UUID fixe
-            UUID devUserId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+            Long userId = Long.parseLong(userIdString);
+            log.debug("Extracted userId from authentication: {}", userId);
+            return userId;
+        } catch (NumberFormatException e) {
+            log.error("Invalid userId format in authentication token: {}", authentication.getName(), e);
+            
+            // PRODUCTION MODE: Reject invalid token
+            String keycloakEnabled = System.getenv("KEYCLOAK_ENABLED");
+            if ("true".equalsIgnoreCase(keycloakEnabled)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                    "Invalid user ID format in authentication token"
+                );
+            }
+            
+            // DEVELOPMENT MODE: Fallback to dev user
+            Long devUserId = 1L;
+            log.warn("[DEV MODE] Failed to parse userId, using fixed dev userId: {}", devUserId);
             return devUserId;
         }
     }

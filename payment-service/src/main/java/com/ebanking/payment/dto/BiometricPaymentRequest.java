@@ -8,16 +8,15 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 public class BiometricPaymentRequest {
 
     // Données du paiement standard
     @NotNull(message = "From account ID is required")
-    private UUID fromAccountId;
+    private Long fromAccountId;
 
-    private UUID toAccountId;
+    private Long toAccountId;
 
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
@@ -36,6 +35,9 @@ public class BiometricPaymentRequest {
     private BiometricData biometricData;
 
     @Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
     public static class BiometricData {
         @NotNull(message = "Biometric type is required")
         private BiometricType type; // QR_CODE (remplace FACE)

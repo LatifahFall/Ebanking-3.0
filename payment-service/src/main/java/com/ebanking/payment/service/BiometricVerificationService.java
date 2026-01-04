@@ -30,7 +30,7 @@ public class BiometricVerificationService {
      * @return true si la vérification réussit
      * @throws BiometricVerificationException si la vérification échoue
      */
-    public boolean verifyBiometric(UUID userId, BiometricPaymentRequest.BiometricData biometricData) {
+    public boolean verifyBiometric(Long userId, BiometricPaymentRequest.BiometricData biometricData) {
         if (!verificationEnabled) {
             log.warn("Biometric verification is disabled, skipping verification");
             return true;
@@ -75,7 +75,7 @@ public class BiometricVerificationService {
     /**
      * Effectue la vérification biométrique avec QR code
      */
-    private boolean performBiometricVerification(UUID userId, BiometricPaymentRequest.BiometricData biometricData) {
+    private boolean performBiometricVerification(Long userId, BiometricPaymentRequest.BiometricData biometricData) {
         log.debug("Performing QR code verification for user: {}", userId);
 
         // Vérifier le type biométrique
@@ -94,7 +94,7 @@ public class BiometricVerificationService {
      * Vérifie si l'utilisateur peut utiliser les paiements biométriques (QR code)
      * Avec QR code, pas besoin d'enrollment préalable
      */
-    public boolean hasBiometricEnrollment(UUID userId) {
+    public boolean hasBiometricEnrollment(Long userId) {
         // Avec QR code, tous les utilisateurs peuvent utiliser les paiements biométriques
         return true;
     }

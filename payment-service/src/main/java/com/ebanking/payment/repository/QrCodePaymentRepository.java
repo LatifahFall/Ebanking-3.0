@@ -6,14 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
-public interface QrCodePaymentRepository extends JpaRepository<QrCodePayment, UUID> {
+public interface QrCodePaymentRepository extends JpaRepository<QrCodePayment, Long> {
     
     Optional<QrCodePayment> findByQrToken(String qrToken);
     
-    Optional<QrCodePayment> findByPaymentId(UUID paymentId);
+    Optional<QrCodePayment> findByPaymentId(Long paymentId);
     
     void deleteByExpiresAtBefore(LocalDateTime now);
 }

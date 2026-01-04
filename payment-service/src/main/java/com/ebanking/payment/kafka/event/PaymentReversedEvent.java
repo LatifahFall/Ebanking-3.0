@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -17,8 +16,8 @@ import java.util.UUID;
 @Builder
 public class PaymentReversedEvent {
 
-    private UUID paymentId;
-    private UUID accountId;
+    private Long paymentId;
+    private Long accountId;
     private BigDecimal amount;
     private String currency;
     private String reversalReason;

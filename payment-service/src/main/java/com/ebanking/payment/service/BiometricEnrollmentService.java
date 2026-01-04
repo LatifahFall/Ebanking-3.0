@@ -29,7 +29,7 @@ public class BiometricEnrollmentService {
      * @return Le face_token stocké
      */
     @Transactional
-    public String enrollUserFace(UUID userId, String faceImageBase64, String deviceId) {
+    public String enrollUserFace(Long userId, String faceImageBase64, String deviceId) {
         log.info("Enrolling biometric face for user: {}", userId);
         
         // Vérifier si l'utilisateur a déjà un enregistrement actif
@@ -71,7 +71,7 @@ public class BiometricEnrollmentService {
     /**
      * Récupère le face_token stocké d'un utilisateur
      */
-    public String getStoredFaceToken(UUID userId) {
+    public String getStoredFaceToken(Long userId) {
         return enrollmentRepository.findByUserIdAndIsActiveTrue(userId)
                 .map(UserBiometricEnrollment::getFaceToken)
                 .orElseThrow(() -> new BiometricVerificationException("User has not enrolled biometric data"));
@@ -80,7 +80,7 @@ public class BiometricEnrollmentService {
     /**
      * Vérifie si l'utilisateur a enregistré des données biométriques
      */
-    public boolean hasBiometricEnrollment(UUID userId) {
+    public boolean hasBiometricEnrollment(Long userId) {
         return enrollmentRepository.existsByUserIdAndIsActiveTrue(userId);
     }
     
@@ -88,7 +88,7 @@ public class BiometricEnrollmentService {
      * Désactive l'enregistrement biométrique d'un utilisateur
      */
     @Transactional
-    public void revokeBiometricEnrollment(UUID userId) {
+    public void revokeBiometricEnrollment(Long userId) {
         enrollmentRepository.findByUserIdAndIsActiveTrue(userId)
                 .ifPresent(enrollment -> {
                     enrollment.setIsActive(false);
@@ -101,7 +101,7 @@ public class BiometricEnrollmentService {
      * Met à jour la date de dernière vérification
      */
     @Transactional
-    public void updateLastVerifiedAt(UUID userId) {
+    public void updateLastVerifiedAt(Long userId) {
         enrollmentRepository.findByUserIdAndIsActiveTrue(userId)
                 .ifPresent(enrollment -> {
                     enrollment.setLastVerifiedAt(LocalDateTime.now());

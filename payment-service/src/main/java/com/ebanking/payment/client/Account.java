@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -17,10 +16,10 @@ import java.util.UUID;
 public class Account {
 
     @JsonProperty("id")
-    private UUID id;
+    private Long id;
 
     @JsonProperty("userId")
-    private UUID userId;
+    private Long userId;
 
     @JsonProperty("accountNumber")
     private String accountNumber;

@@ -1,0 +1,162 @@
+spring:
+  application:
+    name: audit-service
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 10
+        queue-capacity: 100
+      thread-name-prefix: export-
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:audit_db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:gabrielle}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: audit-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        max.poll.records: 100
+        session.timeout.ms: 30000
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      enable-idempotence: true
+      compression-type: snappy
+    listener:
+      ack-mode: manual
+      concurrency: 3
+
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URI:http://localhost:9200}
+    username: ${ELASTICSEARCH_USER:elastic}
+    password: ${ELASTICSEARCH_PASSWORD:changeme}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 60000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/banking}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8080/realms/banking/protocol/openid-connect/certs}
+
+server:
+  port: ${SERVER_PORT:8086}
+  servlet:
+    context-path: /api/v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# Custom Application Properties
+audit:
+  retention:
+    hot-days: 730      # 2 years in PostgreSQL
+    warm-days: 1825    # 5 years in Elasticsearch
+    cold-days: 3650    # 10 years in S3/Archive
+
+  audit:
+    topics:
+      auth-events: auth.events
+      user-created: user.created
+      user-updated: user.updated
+      user-activated: user.activated
+      user-deactivated: user.deactivated
+      kyc-status-changed: kyc.status.changed
+      client-assigned: client.assigned
+      client-unassigned: client.unassigned
+      account-created: account.created
+      account-updated: account.updated
+      account-balance-changed: account.balance.changed
+      account-suspended: account.suspended
+      account-closed: account.closed
+      transaction-completed: transaction.completed
+      payment-initiated: payment.initiated
+      payment-completed: payment.completed
+      payment-failed: payment.failed
+      payment-reversed: payment.reversed
+      fraud-detected: fraud.detected
+      crypto-transaction: crypto.transaction
+      notification-status: notification.status
+      notification-audit: notification.audit
+
+  compliance:
+    rgpd-enabled: true
+    psd2-enabled: true
+    auto-anonymize-after-days: 3650  # 10 years
+
+  security:
+    checksum-algorithm: SHA-256
+    encryption-enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.banking.audit: DEBUG
+    org.springframework.kafka: INFO
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/audit-service.log
+    max-size: 10MB
+    max-history: 30

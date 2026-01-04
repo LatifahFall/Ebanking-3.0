@@ -1,0 +1,108 @@
+# ========================================
+# application-test.yml
+# audit-service/src/test/resources/application-test.yml
+# ========================================
+
+spring:
+  application:
+    name: audit-service-test
+
+  # ===============================
+  # Database (H2 - in memory)
+  # ===============================
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+
+  # ===============================
+  # JPA / Hibernate
+  # ===============================
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+        # 🔥 FIX CRITIQUE HIBERNATE 6 + H2
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+        format_sql: false
+        generate_statistics: false
+        hbm2ddl.auto: none
+        id.new_generator_mappings: false
+
+  # ===============================
+  # Flyway (désactivé en test)
+  # ===============================
+  flyway:
+    enabled: false
+
+  # ===============================
+  # Elasticsearch (désactivé)
+  # ===============================
+  data:
+    elasticsearch:
+      repositories:
+        enabled: false
+    redis:
+      host: localhost
+      port: 6379
+
+  # ===============================
+  # Kafka (override par Testcontainers)
+  # ===============================
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: test-group
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+    producer:
+      acks: all
+      retries: 0
+
+
+
+  # ===============================
+  # Security (désactivée)
+  # ===============================
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://dummy
+          jwk-set-uri: http://dummy
+
+# ===============================
+# Application custom properties
+# ===============================
+audit:
+  retention:
+    hot-days: 1
+    warm-days: 1
+    cold-days: 1
+
+  compliance:
+    rgpd-enabled: false
+    psd2-enabled: false
+
+  security:
+    encryption-enabled: false
+
+# ===============================
+# Logging
+# ===============================
+logging:
+  level:
+    root: WARN
+    com.banking.audit: DEBUG

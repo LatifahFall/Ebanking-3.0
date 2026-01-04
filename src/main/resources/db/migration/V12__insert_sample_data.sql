@@ -1,0 +1,5 @@
+-- ============================================================================
+-- FICHIER: V12__insert_sample_data.sql
+-- ============================================================================
+-- Données de test (commenté par défaut)
+-- Décommenter uniquement en environnement de développement

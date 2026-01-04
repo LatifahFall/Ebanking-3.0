@@ -1,0 +1,35 @@
+target/
+logs/
+*.log
+*.tmp
+*.bak
+.git/
+.gitignore
+.DS_Store
+node_modules/
+.vscode/
+.idea/
+.mvn/
+mvnw
+.settings/
+*.iml
+*.class
+*.jar
+*.war
+.env
+.gradle/
+out/
+coverage/
+**/target/
+**/build/
+# Exclude local Docker artifacts
+docker-compose.override.yml
+**/.log
+# Exclude IDE and OS files
+Thumbs.db
+desktop.ini
+
+# Keep pom.xml and source
+!pom.xml
+!src/**
+

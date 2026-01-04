@@ -1,0 +1,5 @@
+-- ============================================================================
+-- FICHIER: V11__create_audit_partitioning.sql
+-- ============================================================================
+-- Partitionnement commenté pour ne pas casser les bases existantes
+-- Décommenter pour nouvelles installations

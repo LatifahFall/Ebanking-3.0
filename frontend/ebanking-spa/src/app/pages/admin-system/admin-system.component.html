@@ -1,0 +1,270 @@
+<div class="admin-system-page">
+  <app-page-header
+    title="System Management"
+    subtitle="Configure system settings, security, payment rules, and monitor suspicious activity"
+    [breadcrumbs]="['Home', 'Admin', 'System Management']">
+  </app-page-header>
+
+  <mat-tab-group [(selectedIndex)]="selectedTab" class="system-tabs">
+    <!-- System Configuration Tab -->
+    <mat-tab label="System Configuration">
+      <div class="tab-content">
+        <mat-card class="config-card">
+          <mat-card-header>
+            <mat-card-title>Transaction Limits</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <form [formGroup]="systemConfigForm" class="config-form">
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Maximum Transaction Amount</mat-label>
+                  <input matInput type="number" formControlName="maxTransactionAmount" min="0.01">
+                  <mat-icon matSuffix>attach_money</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Minimum Transaction Amount</mat-label>
+                  <input matInput type="number" formControlName="minTransactionAmount" min="0.01">
+                  <mat-icon matSuffix>attach_money</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Daily Transaction Limit</mat-label>
+                  <input matInput type="number" formControlName="dailyTransactionLimit" min="0">
+                  <mat-icon matSuffix>today</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="form-section">
+                <h3>Payment Methods</h3>
+                <div class="toggle-group">
+                  <mat-slide-toggle formControlName="instantPaymentEnabled">
+                    Instant Payment
+                  </mat-slide-toggle>
+                  <mat-slide-toggle formControlName="biometricPaymentEnabled">
+                    Biometric Payment
+                  </mat-slide-toggle>
+                  <mat-slide-toggle formControlName="qrCodePaymentEnabled">
+                    QR Code Payment
+                  </mat-slide-toggle>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button mat-flat-button color="primary" (click)="onSaveSystemConfig()" [disabled]="systemConfigForm.invalid || loading">
+                  <mat-icon>save</mat-icon>
+                  Save Configuration
+                </button>
+              </div>
+            </form>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Security Settings Tab -->
+    <mat-tab label="Security Settings">
+      <div class="tab-content">
+        <mat-card class="config-card">
+          <mat-card-header>
+            <mat-card-title>Security Configuration</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <form [formGroup]="securityForm" class="config-form">
+              <div class="form-section">
+                <h3>Authentication</h3>
+                <div class="toggle-group">
+                  <mat-slide-toggle formControlName="require2FA">
+                    Require Two-Factor Authentication
+                  </mat-slide-toggle>
+                  <mat-slide-toggle formControlName="requireStrongPassword">
+                    Require Strong Password
+                  </mat-slide-toggle>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Session Timeout (minutes)</mat-label>
+                  <input matInput type="number" formControlName="sessionTimeout" min="5">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Max Login Attempts</mat-label>
+                  <input matInput type="number" formControlName="maxLoginAttempts" min="3">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Password Min Length</mat-label>
+                  <input matInput type="number" formControlName="passwordMinLength" min="6">
+                </mat-form-field>
+              </div>
+
+              <div class="form-section">
+                <h3>Fraud Detection</h3>
+                <div class="toggle-group">
+                  <mat-slide-toggle formControlName="enableFraudDetection">
+                    Enable Fraud Detection
+                  </mat-slide-toggle>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button mat-flat-button color="primary" (click)="onSaveSecuritySettings()" [disabled]="securityForm.invalid || loading">
+                  <mat-icon>save</mat-icon>
+                  Save Security Settings
+                </button>
+              </div>
+            </form>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Payment Rules Tab -->
+    <mat-tab label="Payment Rules">
+      <div class="tab-content">
+        <mat-card class="rules-card">
+          <mat-card-header>
+            <mat-card-title>Payment Rules</mat-card-title>
+            <button mat-icon-button matTooltip="Add New Rule">
+              <mat-icon>add</mat-icon>
+            </button>
+          </mat-card-header>
+          <mat-card-content>
+            <table mat-table [dataSource]="paymentRules" class="rules-table">
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Rule Name</th>
+                <td mat-cell *matCellDef="let rule">{{ rule.name }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="condition">
+                <th mat-header-cell *matHeaderCellDef>Condition</th>
+                <td mat-cell *matCellDef="let rule">{{ rule.condition }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="action">
+                <th mat-header-cell *matHeaderCellDef>Action</th>
+                <td mat-cell *matCellDef="let rule">{{ rule.action }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="enabled">
+                <th mat-header-cell *matHeaderCellDef>Enabled</th>
+                <td mat-cell *matCellDef="let rule">
+                  <mat-slide-toggle [checked]="rule.enabled" (change)="onTogglePaymentRule(rule)">
+                  </mat-slide-toggle>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let rule">
+                  <button mat-icon-button (click)="onDeletePaymentRule(rule)" color="warn" matTooltip="Delete Rule">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="paymentRulesColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: paymentRulesColumns;"></tr>
+            </table>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Suspicious Transactions Tab -->
+    <mat-tab label="Suspicious Transactions">
+      <div class="tab-content">
+        @if (loading) {
+          <app-loader [fullScreen]="false" message="Loading suspicious transactions..."></app-loader>
+        } @else {
+          <mat-card class="suspicious-card">
+            <mat-card-header>
+              <mat-card-title>Suspicious Activity Monitoring</mat-card-title>
+              <button mat-icon-button (click)="loadSuspiciousTransactions()" matTooltip="Refresh">
+                <mat-icon>refresh</mat-icon>
+              </button>
+            </mat-card-header>
+            <mat-card-content>
+              @if (suspiciousTransactions.length > 0) {
+                <table mat-table [dataSource]="suspiciousTransactions" class="suspicious-table">
+                  <ng-container matColumnDef="transactionId">
+                    <th mat-header-cell *matHeaderCellDef>Transaction ID</th>
+                    <td mat-cell *matCellDef="let suspicious">{{ suspicious.transactionId }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="userId">
+                    <th mat-header-cell *matHeaderCellDef>User ID</th>
+                    <td mat-cell *matCellDef="let suspicious">{{ suspicious.userId }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="amount">
+                    <th mat-header-cell *matHeaderCellDef>Amount</th>
+                    <td mat-cell *matCellDef="let suspicious">{{ suspicious.amount | currency:'USD' }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="reason">
+                    <th mat-header-cell *matHeaderCellDef>Reason</th>
+                    <td mat-cell *matCellDef="let suspicious">{{ suspicious.reason }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="severity">
+                    <th mat-header-cell *matHeaderCellDef>Severity</th>
+                    <td mat-cell *matCellDef="let suspicious">
+                      <mat-chip [color]="getSeverityColor(suspicious.severity)" selected>
+                        {{ suspicious.severity.toUpperCase() }}
+                      </mat-chip>
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="timestamp">
+                    <th mat-header-cell *matHeaderCellDef>Detected</th>
+                    <td mat-cell *matCellDef="let suspicious">{{ suspicious.timestamp | date:'short' }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>Status</th>
+                    <td mat-cell *matCellDef="let suspicious">
+                      <mat-chip [color]="getStatusColor(suspicious.status)" selected>
+                        {{ suspicious.status.toUpperCase() }}
+                      </mat-chip>
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef>Actions</th>
+                    <td mat-cell *matCellDef="let suspicious">
+                      @if (suspicious.status === 'pending') {
+                        <div class="action-buttons">
+                          <button mat-icon-button (click)="onReviewTransaction(suspicious, 'approve')" color="primary" matTooltip="Approve">
+                            <mat-icon>check_circle</mat-icon>
+                          </button>
+                          <button mat-icon-button (click)="onReviewTransaction(suspicious, 'reject')" color="warn" matTooltip="Mark as False Positive">
+                            <mat-icon>cancel</mat-icon>
+                          </button>
+                          <button mat-icon-button (click)="onReviewTransaction(suspicious, 'flag')" matTooltip="Flag for Review">
+                            <mat-icon>flag</mat-icon>
+                          </button>
+                        </div>
+                      }
+                    </td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="suspiciousColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: suspiciousColumns;"></tr>
+                </table>
+              } @else {
+                <div class="empty-state">
+                  <mat-icon>security</mat-icon>
+                  <p>No suspicious transactions detected</p>
+                </div>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+

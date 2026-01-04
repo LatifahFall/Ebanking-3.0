@@ -54,6 +54,8 @@ export class SidebarComponent {
   adminMenuItems: MenuItem[] = [
     { label: 'Admin Dashboard', icon: 'admin_panel_settings', route: '/admin/dashboard' },
     { label: 'User Management', icon: 'manage_accounts', route: '/admin/users' },
+    { label: 'Agent Management', icon: 'supervisor_account', route: '/admin/agents' },
+    { label: 'System Management', icon: 'settings', route: '/admin/system' },
     { label: 'Profile', icon: 'person', route: '/profile' }
   ];
 

@@ -13,8 +13,12 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../core/services/user.service';
-import { User, UserRole, UserStatus } from '../../models';
+import { User, UserRole, UserStatus, KYCStatus } from '../../models';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { CustomButtonComponent } from '../../shared/components/custom-button/custom-button.component';
 import { LoaderComponent } from '../../shared/components/loader/loader.component';
@@ -39,6 +43,10 @@ import { AssignAgentDialogComponent, AssignAgentData } from '../../shared/compon
     MatChipsModule,
     MatTooltipModule,
     MatMenuModule,
+    MatCheckboxModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatSnackBarModule,
     PageHeaderComponent,
     CustomButtonComponent,
     LoaderComponent
@@ -48,12 +56,21 @@ import { AssignAgentDialogComponent, AssignAgentData } from '../../shared/compon
 })
 export class AdminUsersComponent implements OnInit {
   users: User[] = [];
-  displayedColumns: string[] = ['name', 'email', 'role', 'status', 'kycStatus', 'actions'];
+  allUsers: User[] = []; // For filtering and export
+  displayedColumns: string[] = ['select', 'name', 'email', 'role', 'status', 'kycStatus', 'createdAt', 'actions'];
   loading = false;
   errorMessage = '';
   searchQuery = '';
   selectedRole: UserRole | 'ALL' = 'ALL';
+  selectedStatus: UserStatus | 'ALL' = 'ALL';
+  selectedKycStatus: KYCStatus | 'ALL' = 'ALL';
+  dateFrom: Date | null = null;
+  dateTo: Date | null = null;
   
+  // Selection for bulk actions
+  selectedUsers = new Set<string>();
+  selectAll = false;
+
   // Pagination
   page = 0;
   pageSize = 10;
@@ -67,13 +84,35 @@ export class AdminUsersComponent implements OnInit {
     { value: UserRole.ADMIN, label: 'Admin' }
   ];
 
+  // Status options
+  statuses: { value: UserStatus | 'ALL'; label: string }[] = [
+    { value: 'ALL', label: 'All Statuses' },
+    { value: UserStatus.ACTIVE, label: 'Active' },
+    { value: UserStatus.INACTIVE, label: 'Inactive' },
+    { value: UserStatus.SUSPENDED, label: 'Suspended' },
+    { value: UserStatus.PENDING, label: 'Pending' }
+  ];
+
+  // KYC Status options
+  kycStatuses: { value: KYCStatus | 'ALL'; label: string }[] = [
+    { value: 'ALL', label: 'All KYC Statuses' },
+    { value: KYCStatus.NOT_STARTED, label: 'Not Started' },
+    { value: KYCStatus.IN_PROGRESS, label: 'In Progress' },
+    { value: KYCStatus.VERIFIED, label: 'Verified' },
+    { value: KYCStatus.REJECTED, label: 'Rejected' }
+  ];
+
   // For assignment dialog
   agents: User[] = [];
   clients: User[] = [];
 
+  // User modification history (mock)
+  userHistory: Map<string, any[]> = new Map();
+
   constructor(
     private userService: UserService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -90,12 +129,12 @@ export class AdminUsersComponent implements OnInit {
     this.userService.searchUsers(
       this.searchQuery || undefined,
       roleFilter,
-      this.page,
-      this.pageSize
+      0,
+      10000 // Get all for filtering
     ).subscribe({
       next: (result) => {
-        this.users = result.users;
-        this.totalUsers = result.total;
+        this.allUsers = result.users;
+        this.applyFilters();
         this.loading = false;
       },
       error: () => {
@@ -103,6 +142,50 @@ export class AdminUsersComponent implements OnInit {
         this.errorMessage = 'Failed to load users. Please try again.';
       }
     });
+  }
+
+  applyFilters(): void {
+    let filtered = [...this.allUsers];
+
+    // Role filter
+    if (this.selectedRole !== 'ALL') {
+      filtered = filtered.filter(u => u.role === this.selectedRole);
+    }
+
+    // Status filter
+    if (this.selectedStatus !== 'ALL') {
+      filtered = filtered.filter(u => u.status === this.selectedStatus);
+    }
+
+    // KYC Status filter
+    if (this.selectedKycStatus !== 'ALL') {
+      filtered = filtered.filter(u => u.kycStatus === this.selectedKycStatus);
+    }
+
+    // Date filters
+    if (this.dateFrom) {
+      filtered = filtered.filter(u => new Date(u.createdAt) >= this.dateFrom!);
+    }
+    if (this.dateTo) {
+      const toDate = new Date(this.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(u => new Date(u.createdAt) <= toDate);
+    }
+
+    // Search filter
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(u => 
+        u.fullName.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query) ||
+        u.firstName.toLowerCase().includes(query) ||
+        u.lastName.toLowerCase().includes(query)
+      );
+    }
+
+    this.totalUsers = filtered.length;
+    const start = this.page * this.pageSize;
+    this.users = filtered.slice(start, start + this.pageSize);
   }
 
   loadAgentsAndClients(): void {
@@ -117,12 +200,150 @@ export class AdminUsersComponent implements OnInit {
 
   onSearch(): void {
     this.page = 0;
-    this.loadUsers();
+    this.applyFilters();
   }
 
-  onRoleFilterChange(): void {
+  onFilterChange(): void {
     this.page = 0;
-    this.loadUsers();
+    this.applyFilters();
+  }
+
+  onSelectAll(checked: boolean): void {
+    this.selectAll = checked;
+    if (checked) {
+      this.users.forEach(u => this.selectedUsers.add(u.id));
+    } else {
+      this.selectedUsers.clear();
+    }
+  }
+
+  onSelectUser(userId: string, checked: boolean): void {
+    if (checked) {
+      this.selectedUsers.add(userId);
+    } else {
+      this.selectedUsers.delete(userId);
+      this.selectAll = false;
+    }
+  }
+
+  isSelected(userId: string): boolean {
+    return this.selectedUsers.has(userId);
+  }
+
+  onBulkActivate(): void {
+    if (this.selectedUsers.size === 0) {
+      this.snackBar.open('Please select users to activate', 'Close', { duration: 3000 });
+      return;
+    }
+
+    this.loading = true;
+    const userIds = Array.from(this.selectedUsers);
+    let completed = 0;
+    let failed = 0;
+
+    userIds.forEach(userId => {
+      this.userService.activateUser(userId).subscribe({
+        next: () => {
+          completed++;
+          if (completed + failed === userIds.length) {
+            this.loading = false;
+            this.selectedUsers.clear();
+            this.selectAll = false;
+            this.loadUsers();
+            this.snackBar.open(`Activated ${completed} user(s)`, 'Close', { duration: 3000 });
+          }
+        },
+        error: () => {
+          failed++;
+          if (completed + failed === userIds.length) {
+            this.loading = false;
+            this.snackBar.open(`Activated ${completed}, failed ${failed}`, 'Close', { duration: 5000 });
+          }
+        }
+      });
+    });
+  }
+
+  onBulkDeactivate(): void {
+    if (this.selectedUsers.size === 0) {
+      this.snackBar.open('Please select users to deactivate', 'Close', { duration: 3000 });
+      return;
+    }
+
+    this.loading = true;
+    const userIds = Array.from(this.selectedUsers);
+    let completed = 0;
+    let failed = 0;
+
+    userIds.forEach(userId => {
+      this.userService.deactivateUser(userId).subscribe({
+        next: () => {
+          completed++;
+          if (completed + failed === userIds.length) {
+            this.loading = false;
+            this.selectedUsers.clear();
+            this.selectAll = false;
+            this.loadUsers();
+            this.snackBar.open(`Deactivated ${completed} user(s)`, 'Close', { duration: 3000 });
+          }
+        },
+        error: () => {
+          failed++;
+          if (completed + failed === userIds.length) {
+            this.loading = false;
+            this.snackBar.open(`Deactivated ${completed}, failed ${failed}`, 'Close', { duration: 5000 });
+          }
+        }
+      });
+    });
+  }
+
+  onViewHistory(user: User): void {
+    const history = this.userHistory.get(user.id) || [];
+    if (history.length === 0) {
+      this.snackBar.open('No modification history available for this user', 'Close', { duration: 3000 });
+    } else {
+      // In a real app, this would open a dialog with history
+      this.snackBar.open(`User has ${history.length} modification(s) in history`, 'Close', { duration: 3000 });
+    }
+  }
+
+  onExportCSV(): void {
+    const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'KYC Status', 'Created At', 'Last Login'];
+    const rows = this.allUsers.map(u => [
+      u.id,
+      u.fullName,
+      u.email,
+      u.role,
+      u.status,
+      u.kycStatus,
+      new Date(u.createdAt).toLocaleDateString(),
+      u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.snackBar.open('Users exported to CSV', 'Close', { duration: 3000 });
+  }
+
+  onExportExcel(): void {
+    // For Excel export, we'd typically use a library like xlsx
+    // For now, we'll export as CSV with .xlsx extension (basic implementation)
+    this.onExportCSV();
+    this.snackBar.open('Excel export uses CSV format (install xlsx library for full Excel support)', 'Close', { duration: 5000 });
   }
 
   onCreateUser(): void {
@@ -183,6 +404,15 @@ export class AdminUsersComponent implements OnInit {
     
     action.subscribe({
       next: () => {
+        // Record in history
+        if (!this.userHistory.has(user.id)) {
+          this.userHistory.set(user.id, []);
+        }
+        this.userHistory.get(user.id)!.push({
+          action: user.status === 'ACTIVE' ? 'DEACTIVATED' : 'ACTIVATED',
+          timestamp: new Date(),
+          performedBy: 'Admin'
+        });
         this.loadUsers();
       },
       error: () => {
@@ -260,7 +490,7 @@ export class AdminUsersComponent implements OnInit {
   onPageChange(event: PageEvent): void {
     this.page = event.pageIndex;
     this.pageSize = event.pageSize;
-    this.loadUsers();
+    this.applyFilters();
   }
 
   getStatusColor(status: string): string {

@@ -1,0 +1,44 @@
+<div class="assign-client-dialog">
+  <h2 mat-dialog-title>
+    <mat-icon>person_add</mat-icon>
+    Assign Client to Agent
+  </h2>
+
+  <mat-dialog-content>
+    <div class="agent-info">
+      <strong>Agent: {{ data.agent.fullName }}</strong>
+      <span class="agent-email">{{ data.agent.email }}</span>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Select Client</mat-label>
+      <mat-select [(ngModel)]="selectedClientId" name="client">
+        @for (client of availableClients; track client.id) {
+          <mat-option [value]="client.id">
+            {{ client.fullName }} ({{ client.email }})
+          </mat-option>
+        }
+      </mat-select>
+      @if (availableClients.length === 0) {
+        <mat-hint>No available clients to assign</mat-hint>
+      }
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()" type="button">
+      <mat-icon>close</mat-icon>
+      Cancel
+    </button>
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="onAssign()" 
+      [disabled]="!selectedClientId || availableClients.length === 0"
+      type="button">
+      <mat-icon>check</mat-icon>
+      Assign
+    </button>
+  </mat-dialog-actions>
+</div>
+

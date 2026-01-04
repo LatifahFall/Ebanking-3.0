@@ -25,6 +25,8 @@ import { AgentClientDetailsComponent } from './pages/agent-client-details/agent-
 import { AgentSupportComponent } from './pages/agent-support/agent-support.component';
 import { AgentReportsComponent } from './pages/agent-reports/agent-reports.component';
 import { AgentPaymentsComponent } from './pages/agent-payments/agent-payments.component';
+import { AdminAgentsComponent } from './pages/admin-agents/admin-agents.component';
+import { AdminSystemComponent } from './pages/admin-system/admin-system.component';
 
 export const routes: Routes = [
   // Redirect root to dashboard or login
@@ -141,6 +143,18 @@ export const routes: Routes = [
           component: AdminUsersComponent,
           canActivate: [adminGuard],
           title: 'User Management - E-Banking 3.0'
+        },
+        {
+          path: 'admin/agents',
+          component: AdminAgentsComponent,
+          canActivate: [adminGuard],
+          title: 'Agent Management - E-Banking 3.0'
+        },
+        {
+          path: 'admin/system',
+          component: AdminSystemComponent,
+          canActivate: [adminGuard],
+          title: 'System Management - E-Banking 3.0'
         },
         {
           path: 'agent/clients',

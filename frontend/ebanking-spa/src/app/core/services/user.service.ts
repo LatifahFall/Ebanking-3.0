@@ -63,6 +63,36 @@ export class UserService {
         createdAt: new Date('2023-01-15'),
         preferences: { theme: 'light', language: 'fr', currency: 'MAD', notifications: { email: true, sms: false, push: true, transactionAlerts: true, securityAlerts: true } },
         kycStatus: 'VERIFIED' as any
+      },
+      {
+        id: '4',
+        email: 'ahmed.client@ebanking.com',
+        firstName: 'Ahmed',
+        lastName: 'Benali',
+        fullName: 'Ahmed Benali',
+        avatar: '',
+        phoneNumber: '+212633333333',
+        role: UserRole.CLIENT,
+        status: 'ACTIVE' as any,
+        lastLogin: new Date(Date.now() - 86400000),
+        createdAt: new Date('2023-06-10'),
+        preferences: { theme: 'dark', language: 'ar', currency: 'MAD', notifications: { email: true, sms: true, push: true, transactionAlerts: true, securityAlerts: true } },
+        kycStatus: 'IN_PROGRESS' as any
+      },
+      {
+        id: '5',
+        email: 'sara.client@ebanking.com',
+        firstName: 'Sara',
+        lastName: 'Alami',
+        fullName: 'Sara Alami',
+        avatar: '',
+        phoneNumber: '+212644444444',
+        role: UserRole.CLIENT,
+        status: 'ACTIVE' as any,
+        lastLogin: new Date(Date.now() - 172800000),
+        createdAt: new Date('2023-08-20'),
+        preferences: { theme: 'light', language: 'fr', currency: 'EUR', notifications: { email: true, sms: false, push: true, transactionAlerts: true, securityAlerts: true } },
+        kycStatus: 'VERIFIED' as any
       }
     ];
 
@@ -122,9 +152,23 @@ export class UserService {
 
   // ADMIN: POST /admin/users/assignments
   assignClientToAgent(agentId: string, clientId: string): Observable<{ success: boolean }> {
-    if (!this.clientAssignments[agentId]) this.clientAssignments[agentId] = [];
-    if (!this.clientAssignments[agentId].includes(clientId)) this.clientAssignments[agentId].push(clientId);
-    return of({ success: true }).pipe(delay(200));
+    // Backend expects Long (number), but frontend uses string IDs
+    // Convert to number if possible, otherwise backend should handle string-to-Long conversion
+    const request = {
+      agentId: Number(agentId) || agentId, // Try to convert to number
+      clientId: Number(clientId) || clientId
+    };
+    
+    // Backend returns AgentClientAssignmentResponse, but we simplify to { success: boolean }
+    return this.http.post<any>(`${this.base}/admin/users/assignments`, request).pipe(
+      map(() => ({ success: true })),
+      catchError(() => {
+        // Fallback to mock
+        if (!this.clientAssignments[agentId]) this.clientAssignments[agentId] = [];
+        if (!this.clientAssignments[agentId].includes(clientId)) this.clientAssignments[agentId].push(clientId);
+        return of({ success: true }).pipe(delay(200));
+      })
+    );
   }
 
   // ADMIN: DELETE /admin/users/assignments
@@ -148,6 +192,15 @@ export class UserService {
         const total = filtered.length;
         const paged = filtered.slice(page * size, page * size + size);
         return of({ users: paged, total }).pipe(delay(250));
+      })
+    );
+  }
+
+  // ADMIN: Get all users (for analytics)
+  getAllUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.base}/admin/users`).pipe(
+      catchError(() => {
+        return of([...this.users]).pipe(delay(200));
       })
     );
   }

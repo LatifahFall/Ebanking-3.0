@@ -65,9 +65,61 @@ export class AccountService {
         color: '#F59E0B',
         icon: 'trending_up'
       },
-      // Accounts for other users (fallback)
+      // Accounts for Ahmed Benali (ID: '4')
       {
         id: 'acc-004',
+        accountNumber: '****3333',
+        accountType: AccountType.CHECKING,
+        accountName: 'Ahmed Checking',
+        currency: 'MAD',
+        balance: 25000.00,
+        availableBalance: 25000.00,
+        status: 'ACTIVE' as any,
+        iban: 'MA64011519000001234567890123',
+        bic: 'BCMAMAMC',
+        createdAt: new Date('2023-06-10'),
+        lastActivity: new Date(),
+        userId: '4',
+        color: '#4F46E5',
+        icon: 'account_balance_wallet'
+      },
+      // Accounts for Sara Alami (ID: '5')
+      {
+        id: 'acc-005',
+        accountNumber: '****4444',
+        accountType: AccountType.CHECKING,
+        accountName: 'Sara Checking',
+        currency: 'EUR',
+        balance: 8500.00,
+        availableBalance: 8500.00,
+        status: 'ACTIVE' as any,
+        iban: 'FR7630006000011234567890390',
+        bic: 'CRLYFR21',
+        createdAt: new Date('2023-08-20'),
+        lastActivity: new Date(),
+        userId: '5',
+        color: '#4F46E5',
+        icon: 'account_balance_wallet'
+      },
+      {
+        id: 'acc-006',
+        accountNumber: '****5555',
+        accountType: AccountType.SAVINGS,
+        accountName: 'Sara Savings',
+        currency: 'EUR',
+        balance: 12000.00,
+        availableBalance: 12000.00,
+        status: 'ACTIVE' as any,
+        iban: 'FR7630006000011234567890490',
+        bic: 'CRLYFR21',
+        createdAt: new Date('2023-09-01'),
+        userId: '5',
+        color: '#10B981',
+        icon: 'savings'
+      },
+      // Accounts for other users (fallback)
+      {
+        id: 'acc-007',
         accountNumber: '****1234',
         accountType: AccountType.CHECKING,
         accountName: 'Main Checking',

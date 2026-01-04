@@ -1,0 +1,325 @@
+@use '../../themes/variables' as *;
+@use '../../themes/mixins' as *;
+
+.admin-dashboard-page {
+  padding: $spacing-lg;
+  max-width: 1600px;
+  margin: 0 auto;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-md;
+  }
+}
+
+.dashboard-tabs {
+  margin-top: $spacing-xl;
+
+  .tab-content {
+    padding: $spacing-xl 0;
+    min-height: 600px;
+  }
+}
+
+// Statistics Cards
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
+
+  @media (max-width: $breakpoint-sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  @include card;
+  padding: $spacing-xl;
+  transition: transform $transition-base, box-shadow $transition-base;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .stat-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+
+    mat-icon {
+      font-size: $text-2xl;
+      width: $text-2xl;
+      height: $text-2xl;
+      color: $primary-500;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: $text-base;
+      font-weight: $font-medium;
+      color: var(--text-secondary);
+    }
+  }
+
+  .stat-value {
+    font-size: $text-3xl;
+    font-weight: $font-bold;
+    color: var(--text-primary);
+    margin-bottom: $spacing-sm;
+  }
+
+  .stat-details {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    margin-top: $spacing-md;
+
+    .stat-label {
+      font-size: $text-sm;
+      color: var(--text-secondary);
+    }
+  }
+}
+
+// Charts
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chart-card {
+  @include card;
+  padding: $spacing-lg;
+
+  mat-card-header {
+    margin-bottom: $spacing-lg;
+
+    mat-card-title {
+      font-size: $text-lg;
+      font-weight: $font-semibold;
+      color: var(--text-primary);
+    }
+  }
+
+  .chart-placeholder {
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: $text-base;
+  }
+}
+
+// Alerts
+.alerts-card {
+  @include card;
+  padding: $spacing-lg;
+  margin-top: $spacing-xl;
+
+  mat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-lg;
+
+    mat-card-title {
+      font-size: $text-lg;
+      font-weight: $font-semibold;
+      color: var(--text-primary);
+    }
+  }
+}
+
+.alerts-table {
+  width: 100%;
+
+  th {
+    text-align: left;
+    padding: $spacing-sm $spacing-md;
+    background: var(--table-header-bg);
+    color: var(--text-secondary);
+    font-weight: $font-semibold;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  td {
+    padding: $spacing-md;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+
+    .alert-message {
+      font-size: $text-sm;
+      color: var(--text-secondary);
+      margin-top: $spacing-xs;
+    }
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+// User Management
+.user-management-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xl;
+
+  h2 {
+    margin: 0;
+    font-size: $text-2xl;
+    font-weight: $font-bold;
+    color: var(--text-primary);
+  }
+}
+
+.user-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
+
+  @media (max-width: $breakpoint-sm) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.user-stat {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+
+  mat-icon {
+    font-size: $text-3xl;
+    width: $text-3xl;
+    height: $text-3xl;
+    color: $primary-500;
+  }
+
+  .user-stat-value {
+    font-size: $text-2xl;
+    font-weight: $font-bold;
+    color: var(--text-primary);
+    margin-bottom: $spacing-xs;
+  }
+
+  .user-stat-label {
+    font-size: $text-sm;
+    color: var(--text-secondary);
+  }
+}
+
+.quick-actions-card {
+  @include card;
+  padding: $spacing-lg;
+
+  mat-card-header {
+    margin-bottom: $spacing-lg;
+
+    mat-card-title {
+      font-size: $text-lg;
+      font-weight: $font-semibold;
+      color: var(--text-primary);
+    }
+  }
+}
+
+.quick-actions {
+  display: flex;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+
+  button {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+
+    mat-icon {
+      margin-right: $spacing-xs;
+    }
+  }
+}
+
+// System Monitoring
+.monitoring-card {
+  @include card;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-xl;
+
+  mat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-lg;
+
+    mat-card-title {
+      font-size: $text-lg;
+      font-weight: $font-semibold;
+      color: var(--text-primary);
+    }
+  }
+}
+
+.health-table,
+.performance-table {
+  width: 100%;
+
+  th {
+    text-align: left;
+    padding: $spacing-sm $spacing-md;
+    background: var(--table-header-bg);
+    color: var(--text-secondary);
+    font-weight: $font-semibold;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  td {
+    padding: $spacing-md;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+
+    .error-high {
+      color: $error-color;
+      font-weight: $font-semibold;
+    }
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: $spacing-3xl;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: $spacing-md;
+    opacity: 0.5;
+    color: $success-color;
+  }
+
+  p {
+    margin: 0;
+    font-size: $text-base;
+  }
+}
+

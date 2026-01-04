@@ -18,13 +18,45 @@
             <mat-icon matSuffix>search</mat-icon>
           </mat-form-field>
           
-          <mat-form-field appearance="outline" class="role-filter">
-            <mat-label>Filter by Role</mat-label>
-            <mat-select [(ngModel)]="selectedRole" (selectionChange)="onRoleFilterChange()">
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Role</mat-label>
+            <mat-select [(ngModel)]="selectedRole" (selectionChange)="onFilterChange()">
               @for (role of roles; track role.value) {
                 <mat-option [value]="role.value">{{ role.label }}</mat-option>
               }
             </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Status</mat-label>
+            <mat-select [(ngModel)]="selectedStatus" (selectionChange)="onFilterChange()">
+              @for (status of statuses; track status.value) {
+                <mat-option [value]="status.value">{{ status.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>KYC Status</mat-label>
+            <mat-select [(ngModel)]="selectedKycStatus" (selectionChange)="onFilterChange()">
+              @for (kyc of kycStatuses; track kyc.value) {
+                <mat-option [value]="kyc.value">{{ kyc.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>From Date</mat-label>
+            <input matInput [matDatepicker]="fromPicker" [(ngModel)]="dateFrom" (dateChange)="onFilterChange()">
+            <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+            <mat-datepicker #fromPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>To Date</mat-label>
+            <input matInput [matDatepicker]="toPicker" [(ngModel)]="dateTo" (dateChange)="onFilterChange()">
+            <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+            <mat-datepicker #toPicker></mat-datepicker>
           </mat-form-field>
 
           <app-custom-button 
@@ -35,12 +67,34 @@
           </app-custom-button>
         </div>
         
-        <app-custom-button 
-          label="Add New User" 
-          icon="person_add"
-          variant="primary"
-          (clicked)="onCreateUser()">
-        </app-custom-button>
+        <div class="action-buttons-group">
+          @if (selectedUsers.size > 0) {
+            <div class="bulk-actions">
+              <button mat-stroked-button (click)="onBulkActivate()" color="primary">
+                <mat-icon>check_circle</mat-icon>
+                Activate ({{ selectedUsers.size }})
+              </button>
+              <button mat-stroked-button (click)="onBulkDeactivate()" color="warn">
+                <mat-icon>block</mat-icon>
+                Deactivate ({{ selectedUsers.size }})
+              </button>
+            </div>
+          }
+          <button mat-stroked-button (click)="onExportCSV()" matTooltip="Export to CSV">
+            <mat-icon>download</mat-icon>
+            CSV
+          </button>
+          <button mat-stroked-button (click)="onExportExcel()" matTooltip="Export to Excel">
+            <mat-icon>download</mat-icon>
+            Excel
+          </button>
+          <app-custom-button 
+            label="Add New User" 
+            icon="person_add"
+            variant="primary"
+            (clicked)="onCreateUser()">
+          </app-custom-button>
+        </div>
       </div>
 
       @if (errorMessage) {
@@ -52,6 +106,23 @@
         <div class="table-container">
           <table mat-table [dataSource]="users" class="users-table">
             
+            <!-- Select Column -->
+            <ng-container matColumnDef="select">
+              <th mat-header-cell *matHeaderCellDef>
+                <mat-checkbox 
+                  [checked]="selectAll" 
+                  (change)="onSelectAll($event.checked)"
+                  [indeterminate]="selectedUsers.size > 0 && selectedUsers.size < users.length">
+                </mat-checkbox>
+              </th>
+              <td mat-cell *matCellDef="let user">
+                <mat-checkbox 
+                  [checked]="isSelected(user.id)"
+                  (change)="onSelectUser(user.id, $event.checked)">
+                </mat-checkbox>
+              </td>
+            </ng-container>
+
             <!-- Name Column -->
             <ng-container matColumnDef="name">
               <th mat-header-cell *matHeaderCellDef>Name</th>
@@ -97,6 +168,12 @@
               </td>
             </ng-container>
 
+            <!-- Created At Column -->
+            <ng-container matColumnDef="createdAt">
+              <th mat-header-cell *matHeaderCellDef>Created At</th>
+              <td mat-cell *matCellDef="let user">{{ user.createdAt | date:'short' }}</td>
+            </ng-container>
+
             <!-- Actions Column -->
             <ng-container matColumnDef="actions">
               <th mat-header-cell *matHeaderCellDef>Actions</th>
@@ -113,6 +190,10 @@
                     <button mat-menu-item (click)="onToggleStatus(user)">
                       <mat-icon>{{ user.status === 'ACTIVE' ? 'block' : 'check_circle' }}</mat-icon>
                       <span>{{ user.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}</span>
+                    </button>
+                    <button mat-menu-item (click)="onViewHistory(user)">
+                      <mat-icon>history</mat-icon>
+                      <span>View History</span>
                     </button>
                     @if (user.role === 'CLIENT') {
                       <button mat-menu-item (click)="onAssign(user)">

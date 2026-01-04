@@ -10,7 +10,8 @@ RUN mvn dependency:go-offline -B
 
 COPY src ./src
 
-RUN mvn clean package -DskipTests -Dmaven.compiler.failOnError=false
+# Ajouter le plugin Spring Boot explicitement
+RUN mvn clean package -DskipTests spring-boot:repackage
 
 # =========================
 # Étape 2 : Runtime
@@ -19,11 +20,10 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-COPY --from=build /app/target/*.jar app.jar
+# Le JAR Spring Boot a toutes les dépendances incluses
+COPY --from=build /app/target/auth-service-*.jar app.jar
 
 EXPOSE 8081
 
-ENV JAVA_OPTS="-Xms256m -Xmx512m"
-ENV SPRING_PROFILES_ACTIVE=docker
-
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+# Simplifier : pas besoin de sh -c
+ENTRYPOINT ["java", "-jar", "app.jar"]

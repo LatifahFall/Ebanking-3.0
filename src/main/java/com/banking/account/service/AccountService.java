@@ -1,6 +1,3 @@
-// ============================================================================
-// AccountService.java – Version complète avec transaction.completed
-// ============================================================================
 package com.banking.account.service;
 
 import com.banking.account.dto.*;
@@ -12,12 +9,12 @@ import com.banking.account.model.Transaction;
 import com.banking.account.model.Transaction.TransactionType;
 import com.banking.account.repository.AccountRepository;
 import com.banking.account.repository.TransactionRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -39,6 +36,7 @@ public class AccountService {
     // =========================================================================
     // ACCOUNT CRUD
     // =========================================================================
+
     public AccountResponse createAccount(CreateAccountRequest request) {
         Account account = Account.builder()
                 .userId(request.getUserId())
@@ -50,19 +48,18 @@ public class AccountService {
                 .build();
 
         account = accountRepository.save(account);
-
-        log.info("Account created | accountId: {} | userId: {} | type: {} | currency: {}",
-                account.getId(), request.getUserId(), account.getAccountType(), account.getCurrency());
+        log.info("Account created with ID: {} for userId: {}", account.getId(), request.getUserId());
 
         kafkaProducer.publishAccountCreated(AccountCreatedEvent.builder()
-                .accountId(account.getId())
-                .accountNumber(account.getAccountNumber())
-                .userId(account.getUserId())
-                .accountType(account.getAccountType().name())
-                .currency(account.getCurrency())
-                .initialBalance(account.getBalance())
-                .status(account.getStatus().name())
-                .createdAt(Instant.now())
+                .accountId(account.getId())                    // Long → OK
+                .accountNumber(account.getAccountNumber())     // String → OK
+                .userId(account.getUserId())                   // Long → OK (si userId est Long dans l'événement)
+                .accountType(account.getAccountType().name())  // ← CORRIGÉ : enum → String
+                .currency(account.getCurrency())               // String → OK
+                .initialBalance(account.getBalance())          // BigDecimal → OK
+                .status(account.getStatus().name())            // ← AJOUTÉ et CORRIGÉ : enum → String
+                .createdAt(Instant.now())                      // Instant → OK
+                .accountName("Compte principal")               // Optionnel, mais utile (ou retire si pas dans l'événement)
                 .build());
 
         return mapToAccountResponse(account);
@@ -93,12 +90,13 @@ public class AccountService {
 
         accountRepository.save(account);
 
+        // Publication uniquement si le statut a changé
         if (previousStatus != account.getStatus()) {
             kafkaProducer.publishAccountUpdated(AccountUpdatedEvent.builder()
                     .accountId(account.getId())
-                    .previousStatus(previousStatus.name())
-                    .newStatus(account.getStatus().name())
-                    .updateReason("Manual status update")
+                    .previousStatus(previousStatus.name())        // ← CORRIGÉ
+                    .newStatus(account.getStatus().name())        // ← CORRIGÉ
+                    .updateReason("Status changed")
                     .updatedAt(Instant.now())
                     .build());
         }
@@ -109,13 +107,15 @@ public class AccountService {
     // =========================================================================
     // ACCOUNT STATUS OPERATIONS
     // =========================================================================
+
     public void suspendAccount(Long id, String reason, String suspendedBy) {
         Account account = findAccountById(id);
-        if (account.getStatus() == AccountStatus.SUSPENDED) {
+
+        if (account.isSuspended()) {
             log.warn("Account {} is already suspended", id);
             return;
         }
-        if (account.getStatus() == AccountStatus.CLOSED) {
+        if (account.isClosed()) {
             throw new IllegalStateException("Cannot suspend a closed account");
         }
 
@@ -123,51 +123,54 @@ public class AccountService {
         account.setSuspensionReason(reason);
         account.setSuspendedBy(suspendedBy);
         account.setSuspendedAt(LocalDateTime.now());
+
         accountRepository.save(account);
 
         kafkaProducer.publishAccountSuspended(AccountSuspendedEvent.builder()
                 .accountId(id)
                 .suspensionReason(reason)
                 .suspendedBy(suspendedBy)
-                .suspendedAt(Instant.now())
                 .build());
 
-        log.warn("Account {} suspended by {} | reason: {}", id, suspendedBy, reason);
+        log.warn("Account {} suspended by {}", id, suspendedBy);
     }
-
     public void suspendAccountForFraud(Long accountId, String fraudReason) {
         String fullReason = "FRAUD_DETECTED: " + fraudReason;
         suspendAccount(accountId, fullReason, "fraud-service");
-        log.warn("AUTOMATIC FRAUD SUSPENSION | accountId: {} | reason: {}", accountId, fraudReason);
+        log.warn("🔴 AUTOMATIC FRAUD SUSPENSION | accountId: {} | reason: {}", accountId, fraudReason);
     }
 
     public void closeAccount(Long id, String closureReason, String closedBy) {
         Account account = findAccountById(id);
-        if (account.getStatus() == AccountStatus.CLOSED) {
+
+        if (account.isClosed()) {
             log.warn("Account {} is already closed", id);
             return;
         }
 
-        account.freezeFinalBalance(); // Vérifie solde = 0
+        account.freezeFinalBalance(); // ← vérifie que solde = 0 et fige finalBalance
+
         account.setStatus(AccountStatus.CLOSED);
         account.setClosureReason(closureReason);
         account.setClosedBy(closedBy);
         account.setClosedAt(LocalDateTime.now());
+
         accountRepository.save(account);
 
         kafkaProducer.publishAccountClosed(AccountClosedEvent.builder()
                 .accountId(id)
                 .closureReason(closureReason)
                 .finalBalance(account.getFinalBalance())
-                .closedAt(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build());
 
-        log.warn("Account {} closed by {} | reason: {}", id, closedBy, closureReason);
+        log.warn("Account {} successfully closed by {}", id, closedBy);
     }
 
     // =========================================================================
-    // BALANCE & STATEMENTS
+    // BALANCE & TRANSACTIONS
     // =========================================================================
+
     @Transactional(readOnly = true)
     public BalanceResponse getBalance(Long id) {
         Account account = findAccountById(id);
@@ -183,7 +186,10 @@ public class AccountService {
 
     @Transactional(readOnly = true)
     public List<TransactionResponse> getTransactionHistory(Long id, int limit) {
-        return transactionRepository.findTopByAccountIdOrderByCreatedAtDesc(id, limit).stream()
+        return transactionRepository
+                .findByAccountIdOrderByCreatedAtDesc(id)
+                .stream()
+                .limit(limit)
                 .map(this::mapToTransactionResponse)
                 .collect(Collectors.toList());
     }
@@ -191,6 +197,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public AccountStatementResponse getAccountStatement(Long id, LocalDateTime startDate, LocalDateTime endDate) {
         Account account = findAccountById(id);
+
         List<Transaction> transactions = transactionRepository
                 .findByAccountIdAndCreatedAtBetweenOrderByCreatedAtAsc(id, startDate, endDate);
 
@@ -212,16 +219,20 @@ public class AccountService {
     }
 
     // =========================================================================
-    // KAFKA EVENT PROCESSING (payment-service → account-service)
+    // KAFKA EVENT PROCESSING
     // =========================================================================
     public void processPaymentCompleted(PaymentCompletedEvent event) {
         Account account = findAccountById(event.getAccountId());
-        account.assertOperational();
+        account.assertOperational(); // bloque si compte suspendu ou fermé
 
         BigDecimal previousBalance = account.getBalance();
-        boolean isCredit = "TRANSFER".equalsIgnoreCase(event.getTransactionType());
-        ChangeType changeType = isCredit ? ChangeType.CREDIT : ChangeType.DEBIT;
-        TransactionType txType = isCredit ? TransactionType.CREDIT : TransactionType.DEBIT;
+
+        // Détermination du sens de la transaction selon le contrat payment-service
+        // transactionType = PAYMENT | TRANSFER | WITHDRAWAL
+        // Convention réaliste :
+        // - TRANSFER → généralement virement entrant = crédit
+        // - PAYMENT / WITHDRAWAL → paiement ou retrait sortant = débit
+        boolean isCredit = "TRANSFER".equals(event.getTransactionType());
 
         if (isCredit) {
             account.credit(event.getAmount());
@@ -229,24 +240,29 @@ public class AccountService {
             account.debit(event.getAmount());
         }
 
-        String description = event.getDescription() != null ? event.getDescription() : "Payment completed";
+        TransactionType transactionType = isCredit ? TransactionType.CREDIT : TransactionType.DEBIT;
+        ChangeType changeType = isCredit ? ChangeType.CREDIT : ChangeType.DEBIT;
+
+        String description = event.getMetadata() != null
+                ? event.getMetadata().getOrDefault("description", "Payment completed")
+                : "Payment completed";
+
+        String merchantId = event.getMetadata() != null
+                ? event.getMetadata().get("merchantId")
+                : null;
 
         Transaction transaction = Transaction.builder()
                 .accountId(account.getId())
-                .type(txType)
+                .type(transactionType)
                 .amount(event.getAmount())
                 .balanceAfter(account.getBalance())
                 .reference(event.getPaymentId().toString())
                 .description(description)
-                .createdAt(event.getCompletedAt() != null
-                        ? event.getCompletedAt().atZone(ZoneId.of("UTC")).toLocalDateTime()
-                        : LocalDateTime.now())
                 .build();
 
         accountRepository.save(account);
         transactionRepository.save(transaction);
 
-        // 1. Balance changed (analytics + notification)
         kafkaProducer.publishBalanceChanged(BalanceChangedEvent.builder()
                 .accountId(account.getId())
                 .previousBalance(previousBalance)
@@ -254,30 +270,14 @@ public class AccountService {
                 .changeAmount(event.getAmount())
                 .changeType(changeType)
                 .transactionReference(event.getPaymentId().toString())
-                .timestamp(Instant.now())
+                .timestamp(event.getCompletedAt() != null
+                        ? event.getCompletedAt().atZone(ZoneId.of("UTC")).toLocalDateTime()
+                        : LocalDateTime.now())
                 .build());
 
-        // 2. Transaction completed (notification + audit)
-        kafkaProducer.publishTransactionCompleted(TransactionCompletedEvent.builder()
-                .transactionId(UUID.fromString(event.getPaymentId().toString())) // ou UUID.randomUUID() si pas UUID
-                .accountId(account.getId())
-                .userId(account.getUserId())
-                .accountNumber(account.getAccountNumber())
-                .amount(event.getAmount())
-                .currency(account.getCurrency())
-                .transactionType(event.getTransactionType())
-                .description(description)
-                .reference(event.getPaymentId().toString())
-                .balanceBefore(previousBalance)
-                .balanceAfter(account.getBalance())
-                .completedAt(Instant.now())
-                .status("SUCCESS")
-                .sensitive(true)
-                .build());
-
-        log.info("[PAYMENT-COMPLETED] Applied | paymentId: {} | accountId: {} | {} {} | new balance: {}",
-                event.getPaymentId(), account.getId(),
-                isCredit ? "Credit" : "Debit", event.getAmount(), account.getBalance());
+        log.info("[PAYMENT-COMPLETED] {} applied | paymentId: {} | accountId: {} | amount: {} {} | new balance: {}",
+                isCredit ? "Credit" : "Debit",
+                event.getPaymentId(), account.getId(), event.getAmount(), event.getCurrency(), account.getBalance());
     }
 
     public void processPaymentReversed(PaymentReversedEvent event) {
@@ -298,8 +298,7 @@ public class AccountService {
                 .amount(event.getAmount())
                 .balanceAfter(account.getBalance())
                 .reference(event.getPaymentId().toString() + "-REV")
-                .description("Payment reversal - " + event.getReversalReason())
-                .createdAt(LocalDateTime.now())
+                .description("Payment reversal")
                 .build();
 
         accountRepository.save(account);
@@ -312,44 +311,29 @@ public class AccountService {
                 .changeAmount(event.getAmount())
                 .changeType(ChangeType.DEBIT)
                 .transactionReference(event.getPaymentId().toString() + "-REV")
-                .timestamp(Instant.now())
                 .build());
 
-        kafkaProducer.publishTransactionCompleted(TransactionCompletedEvent.builder()
-                .transactionId(UUID.randomUUID())
-                .accountId(account.getId())
-                .userId(account.getUserId())
-                .accountNumber(account.getAccountNumber())
-                .amount(event.getAmount())
-                .currency(account.getCurrency())
-                .transactionType("REVERSAL")
-                .description("Reversal: " + event.getReversalReason())
-                .reference(event.getPaymentId().toString() + "-REV")
-                .balanceBefore(previousBalance)
-                .balanceAfter(account.getBalance())
-                .completedAt(Instant.now())
-                .status("REVERSED")
-                .sensitive(true)
-                .build());
-
-        log.info("Payment {} reversed on account {} | reason: {}", event.getPaymentId(), account.getId(), event.getReversalReason());
+        log.info("Payment {} reversed on account {}", event.getPaymentId(), account.getId());
     }
 
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
+
     private Account findAccountById(Long id) {
         return accountRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Account not found with id: " + id));
     }
 
     private String generateUniqueAccountNumber() {
-        return "FR76" + String.format("%020d", System.nanoTime() % 100_000_000_000_000_000L);
+        return "ACC-" + System.nanoTime();
     }
 
     private BigDecimal calculateOpeningBalance(Long accountId, LocalDateTime startDate) {
-        return transactionRepository.findByAccountIdAndCreatedAtBefore(accountId, startDate)
-                .stream()
+        List<Transaction> priorTransactions = transactionRepository
+                .findByAccountIdAndCreatedAtBefore(accountId, startDate);
+
+        return priorTransactions.stream()
                 .map(t -> t.getType() == TransactionType.CREDIT ? t.getAmount() : t.getAmount().negate())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -369,7 +353,7 @@ public class AccountService {
                 .closedAt(account.getClosedAt())
                 .suspensionReason(account.getSuspensionReason())
                 .closureReason(account.getClosureReason())
-                .finalBalance(account.getFinalBalance())
+                .finalBalance(account.getFinalBalance()) // si tu ajoutes ce champ dans l'entity Account
                 .build();
     }
 

@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: analytics_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: gabrielle
+    volumes:
+      - analytics_pgdata:/var/lib/postgresql/data
+    networks:
+      - analytics-net
+    restart: unless-stopped
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+    networks:
+      - analytics-net
+    restart: unless-stopped
+
+  kafka:
+    image: bitnami/kafka:latest
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://0.0.0.0:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    networks:
+      - analytics-net
+    restart: unless-stopped
+
+  influxdb:
+    image: influxdb:2.6
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpass
+      - DOCKER_INFLUXDB_INIT_ORG=banking
+      - DOCKER_INFLUXDB_INIT_BUCKET=analytics
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-token
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    networks:
+      - analytics-net
+    restart: unless-stopped
+
+  analytics-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: analytics-service:latest
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=analytics_db
+      - DB_USER=postgres
+      - DB_PASSWORD=gabrielle
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=my-super-secret-token
+      - INFLUXDB_ORG=banking
+      - INFLUXDB_BUCKET=analytics
+    ports:
+      - "8087:8087"
+    depends_on:
+      - postgres
+      - kafka
+      - influxdb
+    networks:
+      - analytics-net
+    restart: unless-stopped
+
+volumes:
+  analytics_pgdata:
+  influxdb_data:
+
+networks:
+  analytics-net:
+    driver: bridge

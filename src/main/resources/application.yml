@@ -1,0 +1,164 @@
+spring:
+  application:
+    name: analytics-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:analytics_db}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:gabrielle}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: analytics-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    listener:
+      ack-mode: manual
+      concurrency: 3
+    streams:
+      application-id: analytics-streams
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        commit.interval.ms: 1000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 60000ms
+      lettuce:
+        pool:
+          max-active: 8
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/banking}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8080/realms/banking/protocol/openid-connect/certs}
+
+server:
+  port: ${SERVER_PORT:8087}
+  servlet:
+    context-path: /api/v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# InfluxDB Configuration
+influxdb:
+  url: ${INFLUXDB_URL:http://localhost:8086}
+  token: ${INFLUXDB_TOKEN:my-super-secret-token}
+  org: ${INFLUXDB_ORG:banking}
+  bucket: ${INFLUXDB_BUCKET:analytics}
+
+# Custom Analytics Properties - TOUS LES TOPICS KAFKA
+analytics:
+  topics:
+    # ========================================
+    # AUTH SERVICE TOPICS
+    # ========================================
+    auth-events: auth.events
+
+    # ========================================
+    # USER SERVICE TOPICS
+    # ========================================
+    user-created: user.created
+    user-updated: user.updated
+    user-activated: user.activated
+    user-deactivated: user.deactivated
+    kyc-status-changed: kyc.status.changed
+    client-assigned: client.assigned
+    client-unassigned: client.unassigned
+
+    # ========================================
+    # ACCOUNT SERVICE TOPICS
+    # ========================================
+    account-created: account.created
+    account-updated: account.updated
+    account-balance-changed: account.balance.changed
+    transaction-completed: transaction.completed
+
+
+    # ========================================
+    # PAYMENT SERVICE TOPICS
+    # ========================================
+    payment-completed: payment.completed
+    payment-failed: payment.failed
+
+
+    # ========================================
+    # CRYPTO SERVICE TOPICS
+    # ========================================
+    crypto-transaction: crypto.transaction
+
+    # ========================================
+    # NOTIFICATION SERVICE TOPICS
+    # ========================================
+    notification-status: notification.status
+    notification-audit: notification.audit
+
+  aggregation:
+    enabled: true
+    batch-size: 1000
+    flush-interval-seconds: 60
+
+  alerts:
+    enabled: true
+    evaluation-interval-seconds: 300  # 5 minutes
+
+  retention:
+    raw-data-days: 90
+    aggregated-data-years: 5
+
+  cache:
+    dashboard-ttl-minutes: 5
+    metrics-ttl-minutes: 1
+
+logging:
+  level:
+    root: INFO
+    com.banking.analytics: DEBUG
+    org.springframework.kafka: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  file:
+    name: logs/analytics-service.log

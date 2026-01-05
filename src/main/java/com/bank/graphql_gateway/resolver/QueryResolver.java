@@ -404,4 +404,100 @@ public class QueryResolver {
             throw new RuntimeException("Failed to fetch audit events by type from Audit Service: " + e.getMessage(), e);
         }
     }
+
+    // ==================== ANALYTICS SERVICE QUERIES ====================
+    
+    @QueryMapping
+    public List<AlertDTO> activeAlerts(@Argument String userId) {
+        try {
+            List<AlertDTO> alerts = webClient.build()
+                    .get()
+                    .uri("http://localhost:8087/api/v1/analytics/alerts/active?userId={userId}", userId)
+                    .retrieve()
+                    .bodyToFlux(AlertDTO.class)
+                    .collectList()
+                    .block();
+            return alerts != null ? alerts : Collections.emptyList();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch active alerts from Analytics Service: " + e.getMessage(), e);
+        }
+    }
+
+    @QueryMapping
+    public DashboardSummaryDTO dashboardSummary(@Argument String userId) {
+        try {
+            return webClient.build()
+                    .get()
+                    .uri("http://localhost:8087/api/v1/analytics/dashboard/summary?userId={userId}", userId)
+                    .retrieve()
+                    .bodyToMono(DashboardSummaryDTO.class)
+                    .block();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch dashboard summary from Analytics Service: " + e.getMessage(), e);
+        }
+    }
+
+    @QueryMapping
+    public List<CategoryBreakdownDTO> spendingBreakdown(@Argument String userId, @Argument String period) {
+        try {
+            String periodParam = period != null ? period : "MONTH";
+            List<CategoryBreakdownDTO> breakdown = webClient.build()
+                    .get()
+                    .uri("http://localhost:8087/api/v1/analytics/spending/breakdown?userId={userId}&period={period}", 
+                         userId, periodParam)
+                    .retrieve()
+                    .bodyToFlux(CategoryBreakdownDTO.class)
+                    .collectList()
+                    .block();
+            return breakdown != null ? breakdown : Collections.emptyList();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch spending breakdown from Analytics Service: " + e.getMessage(), e);
+        }
+    }
+
+    @QueryMapping
+    public BalanceTrendDTO balanceTrend(@Argument String userId, @Argument Integer days) {
+        try {
+            int daysParam = days != null ? days : 30;
+            return webClient.build()
+                    .get()
+                    .uri("http://localhost:8087/api/v1/analytics/trends/balance?userId={userId}&days={days}", 
+                         userId, daysParam)
+                    .retrieve()
+                    .bodyToMono(BalanceTrendDTO.class)
+                    .block();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch balance trend from Analytics Service: " + e.getMessage(), e);
+        }
+    }
+
+    @QueryMapping
+    public List<String> recommendations(@Argument String userId) {
+        try {
+            List<String> recommendations = webClient.build()
+                    .get()
+                    .uri("http://localhost:8087/api/v1/analytics/insights/recommendations?userId={userId}", userId)
+                    .retrieve()
+                    .bodyToFlux(String.class)
+                    .collectList()
+                    .block();
+            return recommendations != null ? recommendations : Collections.emptyList();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch recommendations from Analytics Service: " + e.getMessage(), e);
+        }
+    }
+
+    @QueryMapping
+    public AdminOverviewDTO adminOverview() {
+        try {
+            return webClient.build()
+                    .get()
+                    .uri("http://localhost:8087/api/v1/analytics/admin/overview")
+                    .retrieve()
+                    .bodyToMono(AdminOverviewDTO.class)
+                    .block();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch admin overview from Analytics Service: " + e.getMessage(), e);
+        }
+    }
 }

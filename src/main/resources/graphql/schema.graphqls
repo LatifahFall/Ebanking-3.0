@@ -41,6 +41,14 @@ type Query {
   auditEventById(eventId: String!): AuditEventDTO
   auditEventsByUserId(userId: ID!): [AuditEventDTO]
   auditEventsByType(eventType: String!): [AuditEventDTO]
+  
+  # Analytics Service Queries
+  activeAlerts(userId: String!): [AlertDTO]
+  dashboardSummary(userId: String!): DashboardSummaryDTO
+  spendingBreakdown(userId: String!, period: String): [CategoryBreakdownDTO]
+  balanceTrend(userId: String!, days: Int): BalanceTrendDTO
+  recommendations(userId: String!): [String]
+  adminOverview: AdminOverviewDTO
 }
 
 # ==================== MUTATIONS ====================
@@ -80,6 +88,9 @@ type Mutation {
   # Notification Service Mutations
   sendNotification(input: SendNotificationInput!): NotificationDTO
   markNotificationAsRead(id: ID!): NotificationDTO
+  
+  # Analytics Service Mutations
+  resolveAlert(alertId: String!): Boolean
 }
 
 # ==================== USER SERVICE TYPES ====================
@@ -324,4 +335,63 @@ type AuditEventDTO {
   ipAddress: String
 }
 
+# ==================== ANALYTICS SERVICE TYPES ====================
+
+type AlertDTO {
+  alertId: String
+  userId: String
+  alertType: String
+  severity: String
+  title: String
+  message: String
+  thresholdValue: Float
+  currentValue: Float
+  status: String
+  triggeredAt: String
+  resolvedAt: String
+  notified: Boolean
+}
+
+type DashboardSummaryDTO {
+  userId: String
+  currentBalance: Float
+  monthlySpending: Float
+  monthlyIncome: Float
+  transactionsThisMonth: Int
+  topCategories: [CategoryBreakdownDTO]
+  balanceTrend: BalanceTrendDTO
+  recentTransactions: [RecentTransactionDTO]
+  generatedAt: String
+}
+
+type CategoryBreakdownDTO {
+  category: String
+  amount: Float
+  count: Int
+  percentage: Float
+}
+
+type BalanceTrendDTO {
+  period: String
+  dataPoints: [DataPointDTO]
+}
+
+type DataPointDTO {
+  timestamp: String
+  value: Float
+}
+
+type RecentTransactionDTO {
+  transactionId: String
+  type: String
+  amount: Float
+  merchant: String
+  date: String
+}
+
+type AdminOverviewDTO {
+  activeUsers: Int
+  totalTransactions: Int
+  revenue: Float
+}
 

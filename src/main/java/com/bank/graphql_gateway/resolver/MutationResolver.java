@@ -272,4 +272,21 @@ public class MutationResolver {
                 .bodyToMono(NotificationDTO.class)
                 .block();
     }
+
+    // ==================== ANALYTICS SERVICE MUTATIONS ====================
+
+    @MutationMapping
+    public Boolean resolveAlert(@Argument String alertId) {
+        try {
+            webClient.build()
+                    .post()
+                    .uri("http://localhost:8087/api/v1/analytics/alerts/{alertId}/resolve", alertId)
+                    .retrieve()
+                    .bodyToMono(Void.class)
+                    .block();
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to resolve alert in Analytics Service: " + e.getMessage(), e);
+        }
+    }
 }

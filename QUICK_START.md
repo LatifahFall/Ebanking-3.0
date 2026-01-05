@@ -194,7 +194,7 @@ curl http://localhost:8090/graphql -H "Content-Type: application/json" --data @q
 
 ## 📊 All Available Operations
 
-### Queries (27)
+### Queries (33)
 ```
 ✅ health
 ✅ users, userById, me, clientsByAgent, agentByClient
@@ -204,9 +204,10 @@ curl http://localhost:8090/graphql -H "Content-Type: application/json" --data @q
 ✅ cryptoWalletByUserId, cryptoTransactionsByWalletId, cryptoCoins, cryptoCoinById
 ✅ notificationsByUserId, inAppNotificationsByUserId
 ✅ auditEvents, auditEventById, auditEventsByUserId, auditEventsByType
+✅ activeAlerts, dashboardSummary, spendingBreakdown, balanceTrend, recommendations, adminOverview
 ```
 
-### Mutations (23)
+### Mutations (24)
 ```
 ✅ createUser, activateUser, deactivateUser, updateProfile, assignClient, unassignClient
 ✅ createAccount, updateAccount, suspendAccount, closeAccount
@@ -214,6 +215,7 @@ curl http://localhost:8090/graphql -H "Content-Type: application/json" --data @q
 ✅ createPayment, cancelPayment, reversePayment
 ✅ createCryptoWallet, activateCryptoWallet, deactivateCryptoWallet, buyCrypto, sellCrypto
 ✅ sendNotification, markNotificationAsRead
+✅ resolveAlert
 ```
 
 ---
@@ -233,7 +235,7 @@ curl http://localhost:8090/graphql -H "Content-Type: application/json" --data @q
 ### INTERNAL_ERROR
 - Microservice is down or unreachable
 - Check microservice logs
-- Verify microservice ports (8081-8084)
+- Verify microservice ports (8081-8084, 8087)
 
 ### Connection Refused
 - Microservice not running on expected port

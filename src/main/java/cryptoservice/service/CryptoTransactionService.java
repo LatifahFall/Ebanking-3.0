@@ -19,6 +19,7 @@ public class CryptoTransactionService {
     private final CryptoWalletRepository walletRepository;
     private final CryptoHoldingRepository holdingRepository;
     private final CoinsCacheService coinsCacheService;
+    private final TransactionAuditProducer auditProducer;
 
     private static final BigDecimal MIN_EUR_AMOUNT = new BigDecimal("10.00");
     private static final BigDecimal FEE_PERCENTAGE = new BigDecimal("0.01"); // 1%
@@ -27,11 +28,13 @@ public class CryptoTransactionService {
             CryptoTransactionRepository transactionRepository,
             CryptoWalletRepository walletRepository,
             CryptoHoldingRepository holdingRepository,
-            CoinsCacheService coinsCacheService) {
+            CoinsCacheService coinsCacheService,
+            TransactionAuditProducer auditProducer) {
         this.transactionRepository = transactionRepository;
         this.walletRepository = walletRepository;
         this.holdingRepository = holdingRepository;
         this.coinsCacheService = coinsCacheService;
+        this.auditProducer = auditProducer;
     }
 
     public List<CryptoTransaction> getTransactionsByWalletId(Long walletId) {
@@ -92,8 +95,11 @@ public class CryptoTransactionService {
         // Update or create holding (only the crypto amount purchased, after fee)
         updateHolding(walletId, symbol.toUpperCase(), cryptoAmount);
 
-        // Save and return transaction
-        return transactionRepository.save(transaction);
+        // Save and return transaction and publish audit event (non-blocking)
+        CryptoTransaction savedTransaction = transactionRepository.save(transaction);
+        //kafka event
+        auditProducer.publish(savedTransaction);
+        return savedTransaction;
     }
 
     @Transactional
@@ -161,8 +167,11 @@ public class CryptoTransactionService {
         holding.setAmount(holding.getAmount().subtract(cryptoAmount));
         holdingRepository.save(holding);
 
-        // Save and return transaction
-        return transactionRepository.save(transaction);
+        // Save and return transaction and publish audit event (non-blocking)
+        CryptoTransaction savedTransaction = transactionRepository.save(transaction);
+        //kafka event
+        auditProducer.publish(savedTransaction);
+        return savedTransaction;
     }
 
     private BigDecimal getCurrentPriceForSymbol(String symbol) {

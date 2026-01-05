@@ -1,10 +1,10 @@
-package main.userservice;
+package main.cryptoservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class UserServiceApplicationTests {
+class CryptoServiceApplicationTests {
 
 	@Test
 	void contextLoads() {

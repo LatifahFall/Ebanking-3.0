@@ -1,18 +1,20 @@
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml
-COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
+# Installer Maven
+RUN apk add --no-cache maven
 
-# Download dependencies (cached layer)
-RUN ./mvnw dependency:go-offline
+# Copier le pom.xml d'abord (pour bénéficier du cache Docker)
+COPY pom.xml ./
 
-# Copy source code
+# Télécharger les dépendances (cached layer)
+RUN mvn dependency:go-offline -B
+
+# Copier le code source
 COPY src ./src
 
-# Build application
-RUN ./mvnw clean package -DskipTests
+# Compiler l'application
+RUN mvn clean package -DskipTests
 
 # Production stage
 FROM eclipse-temurin:17-jre-alpine
@@ -33,7 +35,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 EXPOSE 8087
 
 # JVM options
-ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC"
+ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
 
 # Run application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

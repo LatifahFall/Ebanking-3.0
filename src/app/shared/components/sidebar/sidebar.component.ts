@@ -38,45 +38,45 @@ export class SidebarComponent {
     { label: 'Crypto Wallet', icon: 'currency_bitcoin', route: '/crypto' },
     { label: 'Analytics', icon: 'analytics', route: '/analytics' },
     { label: 'Profile', icon: 'person', route: '/profile' },
-    
+
     // Employee Section
-    { 
-      label: 'Customer Management', 
-      icon: 'supervisor_account', 
+    {
+      label: 'Customer Management',
+      icon: 'supervisor_account',
       route: '/employee/customers',
       roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN]
     },
-    { 
-      label: 'Transactions Review', 
-      icon: 'fact_check', 
+    {
+      label: 'Transactions Review',
+      icon: 'fact_check',
       route: '/employee/transactions',
       roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN]
     },
-    
+
     // Admin Section
-    { 
-      label: 'Admin Dashboard', 
-      icon: 'admin_panel_settings', 
+    {
+      label: 'Admin Dashboard',
+      icon: 'admin_panel_settings',
       route: '/admin',
       roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN]
     },
-    { 
-      label: 'User Management', 
-      icon: 'manage_accounts', 
+    {
+      label: 'User Management',
+      icon: 'manage_accounts',
       route: '/admin/users',
       roles: [UserRole.SUPER_ADMIN]
     },
-    { 
-      label: 'System Settings', 
-      icon: 'settings', 
+    {
+      label: 'System Settings',
+      icon: 'settings',
       route: '/admin/settings',
       roles: [UserRole.SUPER_ADMIN]
     },
-    { 
-      label: 'Audit Logs', 
-      icon: 'history', 
+    {
+      label: 'Audit Logs',
+      icon: 'history',
       route: '/admin/audit',
-      roles: [UserRole.SUPER_ADMIN]
+      roles: [UserRole.ADMIN, UserRole.SUPER_ADMIN]
     }
   ];
 
@@ -86,11 +86,17 @@ export class SidebarComponent {
     this.collapsedChange.emit(!this.isCollapsed());
   }
 
+  // Helper to decide display of Audit Logs (used by template)
+  canShowAudit(): boolean {
+    const user = this.authService.getCurrentUser();
+    return !!user && ([UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role as UserRole));
+  }
+
   canShowItem(item: MenuItem): boolean {
     if (!item.roles || item.roles.length === 0) {
       return true;
     }
-    
+
     const user = this.authService.getCurrentUser();
     return item.roles.includes(user?.role as UserRole);
   }

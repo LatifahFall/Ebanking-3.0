@@ -3,22 +3,22 @@ import { Observable } from 'rxjs';
 
 /**
  * GraphQL Service Placeholder
- * 
+ *
  * This service is prepared for future GraphQL integration using Apollo Client.
  * Currently contains mock implementations and type definitions.
- * 
+ *
  * FUTURE IMPLEMENTATION STEPS:
  * 1. Install Apollo Angular: npm install @apollo/client @apollo/angular graphql
  * 2. Configure Apollo Client in app.config.ts with GraphQL endpoint
  * 3. Define GraphQL queries and mutations using gql tagged templates
  * 4. Replace mock implementations with actual Apollo Client calls
  * 5. Implement error handling and caching strategies
- * 
+ *
  * Example configuration (commented for future use):
- * 
+ *
  * import { Apollo, ApolloModule, APOLLO_OPTIONS } from '@apollo/client/angular';
  * import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client/core';
- * 
+ *
  * export function apolloFactory(httpLink: HttpLink) {
  *   return {
  *     link: httpLink.create({ uri: 'https://api.ebanking.com/graphql' }),
@@ -34,7 +34,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class GraphqlService {
-  
+
   /**
    * GraphQL endpoint (to be configured)
    */
@@ -47,11 +47,11 @@ export class GraphqlService {
 
   /**
    * Execute GraphQL query
-   * 
+   *
    * @template T - Expected return type
    * @param query - GraphQL query string or DocumentNode
    * @param variables - Query variables
-   * 
+   *
    * Example usage (future):
    * ```typescript
    * const GET_ACCOUNTS = gql`
@@ -64,7 +64,7 @@ export class GraphqlService {
    *     }
    *   }
    * `;
-   * 
+   *
    * this.graphql.query<AccountsResponse>(GET_ACCOUNTS, { userId: '123' })
    *   .subscribe(result => console.log(result.data.accounts));
    * ```
@@ -78,11 +78,11 @@ export class GraphqlService {
 
   /**
    * Execute GraphQL mutation
-   * 
+   *
    * @template T - Expected return type
    * @param mutation - GraphQL mutation string or DocumentNode
    * @param variables - Mutation variables
-   * 
+   *
    * Example usage (future):
    * ```typescript
    * const TRANSFER_FUNDS = gql`
@@ -96,8 +96,8 @@ export class GraphqlService {
    *     }
    *   }
    * `;
-   * 
-   * this.graphql.mutate<TransferResponse>(TRANSFER_FUNDS, { 
+   *
+   * this.graphql.mutate<TransferResponse>(TRANSFER_FUNDS, {
    *   input: { from: 'acc-001', to: 'acc-002', amount: 100 }
    * }).subscribe(result => console.log(result.data.transferFunds));
    * ```
@@ -111,11 +111,11 @@ export class GraphqlService {
 
   /**
    * Subscribe to GraphQL subscription
-   * 
+   *
    * @template T - Expected return type
    * @param subscription - GraphQL subscription string or DocumentNode
    * @param variables - Subscription variables
-   * 
+   *
    * Example usage (future):
    * ```typescript
    * const TRANSACTION_UPDATES = gql`
@@ -129,7 +129,7 @@ export class GraphqlService {
    *     }
    *   }
    * `;
-   * 
+   *
    * this.graphql.subscribe<TransactionUpdate>(TRANSACTION_UPDATES, { userId: '123' })
    *   .subscribe(result => console.log('New transaction:', result.data));
    * ```
@@ -144,7 +144,7 @@ export class GraphqlService {
 
 /**
  * GraphQL Type Definitions (for future implementation)
- * 
+ *
  * These interfaces define the expected structure of GraphQL responses.
  * Update these to match your actual GraphQL schema.
  */

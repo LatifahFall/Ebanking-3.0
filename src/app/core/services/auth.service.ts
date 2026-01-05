@@ -1,10 +1,9 @@
 import { Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { User, UserRole, LoginRequest, RegisterRequest, TokenResponse, RefreshRequest, TokenRequest, TokenInfo, RegisterResponse } from '../../models';
-import { BehaviorSubject, Observable, of, delay, throwError, tap, map, catchError, switchMap } from 'rxjs';
-
-// (Auth DTOs are exported from src/app/models/auth.model.ts)
+import { User, UserRole, LoginRequest, RegisterRequest, TokenResponse, TokenInfo, RegisterResponse } from '../../models';
+import { BehaviorSubject, Observable, of, delay, throwError, tap, map, catchError } from 'rxjs';
+import { AuditService } from './audit.service';
 
 /**
  * Authentication Service
@@ -22,7 +21,7 @@ export class AuthService {
   // Reactive state
   private currentUserSubject = new BehaviorSubject<User | null>(this.getStoredUser());
   public currentUser$ = this.currentUserSubject.asObservable();
-  
+
   public isAuthenticated = signal<boolean>(!!this.getStoredUser());
 
   private base = (localStorage.getItem('API_BASE') || '/api/v1').replace(/\/+$/, '');
@@ -75,7 +74,7 @@ export class AuthService {
   // Pending MFA user id when login requires 2FA (used by MfaComponent)
   private pendingMfaUserId: string | null = null;
 
-  constructor(private router: Router, private http: HttpClient) {
+  constructor(private router: Router, private http: HttpClient, private auditService: AuditService) {
     // Check token validity on init
     this.validateStoredToken();
   }
@@ -134,6 +133,17 @@ export class AuthService {
             this.storeTokens(tokenResponse);
             this.setCurrentUser(user);
 
+            // Emit audit event (fire-and-forget)
+            try {
+              this.auditService.createEvent({
+                eventType: 'USER_LOGIN', // <-- utiliser eventType à la place d'action
+                userId: Number(user.id),
+                username: user.username,
+                timestamp: new Date().toISOString(),
+                details: { method: 'mock' }
+              }).subscribe(() => {}, () => {});
+            } catch (e) {}
+
             return { success: true, requiresMFA: false };
           })
         );
@@ -152,7 +162,12 @@ export class AuthService {
         // try to resolve user from token or fallback to mock users
         const info = this.decodeToken(response.access_token);
         const user = info ? this.MOCK_USERS.find(u => u.id === info.sub) : null;
-        if (user) this.setCurrentUser(user);
+        if (user) {
+          this.setCurrentUser(user);
+          try {
+            this.auditService.createEvent({ eventType: 'USER_LOGIN', userId: Number(user.id), username: user.username, timestamp: new Date().toISOString(), details: { method: 'backend' } }).subscribe(() => {}, () => {});
+          } catch (e) {}
+        }
       }),
       catchError(() => {
         // fallback to mock implementation
@@ -170,6 +185,10 @@ export class AuthService {
             const response = this.generateTokenResponse(user);
             this.storeTokens(response);
             this.setCurrentUser(user);
+
+            try {
+              this.auditService.createEvent({ eventType: 'USER_LOGIN', userId: Number(user.id), username: user.username, timestamp: new Date().toISOString(), details: { method: 'mock' } }).subscribe(() => {}, () => {});
+            } catch (e) {}
 
             return response;
           })
@@ -202,11 +221,24 @@ export class AuthService {
 
             const newUserId = `usr-${Date.now()}`;
 
-            return {
+            const resp = {
               success: true,
               message: 'Registration successful. Please check your email to verify your account.',
               userId: newUserId
             } as RegisterResponse;
+
+            // Emit audit event for registration
+            try {
+              this.auditService.createEvent({
+                eventType: 'USER_REGISTER', // <-- eventType
+                userId: null,
+                username: request.username,
+                timestamp: new Date().toISOString(),
+                details: { email: request.email }
+              }).subscribe(() => {}, () => {});
+            } catch (e) {}
+
+            return resp;
           })
         );
       })
@@ -232,7 +264,7 @@ export class AuthService {
           map(() => {
             const userId = this.extractUserIdFromRefreshToken(token);
             const user = this.MOCK_USERS.find(u => u.id === userId);
-            
+
             if (!user) {
               throw new Error('Invalid refresh token');
             }

@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard, adminGuard } from './core/guards/auth.guard';
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { LoginComponent } from './pages/login/login.component';
@@ -116,6 +116,12 @@ export const routes: Routes = [
           // canActivate: [adminGuard],
           title: 'User Management - E-Banking 3.0'
         },
+        {
+          path: 'admin/audit',
+          loadComponent: () => import('./pages/admin-audit/admin-audit.component').then(m => m.AdminAuditComponent),
+          canActivate: [adminGuard],
+          title: 'Audit - E-Banking 3.0'
+        },
       // Add more routes as needed
       // {
       //   path: 'transactions',
@@ -162,4 +168,3 @@ export const routes: Routes = [
     redirectTo: 'dashboard'
   }
 ];
-

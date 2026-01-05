@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, delay } from 'rxjs';
 import { Transaction, TransactionType, TransactionCategory, TransactionStatus } from '../../models';
+import { AuditService } from './audit.service';
 
 /**
  * Transaction Service
@@ -10,6 +11,8 @@ import { Transaction, TransactionType, TransactionCategory, TransactionStatus } 
   providedIn: 'root'
 })
 export class TransactionService {
+
+  constructor(private auditService: AuditService) {}
 
   /**
    * Get recent transactions (mock data)
@@ -149,7 +152,7 @@ export class TransactionService {
       this.getRecentTransactions(50).subscribe(transactions => {
         const start = (page - 1) * pageSize;
         const paginatedTransactions = transactions.slice(start, start + pageSize);
-        
+
         observer.next({
           transactions: paginatedTransactions,
           total: transactions.length
@@ -170,5 +173,59 @@ export class TransactionService {
     };
 
     return of(stats).pipe(delay(300));
+  }
+
+  /**
+   * Create a new transaction (mock)
+   */
+  createTransaction(tx: Partial<Transaction>): Observable<Transaction> {
+    const newTx: Transaction = {
+      id: `txn-${Math.random().toString(36).substr(2, 9)}`,
+      type: tx.type || TransactionType.DEBIT,
+      category: tx.category || TransactionCategory.TRANSFER,
+      amount: tx.amount || 0,
+      currency: tx.currency || 'USD',
+      description: tx.description || '',
+      status: tx.status || TransactionStatus.PENDING,
+      date: tx.date || new Date(),
+      fromAccount: tx.fromAccount || '',
+      toAccount: tx.toAccount,
+      merchant: tx.merchant,
+      userId: tx.userId || 'unknown',
+      icon: tx.icon || 'swap_horiz',
+      color: tx.color || '#F59E0B'
+    };
+
+    // Emit audit event (try/catch to avoid breaking flow)
+    try {
+      this.auditService.createEvent({ eventType: 'TRANSACTION_CREATED', userId: Number(newTx.userId) || null, username: null, details: { transactionId: newTx.id, amount: newTx.amount }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {});
+    } catch {}
+
+    // Simple suspicious heuristic: large amount
+    if (Math.abs(newTx.amount) > 10000) {
+      try {
+        this.auditService.createEvent({ eventType: 'TRANSACTION_SUSPICIOUS', userId: Number(newTx.userId) || null, username: null, details: { transactionId: newTx.id, amount: newTx.amount, reason: 'high_amount' }, timestamp: new Date().toISOString(), riskScore: 0.9 }).subscribe(() => {}, () => {});
+      } catch {}
+    }
+
+    return of(newTx).pipe(delay(250));
+  }
+
+  /**
+   * Run a mock suspicious detection for a user
+   */
+  detectSuspiciousActivityForUser(userId: string): Observable<Transaction[]> {
+    // In a real system, this would run analysis; here we return recent transactions > threshold
+    return new Observable(observer => {
+      this.getRecentTransactions(50).subscribe(transactions => {
+        const suspicious = transactions.filter(t => t.userId === userId && Math.abs(t.amount) > 10000);
+        // Emit audit events for each detected suspicious transaction
+        suspicious.forEach(s => {
+          try { this.auditService.createEvent({ eventType: 'TRANSACTION_SUSPICIOUS', userId: Number(s.userId) || null, username: null, details: { transactionId: s.id, amount: s.amount }, timestamp: new Date().toISOString(), riskScore: 0.85 }).subscribe(() => {}, () => {}); } catch {}
+        });
+        observer.next(suspicious);
+        observer.complete();
+      });
+    });
   }
 }

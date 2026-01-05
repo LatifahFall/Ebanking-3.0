@@ -7,3 +7,4 @@ export * from './transaction.model';
 export * from './notification.model';
 export * from './payment.model';
 export * from './auth.model';
+export * from './audit.model';

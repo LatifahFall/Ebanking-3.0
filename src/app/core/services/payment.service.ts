@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, delay, catchError, map } from 'rxjs';
+import { Observable, of, delay, catchError, map, tap } from 'rxjs';
 import { PaymentRequest, PaymentResponse, PaymentListResponse, PaymentStatus, PaymentType } from '../../models';
+import { AuditService } from './audit.service';
 
 /**
  * Payment Service (MOCK)
@@ -13,7 +14,7 @@ import { PaymentRequest, PaymentResponse, PaymentListResponse, PaymentStatus, Pa
 export class PaymentService {
   private payments: PaymentResponse[] = [];
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private auditService: AuditService) {
     // Seed with some mock payments
     this.payments = [
       {
@@ -50,6 +51,12 @@ export class PaymentService {
   initiatePayment(request: PaymentRequest): Observable<PaymentResponse> {
     // Try backend first
     return this.http.post<PaymentResponse>('/api/payments', request).pipe(
+      tap(response => {
+        // Emit audit event for successful payment initiation
+        try {
+          this.auditService.createEvent({ eventType: 'PAYMENT_INITIATED', userId: null, username: null, details: { request, paymentId: (response as any)?.id }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {});
+        } catch {}
+      }),
       catchError(() => {
         // Fallback to mock
         const newPayment: PaymentResponse = {
@@ -67,6 +74,12 @@ export class PaymentService {
         };
 
         this.payments.unshift(newPayment);
+
+        // Emit audit event for mock payment
+        try {
+          this.auditService.createEvent({ eventType: 'PAYMENT_INITIATED', userId: null, username: null, details: { request, paymentId: newPayment.id }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {});
+        } catch {}
+
         return of(newPayment).pipe(delay(500));
       })
     );
@@ -132,6 +145,11 @@ export class PaymentService {
           return of({ success: false, message: 'Cannot cancel completed payment' }).pipe(delay(200));
         }
         p.status = PaymentStatus.CANCELLED;
+
+        try {
+          this.auditService.createEvent({ eventType: 'PAYMENT_CANCELLED', userId: null, username: null, details: { paymentId: id }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {});
+        } catch {}
+
         return of({ success: true, message: 'Payment cancelled' }).pipe(delay(200));
       })
     );
@@ -166,6 +184,10 @@ export class PaymentService {
 
         this.payments.unshift(reversal);
         p.status = PaymentStatus.REVERSED as any;
+
+        try {
+          this.auditService.createEvent({ eventType: 'PAYMENT_REVERSED', userId: null, username: null, details: { originalPaymentId: id, reversalId: reversal.id, reason }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {});
+        } catch {}
 
         return of({ success: true, message: 'Payment reversed' }).pipe(delay(300));
       })

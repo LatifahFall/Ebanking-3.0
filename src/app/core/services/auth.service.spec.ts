@@ -1,8 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
+import { of } from 'rxjs';
 
 import { AuthService } from './auth.service';
+import { AuditService } from './audit.service';
+
+// Avoid TypeScript conflict between Chai and Jasmine expect in this workspace
+declare const expect: any;
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -11,7 +16,10 @@ describe('AuthService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule, RouterTestingModule],
-      providers: [AuthService]
+      providers: [
+        AuthService,
+        { provide: AuditService, useValue: { createEvent: () => of(null) } }
+      ]
     });
 
     service = TestBed.inject(AuthService);

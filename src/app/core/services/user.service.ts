@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, of, delay, catchError, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { User, UserRole } from '../../models';
+import { AuditService } from './audit.service';
 
 /**
  * User Service (MOCK)
@@ -16,7 +17,7 @@ export class UserService {
 
   private base = (localStorage.getItem('API_BASE') || '/api/v1').replace(/\/+$/, '');
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private auditService: AuditService) {
     // Seed users
     this.users = [
       {
@@ -92,6 +93,10 @@ export class UserService {
         };
 
         this.users.push(newUser);
+
+        // Audit
+        try { this.auditService.createEvent({ eventType: 'USER_REGISTER', userId: Number(newUser.id) || null, username: newUser.email, details: { createdBy: 'admin' }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {}); } catch {}
+
         return of(newUser).pipe(delay(300));
       })
     );
@@ -115,6 +120,10 @@ export class UserService {
         if (!u) return of(null).pipe(delay(200));
 
         Object.assign(u, payload);
+
+        // Audit
+        try { this.auditService.createEvent({ eventType: 'PROFILE_UPDATED', userId: Number(u.id) || null, username: u.email, details: { changes: payload }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {}); } catch {}
+
         return of(u).pipe(delay(200));
       })
     );
@@ -124,6 +133,9 @@ export class UserService {
   assignClientToAgent(agentId: string, clientId: string): Observable<{ success: boolean }> {
     if (!this.clientAssignments[agentId]) this.clientAssignments[agentId] = [];
     if (!this.clientAssignments[agentId].includes(clientId)) this.clientAssignments[agentId].push(clientId);
+
+    try { this.auditService.createEvent({ eventType: 'USER_ASSIGNMENT', userId: Number(clientId) || null, username: null, details: { agentId, clientId }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {}); } catch {}
+
     return of({ success: true }).pipe(delay(200));
   }
 
@@ -131,6 +143,9 @@ export class UserService {
   unassignClient(agentId: string, clientId: string): Observable<{ success: boolean }> {
     if (!this.clientAssignments[agentId]) return of({ success: false }).pipe(delay(200));
     this.clientAssignments[agentId] = this.clientAssignments[agentId].filter(id => id !== clientId);
+
+    try { this.auditService.createEvent({ eventType: 'USER_UNASSIGNMENT', userId: Number(clientId) || null, username: null, details: { agentId, clientId }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {}); } catch {}
+
     return of({ success: true }).pipe(delay(200));
   }
 
@@ -171,6 +186,9 @@ export class UserService {
     const u = this.users.find(x => x.id === userId);
     if (!u) return of({ success: false }).pipe(delay(200));
     u.status = 'ACTIVE' as any;
+
+    try { this.auditService.createEvent({ eventType: 'USER_ACTIVATED', userId: Number(userId) || null, username: u.email, details: {}, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {}); } catch {}
+
     return of({ success: true }).pipe(delay(200));
   }
 
@@ -179,6 +197,9 @@ export class UserService {
     const u = this.users.find(x => x.id === userId);
     if (!u) return of({ success: false }).pipe(delay(200));
     u.status = 'INACTIVE' as any;
+
+    try { this.auditService.createEvent({ eventType: 'USER_DEACTIVATED', userId: Number(userId) || null, username: u.email, details: {}, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {}); } catch {}
+
     return of({ success: true }).pipe(delay(200));
   }
 
@@ -193,6 +214,12 @@ export class UserService {
   updateMyProfile(userId: string, payload: Partial<User>): Observable<User | null> {
     return this.http.put<User | null>(`${this.base}/me/${userId}`, payload).pipe(
       catchError(() => this.updateUser(userId, payload))
+    ).pipe(
+      // emit audit when profile updated
+      map(res => {
+        try { if (res) this.auditService.createEvent({ eventType: 'PROFILE_UPDATED', userId: Number(userId) || null, username: res.email, details: { changes: payload }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {}); } catch {}
+        return res;
+      })
     );
   }
 
@@ -244,6 +271,9 @@ export class UserService {
     this.users.push(newClient);
     if (!this.clientAssignments[agentId]) this.clientAssignments[agentId] = [];
     this.clientAssignments[agentId].push(newClient.id);
+
+    try { this.auditService.createEvent({ eventType: 'USER_CREATED_BY_AGENT', userId: Number(newClient.id) || null, username: newClient.email, details: { agentId }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {}); } catch {}
+
     return of(newClient).pipe(delay(300));
   }
 
@@ -252,6 +282,9 @@ export class UserService {
     const client = this.users.find(x => x.id === clientId && x.role === UserRole.CLIENT) || null;
     if (!client) return of(null).pipe(delay(200));
     Object.assign(client, payload);
+
+    try { this.auditService.createEvent({ eventType: 'PROFILE_UPDATED', userId: Number(clientId) || null, username: client.email, details: { updatedByAgent: agentId, changes: payload }, timestamp: new Date().toISOString() }).subscribe(() => {}, () => {}); } catch {}
+
     return of(client).pipe(delay(200));
   }
 

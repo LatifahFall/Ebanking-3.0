@@ -236,6 +236,7 @@ curl http://localhost:8090/graphql -H "Content-Type: application/json" --data @q
 - Microservice is down or unreachable
 - Check microservice logs
 - Verify microservice ports (8081-8084, 8087)
+- **Analytics-service** (8087) requires PostgreSQL configured - see `analytics-service/POSTGRESQL_SETUP.md`
 
 ### Connection Refused
 - Microservice not running on expected port

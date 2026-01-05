@@ -1,9 +1,12 @@
 package com.bank.graphql_gateway.resolver;
 
 import com.bank.graphql_gateway.model.*;
+import com.bank.graphql_gateway.security.SecurityContext;
+import graphql.schema.DataFetchingEnvironment;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -14,9 +17,23 @@ import java.util.List;
 public class QueryResolver {
 
     private final WebClient.Builder webClient;
+    private final SecurityContext securityContext;
 
-    public QueryResolver(WebClient.Builder webClient) {
+    public QueryResolver(WebClient.Builder webClient, SecurityContext securityContext) {
         this.webClient = webClient;
+        this.securityContext = securityContext;
+    }
+
+    /**
+     * Helper method to build WebClient with Authorization header if present.
+     * Forwards Bearer token to microservices for authentication and authorization.
+     */
+    private WebClient.RequestHeadersSpec<?> buildRequestWithAuth(WebClient.RequestHeadersSpec<?> spec, DataFetchingEnvironment env) {
+        String authHeader = securityContext.getAuthorizationHeader(env);
+        if (authHeader != null && !authHeader.isEmpty()) {
+            return spec.header(HttpHeaders.AUTHORIZATION, authHeader);
+        }
+        return spec;
     }
 
     @QueryMapping
@@ -27,11 +44,13 @@ public class QueryResolver {
     // ==================== USER SERVICE QUERIES ====================
     
     @QueryMapping
-    public List<UserDTO> users() {
+    public List<UserDTO> users(DataFetchingEnvironment env) {
         try {
-            PageResponse<UserDTO> page = webClient.build()
-                    .get()
-                    .uri("http://localhost:8081/admin/users/search")
+            PageResponse<UserDTO> page = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8081/admin/users/search"),
+                    env)
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<PageResponse<UserDTO>>() {})
                     .block();
@@ -42,11 +61,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public UserDTO userById(@Argument Long id) {
+    public UserDTO userById(@Argument Long id, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8081/admin/users/{id}", id)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8081/admin/users/{id}", id),
+                    env)
                     .retrieve()
                     .bodyToMono(UserDTO.class)
                     .block();
@@ -56,11 +77,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public UserDTO me(@Argument Long id) {
+    public UserDTO me(@Argument Long id, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8081/me/{id}", id)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8081/me/{id}", id),
+                    env)
                     .retrieve()
                     .bodyToMono(UserDTO.class)
                     .block();
@@ -70,11 +93,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<UserDTO> clientsByAgent(@Argument Long agentId) {
+    public List<UserDTO> clientsByAgent(@Argument Long agentId, DataFetchingEnvironment env) {
         try {
-            List<UserDTO> clients = webClient.build()
-                    .get()
-                    .uri("http://localhost:8081/agent/clients/{agentId}", agentId)
+            List<UserDTO> clients = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8081/agent/clients/{agentId}", agentId),
+                    env)
                     .retrieve()
                     .bodyToFlux(UserDTO.class)
                     .collectList()
@@ -86,11 +111,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public UserDTO agentByClient(@Argument Long clientId) {
+    public UserDTO agentByClient(@Argument Long clientId, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8081/admin/users/clients/{clientId}/agent", clientId)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8081/admin/users/clients/{clientId}/agent", clientId),
+                    env)
                     .retrieve()
                     .bodyToMono(UserDTO.class)
                     .block();
@@ -102,11 +129,13 @@ public class QueryResolver {
     // ==================== ACCOUNT SERVICE QUERIES ====================
     
     @QueryMapping
-    public AccountDTO accountById(@Argument Long id) {
+    public AccountDTO accountById(@Argument Long id, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8082/api/accounts/{id}", id)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8082/api/accounts/{id}", id),
+                    env)
                     .retrieve()
                     .bodyToMono(AccountDTO.class)
                     .block();
@@ -116,11 +145,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<AccountDTO> accountsByUserId(@Argument Long userId) {
+    public List<AccountDTO> accountsByUserId(@Argument Long userId, DataFetchingEnvironment env) {
         try {
-            List<AccountDTO> accounts = webClient.build()
-                    .get()
-                    .uri("http://localhost:8082/api/accounts?userId={userId}", userId)
+            List<AccountDTO> accounts = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8082/api/accounts?userId={userId}", userId),
+                    env)
                     .retrieve()
                     .bodyToFlux(AccountDTO.class)
                     .collectList()
@@ -132,11 +163,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public BalanceDTO accountBalance(@Argument Long id) {
+    public BalanceDTO accountBalance(@Argument Long id, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8082/api/accounts/{id}/balance", id)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8082/api/accounts/{id}/balance", id),
+                    env)
                     .retrieve()
                     .bodyToMono(BalanceDTO.class)
                     .block();
@@ -146,11 +179,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<TransactionDTO> accountTransactions(@Argument Long id) {
+    public List<TransactionDTO> accountTransactions(@Argument Long id, DataFetchingEnvironment env) {
         try {
-            List<TransactionDTO> transactions = webClient.build()
-                    .get()
-                    .uri("http://localhost:8082/api/accounts/{id}/transactions", id)
+            List<TransactionDTO> transactions = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8082/api/accounts/{id}/transactions", id),
+                    env)
                     .retrieve()
                     .bodyToFlux(TransactionDTO.class)
                     .collectList()
@@ -200,11 +235,13 @@ public class QueryResolver {
     // ==================== PAYMENT SERVICE QUERIES ====================
     
     @QueryMapping
-    public PaymentDTO paymentById(@Argument Long id) {
+    public PaymentDTO paymentById(@Argument Long id, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8082/api/payments/{id}", id)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8082/api/payments/{id}", id),
+                    env)
                     .retrieve()
                     .bodyToMono(PaymentDTO.class)
                     .block();
@@ -214,11 +251,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<PaymentDTO> paymentsByUserId(@Argument Long userId) {
+    public List<PaymentDTO> paymentsByUserId(@Argument Long userId, DataFetchingEnvironment env) {
         try {
-            List<PaymentDTO> payments = webClient.build()
-                    .get()
-                    .uri("http://localhost:8082/api/payments?userId={userId}", userId)
+            List<PaymentDTO> payments = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8082/api/payments?userId={userId}", userId),
+                    env)
                     .retrieve()
                     .bodyToFlux(PaymentDTO.class)
                     .collectList()
@@ -230,11 +269,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<PaymentDTO> paymentsByAccountId(@Argument Long accountId) {
+    public List<PaymentDTO> paymentsByAccountId(@Argument Long accountId, DataFetchingEnvironment env) {
         try {
-            List<PaymentDTO> payments = webClient.build()
-                    .get()
-                    .uri("http://localhost:8082/api/payments?accountId={accountId}", accountId)
+            List<PaymentDTO> payments = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8082/api/payments?accountId={accountId}", accountId),
+                    env)
                     .retrieve()
                     .bodyToFlux(PaymentDTO.class)
                     .collectList()
@@ -248,11 +289,13 @@ public class QueryResolver {
     // ==================== CRYPTO SERVICE QUERIES ====================
     
     @QueryMapping
-    public CryptoWalletDTO cryptoWalletByUserId(@Argument Long userId) {
+    public CryptoWalletDTO cryptoWalletByUserId(@Argument Long userId, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8081/api/wallets/user/{userId}", userId)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8081/api/wallets/user/{userId}", userId),
+                    env)
                     .retrieve()
                     .bodyToMono(CryptoWalletDTO.class)
                     .block();
@@ -262,11 +305,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<CryptoTransactionDTO> cryptoTransactionsByWalletId(@Argument Long walletId) {
+    public List<CryptoTransactionDTO> cryptoTransactionsByWalletId(@Argument Long walletId, DataFetchingEnvironment env) {
         try {
-            List<CryptoTransactionDTO> transactions = webClient.build()
-                    .get()
-                    .uri("http://localhost:8081/api/transactions/wallet/{walletId}", walletId)
+            List<CryptoTransactionDTO> transactions = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8081/api/transactions/wallet/{walletId}", walletId),
+                    env)
                     .retrieve()
                     .bodyToFlux(CryptoTransactionDTO.class)
                     .collectList()
@@ -278,11 +323,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<CryptoCoinDTO> cryptoCoins() {
+    public List<CryptoCoinDTO> cryptoCoins(DataFetchingEnvironment env) {
         try {
-            List<CryptoCoinDTO> coins = webClient.build()
-                    .get()
-                    .uri("http://localhost:8081/api/coins/details")
+            List<CryptoCoinDTO> coins = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8081/api/coins"),
+                    env)
                     .retrieve()
                     .bodyToFlux(CryptoCoinDTO.class)
                     .collectList()
@@ -294,11 +341,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public CryptoCoinDTO cryptoCoinById(@Argument String coinId) {
+    public CryptoCoinDTO cryptoCoinById(@Argument Long id, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8081/api/coins/{coinId}", coinId)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8082/api/coins/{id}", id),
+                    env)
                     .retrieve()
                     .bodyToMono(CryptoCoinDTO.class)
                     .block();
@@ -310,11 +359,13 @@ public class QueryResolver {
     // ==================== NOTIFICATION SERVICE QUERIES ====================
     
     @QueryMapping
-    public List<NotificationDTO> notificationsByUserId(@Argument String userId) {
+    public List<NotificationDTO> notificationsByUserId(@Argument Long userId, DataFetchingEnvironment env) {
         try {
-            List<NotificationDTO> notifications = webClient.build()
-                    .get()
-                    .uri("http://localhost:8084/api/notifications/user/{userId}", userId)
+            List<NotificationDTO> notifications = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8085/api/notifications/user/{userId}", userId),
+                    env)
                     .retrieve()
                     .bodyToFlux(NotificationDTO.class)
                     .collectList()
@@ -326,13 +377,15 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<NotificationDTO> inAppNotificationsByUserId(@Argument String userId) {
+    public List<InAppNotificationDTO> inAppNotificationsByUserId(@Argument Long userId, DataFetchingEnvironment env) {
         try {
-            List<NotificationDTO> notifications = webClient.build()
-                    .get()
-                    .uri("http://localhost:8084/api/notifications/in-app/{userId}", userId)
+            List<InAppNotificationDTO> notifications = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8085/api/notifications/in-app/user/{userId}", userId),
+                    env)
                     .retrieve()
-                    .bodyToFlux(NotificationDTO.class)
+                    .bodyToFlux(InAppNotificationDTO.class)
                     .collectList()
                     .block();
             return notifications != null ? notifications : Collections.emptyList();
@@ -344,11 +397,13 @@ public class QueryResolver {
     // ==================== AUDIT SERVICE QUERIES ====================
     
     @QueryMapping
-    public List<AuditEventDTO> auditEvents() {
+    public List<AuditEventDTO> auditEvents(DataFetchingEnvironment env) {
         try {
-            List<AuditEventDTO> events = webClient.build()
-                    .get()
-                    .uri("http://localhost:8083/audit/events")
+            List<AuditEventDTO> events = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8083/audit/events"),
+                    env)
                     .retrieve()
                     .bodyToFlux(AuditEventDTO.class)
                     .collectList()
@@ -360,11 +415,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public AuditEventDTO auditEventById(@Argument String eventId) {
+    public AuditEventDTO auditEventById(@Argument Long id, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8083/audit/events/{eventId}", eventId)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8086/api/audit/events/{id}", id),
+                    env)
                     .retrieve()
                     .bodyToMono(AuditEventDTO.class)
                     .block();
@@ -374,11 +431,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<AuditEventDTO> auditEventsByUserId(@Argument Long userId) {
+    public List<AuditEventDTO> auditEventsByUserId(@Argument Long userId, DataFetchingEnvironment env) {
         try {
-            List<AuditEventDTO> events = webClient.build()
-                    .get()
-                    .uri("http://localhost:8083/audit/users/{userId}/events", userId)
+            List<AuditEventDTO> events = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8086/api/audit/events/user/{userId}", userId),
+                    env)
                     .retrieve()
                     .bodyToFlux(AuditEventDTO.class)
                     .collectList()
@@ -390,11 +449,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<AuditEventDTO> auditEventsByType(@Argument String eventType) {
+    public List<AuditEventDTO> auditEventsByType(@Argument String eventType, DataFetchingEnvironment env) {
         try {
-            List<AuditEventDTO> events = webClient.build()
-                    .get()
-                    .uri("http://localhost:8083/audit/events/type/{eventType}", eventType)
+            List<AuditEventDTO> events = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8083/audit/events/type/{eventType}", eventType),
+                    env)
                     .retrieve()
                     .bodyToFlux(AuditEventDTO.class)
                     .collectList()
@@ -408,11 +469,13 @@ public class QueryResolver {
     // ==================== ANALYTICS SERVICE QUERIES ====================
     
     @QueryMapping
-    public List<AlertDTO> activeAlerts(@Argument String userId) {
+    public List<AlertDTO> activeAlerts(@Argument String userId, DataFetchingEnvironment env) {
         try {
-            List<AlertDTO> alerts = webClient.build()
-                    .get()
-                    .uri("http://localhost:8087/api/v1/analytics/alerts/active?userId={userId}", userId)
+            List<AlertDTO> alerts = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8087/api/v1/analytics/alerts/active?userId={userId}", userId),
+                    env)
                     .retrieve()
                     .bodyToFlux(AlertDTO.class)
                     .collectList()
@@ -424,11 +487,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public DashboardSummaryDTO dashboardSummary(@Argument String userId) {
+    public DashboardSummaryDTO dashboardSummary(@Argument String userId, DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8087/api/v1/analytics/dashboard/summary?userId={userId}", userId)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8087/api/v1/analytics/dashboard/summary?userId={userId}", userId),
+                    env)
                     .retrieve()
                     .bodyToMono(DashboardSummaryDTO.class)
                     .block();
@@ -438,13 +503,15 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<CategoryBreakdownDTO> spendingBreakdown(@Argument String userId, @Argument String period) {
+    public List<CategoryBreakdownDTO> spendingBreakdown(@Argument String userId, @Argument String period, DataFetchingEnvironment env) {
         try {
             String periodParam = period != null ? period : "MONTH";
-            List<CategoryBreakdownDTO> breakdown = webClient.build()
-                    .get()
-                    .uri("http://localhost:8087/api/v1/analytics/spending/breakdown?userId={userId}&period={period}", 
-                         userId, periodParam)
+            List<CategoryBreakdownDTO> breakdown = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8087/api/v1/analytics/spending/breakdown?userId={userId}&period={period}", 
+                                 userId, periodParam),
+                    env)
                     .retrieve()
                     .bodyToFlux(CategoryBreakdownDTO.class)
                     .collectList()
@@ -456,13 +523,15 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public BalanceTrendDTO balanceTrend(@Argument String userId, @Argument Integer days) {
+    public BalanceTrendDTO balanceTrend(@Argument String userId, @Argument Integer days, DataFetchingEnvironment env) {
         try {
             int daysParam = days != null ? days : 30;
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8087/api/v1/analytics/trends/balance?userId={userId}&days={days}", 
-                         userId, daysParam)
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8087/api/v1/analytics/trends/balance?userId={userId}&days={days}", 
+                                 userId, daysParam),
+                    env)
                     .retrieve()
                     .bodyToMono(BalanceTrendDTO.class)
                     .block();
@@ -472,11 +541,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public List<String> recommendations(@Argument String userId) {
+    public List<String> recommendations(@Argument String userId, DataFetchingEnvironment env) {
         try {
-            List<String> recommendations = webClient.build()
-                    .get()
-                    .uri("http://localhost:8087/api/v1/analytics/insights/recommendations?userId={userId}", userId)
+            List<String> recommendations = buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8087/api/v1/analytics/insights/recommendations?userId={userId}", userId),
+                    env)
                     .retrieve()
                     .bodyToFlux(String.class)
                     .collectList()
@@ -488,11 +559,13 @@ public class QueryResolver {
     }
 
     @QueryMapping
-    public AdminOverviewDTO adminOverview() {
+    public AdminOverviewDTO adminOverview(DataFetchingEnvironment env) {
         try {
-            return webClient.build()
-                    .get()
-                    .uri("http://localhost:8087/api/v1/analytics/admin/overview")
+            return buildRequestWithAuth(
+                    webClient.build()
+                            .get()
+                            .uri("http://localhost:8087/api/v1/analytics/admin/overview"),
+                    env)
                     .retrieve()
                     .bodyToMono(AdminOverviewDTO.class)
                     .block();

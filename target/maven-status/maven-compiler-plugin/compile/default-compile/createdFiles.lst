@@ -4,6 +4,7 @@ com\bank\graphql_gateway\model\AlertDTO.class
 com\bank\graphql_gateway\model\RefreshTokenInput.class
 com\bank\graphql_gateway\model\CryptoCoinDTO.class
 com\bank\graphql_gateway\model\AdminOverviewDTO.class
+com\bank\graphql_gateway\model\InAppNotificationDTO.class
 com\bank\graphql_gateway\model\RecentTransactionDTO.class
 com\bank\graphql_gateway\model\SellCryptoInput.class
 com\bank\graphql_gateway\model\DataPointDTO.class
@@ -29,6 +30,7 @@ com\bank\graphql_gateway\model\AccountDTO.class
 com\bank\graphql_gateway\model\CreatePaymentInput.class
 com\bank\graphql_gateway\resolver\QueryResolver.class
 com\bank\graphql_gateway\model\UpdateAccountInput.class
+com\bank\graphql_gateway\config\GraphQLSecurityConfig.class
 com\bank\graphql_gateway\GraphqlGatewayApplication.class
 com\bank\graphql_gateway\model\CryptoWalletDTO.class
 com\bank\graphql_gateway\resolver\QueryResolver$1.class
@@ -37,5 +39,6 @@ com\bank\graphql_gateway\model\CreateUserInput.class
 com\bank\graphql_gateway\model\TransactionDTO.class
 com\bank\graphql_gateway\model\LoginInput.class
 com\bank\graphql_gateway\model\CloseAccountInput.class
+com\bank\graphql_gateway\security\SecurityContext.class
 com\bank\graphql_gateway\model\NotificationDTO.class
 com\bank\graphql_gateway\model\UserDTO.class

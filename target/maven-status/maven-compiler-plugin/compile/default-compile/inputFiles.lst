@@ -1,3 +1,4 @@
+C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\config\GraphQLSecurityConfig.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\config\WebClientConfig.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\GraphqlGatewayApplication.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\model\AccountDTO.java
@@ -19,6 +20,7 @@ C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\model\CryptoWalletDTO.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\model\DashboardSummaryDTO.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\model\DataPointDTO.java
+C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\model\InAppNotificationDTO.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\model\LoginInput.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\model\NotificationDTO.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\model\PageResponse.java
@@ -38,3 +40,4 @@ C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\model\UserPreferencesInput.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\resolver\MutationResolver.java
 C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\resolver\QueryResolver.java
+C:\Users\Hp\Desktop\graphql\Ebanking-3.0\src\main\java\com\bank\graphql_gateway\security\SecurityContext.java

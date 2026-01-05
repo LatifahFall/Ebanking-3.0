@@ -1,8 +1,11 @@
 package com.bank.graphql_gateway.resolver;
 
 import com.bank.graphql_gateway.model.*;
+import com.bank.graphql_gateway.security.SecurityContext;
+import graphql.schema.DataFetchingEnvironment;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -10,71 +13,94 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class MutationResolver {
 
     private final WebClient.Builder webClient;
+    private final SecurityContext securityContext;
 
-    public MutationResolver(WebClient.Builder webClient) {
+    public MutationResolver(WebClient.Builder webClient, SecurityContext securityContext) {
         this.webClient = webClient;
+        this.securityContext = securityContext;
+    }
+
+    private WebClient.RequestHeadersSpec<?> buildRequestWithAuth(
+            WebClient.RequestHeadersSpec<?> spec, DataFetchingEnvironment env) {
+        String authHeader = securityContext.getAuthorizationHeader(env);
+        if (authHeader != null) {
+            return spec.header(HttpHeaders.AUTHORIZATION, authHeader);
+        }
+        return spec;
     }
 
     // ==================== USER SERVICE MUTATIONS ====================
 
     @MutationMapping
-    public UserDTO createUser(@Argument CreateUserInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8081/admin/users")
-                .bodyValue(input)
+    public UserDTO createUser(@Argument CreateUserInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8081/admin/users")
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(UserDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public UserDTO activateUser(@Argument Long id) {
-        return webClient.build()
-                .patch()
-                .uri("http://localhost:8081/admin/users/activate?userId={id}", id)
+    public UserDTO activateUser(@Argument Long id, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .patch()
+                        .uri("http://localhost:8081/admin/users/activate?userId={id}", id),
+                env)
                 .retrieve()
                 .bodyToMono(UserDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public UserDTO deactivateUser(@Argument Long id) {
-        return webClient.build()
-                .patch()
-                .uri("http://localhost:8081/admin/users/deactivate?userId={id}", id)
+    public UserDTO deactivateUser(@Argument Long id, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .patch()
+                        .uri("http://localhost:8081/admin/users/deactivate?userId={id}", id),
+                env)
                 .retrieve()
                 .bodyToMono(UserDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public UserDTO updateProfile(@Argument Long id, @Argument UpdateProfileInput input) {
-        return webClient.build()
-                .put()
-                .uri("http://localhost:8081/me/{id}", id)
-                .bodyValue(input)
+    public UserDTO updateProfile(@Argument Long id, @Argument UpdateProfileInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .put()
+                        .uri("http://localhost:8081/me/{id}", id)
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(UserDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public AgentClientAssignmentDTO assignClient(@Argument AssignClientInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8081/admin/users/assignments")
-                .bodyValue(input)
+    public AgentClientAssignmentDTO assignClient(@Argument AssignClientInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8081/admin/users/assignments")
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(AgentClientAssignmentDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public Boolean unassignClient(@Argument Long agentId, @Argument Long clientId) {
-        webClient.build()
-                .delete()
-                .uri("http://localhost:8081/admin/users/assignments?agentId={agentId}&clientId={clientId}", agentId, clientId)
+    public Boolean unassignClient(@Argument Long agentId, @Argument Long clientId, DataFetchingEnvironment env) {
+        buildRequestWithAuth(
+                webClient.build()
+                        .delete()
+                        .uri("http://localhost:8081/admin/users/assignments?agentId={agentId}&clientId={clientId}", agentId, clientId),
+                env)
                 .retrieve()
                 .toBodilessEntity()
                 .block();
@@ -84,44 +110,52 @@ public class MutationResolver {
     // ==================== ACCOUNT SERVICE MUTATIONS ====================
 
     @MutationMapping
-    public AccountDTO createAccount(@Argument CreateAccountInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8082/api/accounts")
-                .bodyValue(input)
+    public AccountDTO createAccount(@Argument CreateAccountInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8082/api/accounts")
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(AccountDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public AccountDTO updateAccount(@Argument Long id, @Argument UpdateAccountInput input) {
-        return webClient.build()
-                .put()
-                .uri("http://localhost:8082/api/accounts/{id}", id)
-                .bodyValue(input)
+    public AccountDTO updateAccount(@Argument Long id, @Argument UpdateAccountInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .put()
+                        .uri("http://localhost:8082/api/accounts/{id}", id)
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(AccountDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public AccountDTO suspendAccount(@Argument Long id, @Argument SuspendAccountInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8082/api/accounts/{id}/suspend", id)
-                .bodyValue(input)
+    public AccountDTO suspendAccount(@Argument Long id, @Argument SuspendAccountInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8082/api/accounts/{id}/suspend", id)
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(AccountDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public AccountDTO closeAccount(@Argument Long id, @Argument CloseAccountInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8082/api/accounts/{id}/close", id)
-                .bodyValue(input)
+    public AccountDTO closeAccount(@Argument Long id, @Argument CloseAccountInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8082/api/accounts/{id}/close", id)
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(AccountDTO.class)
                 .block();
@@ -130,33 +164,39 @@ public class MutationResolver {
     // ==================== AUTH SERVICE MUTATIONS ====================
 
     @MutationMapping
-    public TokenDTO login(@Argument LoginInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8081/auth/login")
-                .bodyValue(input)
+    public TokenDTO login(@Argument LoginInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8081/auth/login")
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(TokenDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public TokenDTO refreshToken(@Argument RefreshTokenInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8081/auth/refresh")
-                .bodyValue(input)
+    public TokenDTO refreshToken(@Argument RefreshTokenInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8081/auth/refresh")
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(TokenDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public Boolean logout(@Argument RefreshTokenInput input) {
-        webClient.build()
-                .post()
-                .uri("http://localhost:8081/auth/logout")
-                .bodyValue(input)
+    public Boolean logout(@Argument RefreshTokenInput input, DataFetchingEnvironment env) {
+        buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8081/auth/logout")
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .toBodilessEntity()
                 .block();
@@ -166,31 +206,37 @@ public class MutationResolver {
     // ==================== PAYMENT SERVICE MUTATIONS ====================
 
     @MutationMapping
-    public PaymentDTO createPayment(@Argument CreatePaymentInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8082/api/payments")
-                .bodyValue(input)
+    public PaymentDTO createPayment(@Argument CreatePaymentInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8082/api/payments")
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(PaymentDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public PaymentDTO cancelPayment(@Argument Long id) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8082/api/payments/{id}/cancel", id)
+    public PaymentDTO cancelPayment(@Argument Long id, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8082/api/payments/{id}/cancel", id),
+                env)
                 .retrieve()
                 .bodyToMono(PaymentDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public PaymentDTO reversePayment(@Argument Long id, @Argument String reason) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8082/api/payments/{id}/reverse?reason={reason}", id, reason)
+    public PaymentDTO reversePayment(@Argument Long id, @Argument String reason, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8082/api/payments/{id}/reverse?reason={reason}", id, reason),
+                env)
                 .retrieve()
                 .bodyToMono(PaymentDTO.class)
                 .block();
@@ -199,52 +245,62 @@ public class MutationResolver {
     // ==================== CRYPTO SERVICE MUTATIONS ====================
 
     @MutationMapping
-    public CryptoWalletDTO createCryptoWallet(@Argument Long userId) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8081/api/wallets?userId={userId}", userId)
+    public CryptoWalletDTO createCryptoWallet(@Argument Long userId, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8081/api/wallets?userId={userId}", userId),
+                env)
                 .retrieve()
                 .bodyToMono(CryptoWalletDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public CryptoWalletDTO activateCryptoWallet(@Argument Long walletId) {
-        return webClient.build()
-                .patch()
-                .uri("http://localhost:8081/api/wallets/activate?walletId={walletId}", walletId)
+    public CryptoWalletDTO activateCryptoWallet(@Argument Long walletId, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .patch()
+                        .uri("http://localhost:8081/api/wallets/activate?walletId={walletId}", walletId),
+                env)
                 .retrieve()
                 .bodyToMono(CryptoWalletDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public CryptoWalletDTO deactivateCryptoWallet(@Argument Long walletId) {
-        return webClient.build()
-                .patch()
-                .uri("http://localhost:8081/api/wallets/deactivate?walletId={walletId}", walletId)
+    public CryptoWalletDTO deactivateCryptoWallet(@Argument Long walletId, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .patch()
+                        .uri("http://localhost:8081/api/wallets/deactivate?walletId={walletId}", walletId),
+                env)
                 .retrieve()
                 .bodyToMono(CryptoWalletDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public CryptoTransactionDTO buyCrypto(@Argument Long walletId, @Argument BuyCryptoInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8081/api/transactions/buy?walletId={walletId}", walletId)
-                .bodyValue(input)
+    public CryptoTransactionDTO buyCrypto(@Argument Long walletId, @Argument BuyCryptoInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8081/api/transactions/buy?walletId={walletId}", walletId)
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(CryptoTransactionDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public CryptoTransactionDTO sellCrypto(@Argument Long walletId, @Argument SellCryptoInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8081/api/transactions/sell?walletId={walletId}", walletId)
-                .bodyValue(input)
+    public CryptoTransactionDTO sellCrypto(@Argument Long walletId, @Argument SellCryptoInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8081/api/transactions/sell?walletId={walletId}", walletId)
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(CryptoTransactionDTO.class)
                 .block();
@@ -253,21 +309,25 @@ public class MutationResolver {
     // ==================== NOTIFICATION SERVICE MUTATIONS ====================
 
     @MutationMapping
-    public NotificationDTO sendNotification(@Argument SendNotificationInput input) {
-        return webClient.build()
-                .post()
-                .uri("http://localhost:8084/api/notifications")
-                .bodyValue(input)
+    public NotificationDTO sendNotification(@Argument SendNotificationInput input, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .post()
+                        .uri("http://localhost:8084/api/notifications")
+                        .bodyValue(input),
+                env)
                 .retrieve()
                 .bodyToMono(NotificationDTO.class)
                 .block();
     }
 
     @MutationMapping
-    public NotificationDTO markNotificationAsRead(@Argument Long id) {
-        return webClient.build()
-                .put()
-                .uri("http://localhost:8084/api/notifications/{id}/read", id)
+    public NotificationDTO markNotificationAsRead(@Argument Long id, DataFetchingEnvironment env) {
+        return buildRequestWithAuth(
+                webClient.build()
+                        .put()
+                        .uri("http://localhost:8084/api/notifications/{id}/read", id),
+                env)
                 .retrieve()
                 .bodyToMono(NotificationDTO.class)
                 .block();
@@ -276,11 +336,13 @@ public class MutationResolver {
     // ==================== ANALYTICS SERVICE MUTATIONS ====================
 
     @MutationMapping
-    public Boolean resolveAlert(@Argument String alertId) {
+    public Boolean resolveAlert(@Argument String alertId, DataFetchingEnvironment env) {
         try {
-            webClient.build()
-                    .post()
-                    .uri("http://localhost:8087/api/v1/analytics/alerts/{alertId}/resolve", alertId)
+            buildRequestWithAuth(
+                    webClient.build()
+                            .post()
+                            .uri("http://localhost:8087/api/v1/analytics/alerts/{alertId}/resolve", alertId),
+                    env)
                     .retrieve()
                     .bodyToMono(Void.class)
                     .block();

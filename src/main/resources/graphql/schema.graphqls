@@ -1,15 +1,88 @@
+# ==================== QUERIES ====================
+
 type Query {
+  # Health check
   health: String
+  
+  # User Service Queries
   users: [UserDTO]
   userById(id: ID!): UserDTO
+  me(id: ID!): UserDTO
   clientsByAgent(agentId: ID!): [UserDTO]
+  agentByClient(clientId: ID!): UserDTO
+  
+  # Account Service Queries
+  accountById(id: ID!): AccountDTO
+  accountsByUserId(userId: ID!): [AccountDTO]
+  accountBalance(id: ID!): BalanceDTO
+  accountTransactions(id: ID!): [TransactionDTO]
+  
+  # Auth Service Queries
+  verifyToken(token: String!): Boolean
+  tokenInfo(token: String!): TokenInfoDTO
+  
+  # Payment Service Queries
+  paymentById(id: ID!): PaymentDTO
+  paymentsByUserId(userId: ID!): [PaymentDTO]
+  paymentsByAccountId(accountId: ID!): [PaymentDTO]
+  
+  # Crypto Service Queries
+  cryptoWalletByUserId(userId: ID!): CryptoWalletDTO
+  cryptoTransactionsByWalletId(walletId: ID!): [CryptoTransactionDTO]
+  cryptoCoins: [CryptoCoinDTO]
+  cryptoCoinById(coinId: String!): CryptoCoinDTO
+  
+  # Notification Service Queries
+  notificationsByUserId(userId: String!): [NotificationDTO]
+  inAppNotificationsByUserId(userId: String!): [NotificationDTO]
+  
+  # Audit Service Queries
+  auditEvents: [AuditEventDTO]
+  auditEventById(eventId: String!): AuditEventDTO
+  auditEventsByUserId(userId: ID!): [AuditEventDTO]
+  auditEventsByType(eventType: String!): [AuditEventDTO]
 }
 
+# ==================== MUTATIONS ====================
+
 type Mutation {
+  # User Service Mutations
   createUser(input: CreateUserInput!): UserDTO
   activateUser(id: ID!): UserDTO
   deactivateUser(id: ID!): UserDTO
+  updateProfile(id: ID!, input: UpdateProfileInput!): UserDTO
+  assignClient(input: AssignClientInput!): AgentClientAssignmentDTO
+  unassignClient(agentId: ID!, clientId: ID!): Boolean
+  
+  # Account Service Mutations
+  createAccount(input: CreateAccountInput!): AccountDTO
+  updateAccount(id: ID!, input: UpdateAccountInput!): AccountDTO
+  suspendAccount(id: ID!, input: SuspendAccountInput!): AccountDTO
+  closeAccount(id: ID!, input: CloseAccountInput!): AccountDTO
+  
+  # Auth Service Mutations
+  login(input: LoginInput!): TokenDTO
+  refreshToken(input: RefreshTokenInput!): TokenDTO
+  logout(input: RefreshTokenInput!): Boolean
+  
+  # Payment Service Mutations
+  createPayment(input: CreatePaymentInput!): PaymentDTO
+  cancelPayment(id: ID!): PaymentDTO
+  reversePayment(id: ID!, reason: String!): PaymentDTO
+  
+  # Crypto Service Mutations
+  createCryptoWallet(userId: ID!): CryptoWalletDTO
+  activateCryptoWallet(walletId: ID!): CryptoWalletDTO
+  deactivateCryptoWallet(walletId: ID!): CryptoWalletDTO
+  buyCrypto(walletId: ID!, input: BuyCryptoInput!): CryptoTransactionDTO
+  sellCrypto(walletId: ID!, input: SellCryptoInput!): CryptoTransactionDTO
+  
+  # Notification Service Mutations
+  sendNotification(input: SendNotificationInput!): NotificationDTO
+  markNotificationAsRead(id: ID!): NotificationDTO
 }
+
+# ==================== USER SERVICE TYPES ====================
 
 type UserDTO {
   id: ID
@@ -31,4 +104,224 @@ input CreateUserInput {
   lname: String!
   role: String!
 }
+
+input UpdateProfileInput {
+  login: String
+  email: String
+  password: String
+  phone: String
+}
+
+input AssignClientInput {
+  agentId: ID!
+  clientId: ID!
+  notes: String
+}
+
+type AgentClientAssignmentDTO {
+  id: ID
+  agentId: ID
+  clientId: ID
+  assignedAt: String
+}
+
+# ==================== ACCOUNT SERVICE TYPES ====================
+
+type AccountDTO {
+  id: ID
+  accountNumber: String
+  userId: ID
+  accountType: String
+  currency: String
+  balance: Float
+  status: String
+  createdAt: String
+  updatedAt: String
+  suspendedAt: String
+  closedAt: String
+  suspensionReason: String
+  closureReason: String
+  finalBalance: Float
+}
+
+input CreateAccountInput {
+  userId: ID!
+  accountType: String!
+  currency: String!
+  initialBalance: Float
+}
+
+input UpdateAccountInput {
+  accountType: String
+  currency: String
+}
+
+input SuspendAccountInput {
+  reason: String!
+  suspendedBy: String!
+}
+
+input CloseAccountInput {
+  closureReason: String!
+  closedBy: String!
+}
+
+type BalanceDTO {
+  accountId: ID
+  balance: Float
+  currency: String
+  timestamp: String
+}
+
+type TransactionDTO {
+  id: ID
+  accountId: ID
+  transactionType: String
+  amount: Float
+  balanceBefore: Float
+  balanceAfter: Float
+  timestamp: String
+  description: String
+}
+
+# ==================== AUTH SERVICE TYPES ====================
+
+type TokenDTO {
+  access_token: String
+  refresh_token: String
+  expires_in: Int
+  refresh_expires_in: Int
+  token_type: String
+  scope: String
+}
+
+input LoginInput {
+  username: String!
+  password: String!
+}
+
+input RefreshTokenInput {
+  refresh_token: String!
+}
+
+type TokenInfoDTO {
+  sub: String
+  username: String
+  email: String
+  roles: [String]
+  exp: Int
+  iat: Int
+}
+
+# ==================== PAYMENT SERVICE TYPES ====================
+
+type PaymentDTO {
+  id: ID
+  fromAccountId: ID
+  toAccountId: ID
+  amount: Float
+  currency: String
+  paymentType: String
+  status: String
+  beneficiaryName: String
+  reference: String
+  description: String
+  createdAt: String
+  updatedAt: String
+  completedAt: String
+  reversedAt: String
+  reversalReason: String
+  userId: ID
+}
+
+input CreatePaymentInput {
+  fromAccountId: ID!
+  toAccountId: ID
+  amount: Float!
+  currency: String!
+  paymentType: String!
+  beneficiaryName: String
+  reference: String
+  description: String
+}
+
+# ==================== CRYPTO SERVICE TYPES ====================
+
+type CryptoWalletDTO {
+  id: ID
+  userId: ID
+  balance: Float
+  currency: String
+  status: String
+  createdAt: String
+}
+
+type CryptoTransactionDTO {
+  id: ID
+  walletId: ID
+  symbol: String
+  transactionType: String
+  cryptoAmount: Float
+  eurAmount: Float
+  price: Float
+  status: String
+  createdAt: String
+}
+
+input BuyCryptoInput {
+  symbol: String!
+  eurAmount: Float!
+}
+
+input SellCryptoInput {
+  symbol: String!
+  cryptoAmount: Float!
+}
+
+type CryptoCoinDTO {
+  coinId: String
+  symbol: String
+  name: String
+  currentPrice: Float
+  marketCap: Float
+  volume24h: Float
+  priceChange24h: Float
+}
+
+# ==================== NOTIFICATION SERVICE TYPES ====================
+
+type NotificationDTO {
+  id: ID
+  userId: String
+  type: String
+  subject: String
+  message: String
+  category: String
+  status: String
+  createdAt: String
+  read: Boolean
+}
+
+input SendNotificationInput {
+  userId: String!
+  type: String!
+  subject: String!
+  message: String!
+  category: String
+}
+
+# ==================== AUDIT SERVICE TYPES ====================
+
+type AuditEventDTO {
+  eventId: String
+  userId: ID
+  eventType: String
+  timestamp: String
+  serviceSource: String
+  result: String
+  riskScore: Float
+  action: String
+  ipAddress: String
+}
+
 

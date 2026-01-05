@@ -1,0 +1,1 @@
+{"query": "{ users { id login email fname lname role isActive } }"}

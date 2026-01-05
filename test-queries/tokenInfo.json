@@ -1,0 +1,1 @@
+{"query": "query { tokenInfo(token: \"test123\") { sub username email roles } }"}

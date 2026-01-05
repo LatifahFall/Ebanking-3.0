@@ -1,0 +1,1 @@
+{"query": "mutation { updateProfile(id: 1, input: { login: \"updated\", email: \"new@test.com\" }) { id login email } }"}

@@ -1,0 +1,1 @@
+{"query": "mutation { sellCrypto(walletId: 1, input: { symbol: \"BTC\", cryptoAmount: 0.01 }) { id cryptoAmount transactionType } }"}

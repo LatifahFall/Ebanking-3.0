@@ -1,0 +1,1 @@
+{"query": "mutation { suspendAccount(id: 1, input: { reason: \"Fraud\", suspendedBy: \"admin\" }) { id status } }"}

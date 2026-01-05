@@ -1,0 +1,1 @@
+{"query": "mutation { createPayment(input: { fromAccountId: 1, toAccountId: 2, amount: 100.0, currency: \"USD\", paymentType: \"TRANSFER\" }) { id amount status } }"}

@@ -1,0 +1,1 @@
+{"query": "mutation { closeAccount(id: 1, input: { closureReason: \"User request\", closedBy: \"admin\" }) { id status } }"}

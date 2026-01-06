@@ -236,17 +236,37 @@ export class AdminSystemComponent implements OnInit {
 
   loadSuspiciousTransactions(): void {
     this.loading = true;
-    this.transactionService.getSuspiciousTransactions().subscribe({
-      next: (transactions) => {
-        this.suspiciousTransactions = transactions;
-        this.loading = false;
-      },
-      error: () => {
-        this.snackBar.open('Erreur lors du chargement des transactions suspectes', 'Fermer', { duration: 3000 });
-        this.loading = false;
-      }
-    });
-  }
+    const result: any = this.transactionService.getSuspiciousTransactions();
+
+// Support Observable
+    if (result && typeof result.subscribe === 'function') {
+      result.subscribe({
+        next: (transactions: SuspiciousTransaction[]) => {
+          this.suspiciousTransactions = transactions;
+          this.loading = false;
+        },
+        error: () => {
+          this.snackBar.open('Erreur lors du chargement des transactions suspectes', 'Fermer', { duration: 3000 });
+          this.loading = false;
+        }
+      });
+// Support Promise
+    } else if (result && typeof result.then === 'function') {
+      result
+        .then((transactions: SuspiciousTransaction[]) => {
+          this.suspiciousTransactions = transactions;
+          this.loading = false;
+        })
+        .catch(() => {
+          this.snackBar.open('Erreur lors du chargement des transactions suspectes', 'Fermer', { duration: 3000 });
+          this.loading = false;
+        });
+    } else {
+      // Service returned void / unexpected type
+      this.loading = false;
+      this.snackBar.open('Impossible de récupérer les transactions suspectes', 'Fermer', { duration: 3000 });
+    }
+   }
 
   onReviewTransaction(suspicious: SuspiciousTransaction, action: 'approve' | 'reject' | 'flag'): void {
     if (action === 'approve') {

@@ -21,10 +21,10 @@ import { AnalyticsBackendService } from '../../core/services/analytics-backend.s
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { User, UserRole } from '../../models';
-import { 
-  DashboardSummary, 
-  CategoryBreakdown, 
-  BalanceTrend, 
+import {
+  DashboardSummary,
+  CategoryBreakdown,
+  BalanceTrend,
   Alert,
   AlertType,
   AlertSeverity,
@@ -69,11 +69,11 @@ export class AnalyticsComponent implements OnInit {
   categoryChart: ChartData | null = null;
   recommendations: string[] = [];
   activeAlerts: Alert[] = [];
-  
+
   userId: string | null = null;
   currentUser: User | null = null;
   isAgentOrAdmin = false;
-  
+
   // Client selection for agents/admins
   clients: User[] = [];
   filteredClients$!: Observable<User[]>;
@@ -88,7 +88,7 @@ export class AnalyticsComponent implements OnInit {
 
   ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
-    
+
     if (!this.currentUser) {
       this.userId = '3'; // Fallback to default user
       this.loadAnalytics();
@@ -101,7 +101,7 @@ export class AnalyticsComponent implements OnInit {
     if (this.isAgentOrAdmin) {
       // Load clients for selection
       this.loadClients();
-      
+
       // Setup filtered clients observable
       this.filteredClients$ = this.clientSearchControl.valueChanges.pipe(
         startWith(''),
@@ -122,7 +122,7 @@ export class AnalyticsComponent implements OnInit {
 
     if (this.currentUser.role === UserRole.AGENT) {
       // Load clients assigned to this agent
-      this.userService.getAgentClients(this.currentUser.id).subscribe({
+      this.userService.getAgentsClients(this.currentUser.id).subscribe({
         next: (clients) => {
           this.clients = clients;
           if (clients.length > 0) {
@@ -133,15 +133,15 @@ export class AnalyticsComponent implements OnInit {
             this.loadAnalytics();
           }
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error loading clients:', error);
         }
       });
     } else if (this.currentUser.role === UserRole.ADMIN) {
-      // Load all clients
-      this.userService.getAllUsers().subscribe({
+      // Load all clients using searchUsers with role filter
+      this.userService.searchUsers('', 'CLIENT', 0, 1000).subscribe({
         next: (users) => {
-          this.clients = users.filter(u => u.role === UserRole.CLIENT);
+          this.clients = users;
           if (this.clients.length > 0) {
             // Auto-select first client
             this.selectedClient = this.clients[0];
@@ -150,7 +150,7 @@ export class AnalyticsComponent implements OnInit {
             this.loadAnalytics();
           }
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error loading clients:', error);
         }
       });
@@ -255,7 +255,7 @@ export class AnalyticsComponent implements OnInit {
       const date = new Date(point.timestamp);
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     });
-    
+
     const data = trend.dataPoints.map(point => point.value);
 
     return {
@@ -323,9 +323,9 @@ export class AnalyticsComponent implements OnInit {
 
   getGeneratedAtFormatted(): string {
     if (this.dashboardSummary?.generatedAt) {
-      return new Date(this.dashboardSummary.generatedAt).toLocaleString('en-US', { 
-        dateStyle: 'short', 
-        timeStyle: 'short' 
+      return new Date(this.dashboardSummary.generatedAt).toLocaleString('en-US', {
+        dateStyle: 'short',
+        timeStyle: 'short'
       });
     }
     return 'now';

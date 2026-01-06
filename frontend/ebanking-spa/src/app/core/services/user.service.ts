@@ -3,6 +3,8 @@ import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { User } from '../../models/user.model';
 import { environment } from '../../../environments/environment';
+import { map, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -89,6 +91,23 @@ export class UserService {
     return this.http.post(`${environment.authServiceUrl}/login`, { email: login, password });
   }
 
+  /**
+   * Change le mot de passe de l'utilisateur courant via le backend (Keycloak)
+   */
+  changePassword(userId: string, currentPassword: string, newPassword: string): Observable<boolean> {
+    return this.http.post<{ success: boolean }>(`${environment.authServiceUrl}/change-password`, {
+      userId,
+      currentPassword,
+      newPassword
+    }).pipe(
+      // Renvoie true si succès, false sinon
+      // (adapter selon la réponse réelle de votre backend)
+      // Si votre backend renvoie juste 200/204, adaptez le map
+      map(res => !!res && res.success),
+      catchError(() => of(false))
+    );
+  }
+
   // ADMIN - Assignments
   assignClientToAgent(agentId: string, clientId: string): Observable<any> {
     return this.http.post(`http://34.22.142.65/admin/users/assignments`, { agentId, clientId });
@@ -115,5 +134,13 @@ export class UserService {
   updateClientProfile(agentId: string, clientId: string, client: Partial<User>): Observable<User> {
     // Utilise le même endpoint que updateClient
     return this.updateClient(agentId, clientId, client);
+  }
+
+  /**
+   * Retourne tous les utilisateurs (agents, clients, etc.)
+   */
+  getAllUsers(): Observable<User[]> {
+    // Utilise searchUsers avec une requête vide pour tout récupérer (limite à 1000)
+    return this.searchUsers('', undefined, 0, 1000);
   }
 }

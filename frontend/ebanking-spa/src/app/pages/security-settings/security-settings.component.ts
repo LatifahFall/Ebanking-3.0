@@ -97,7 +97,7 @@ export class SecuritySettingsComponent implements OnInit {
       this.passwordForm.currentPassword,
       this.passwordForm.newPassword
     ).subscribe({
-      next: (updated) => {
+      next: (updated: boolean) => {
         if (updated) {
           this.showSuccess('Password changed successfully');
           // Reset form
@@ -111,7 +111,7 @@ export class SecuritySettingsComponent implements OnInit {
         }
         this.changingPassword = false;
       },
-      error: (error) => {
+      error: (error: unknown) => {
         console.error('Error changing password:', error);
         this.showError('Failed to change password. Please check your current password.');
         this.changingPassword = false;
@@ -143,4 +143,3 @@ export class SecuritySettingsComponent implements OnInit {
     });
   }
 }
-

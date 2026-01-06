@@ -18,6 +18,8 @@ export class MfaComponent {
   errorMessage = '';
   resendTimer = 60;
   pendingUserId: string | null = null;
+  devCode: string | null = null;
+
 
   constructor(
     private authService: AuthService,

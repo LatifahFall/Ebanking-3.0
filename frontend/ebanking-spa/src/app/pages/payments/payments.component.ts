@@ -166,7 +166,9 @@ export class PaymentsComponent implements OnInit {
   loadPayments(page = this.page): void {
     this.loading = true;
     this.errorMessage = '';
-    this.paymentService.getPayments(undefined, undefined, page, this.size, this.sortBy, this.sortDir).subscribe(resp => {
+    // Remplacer getPayments par listPayments et fournir un accountId (exemple : this.currentAccountId)
+    const accountId = this.payments?.[0]?.fromAccountId || '';
+    this.paymentService.listPayments(accountId, undefined, page, this.size).subscribe((resp) => {
       this.payments = resp.payments;
       this.page = resp.page;
       this.size = resp.size;
@@ -234,7 +236,8 @@ export class PaymentsComponent implements OnInit {
   reverse(id: string): void {
     if (!id) return;
     this.loading = true;
-    this.paymentService.reversePayment(id).subscribe(() => {
+    // Fournir une raison vide pour reversePayment
+    this.paymentService.reversePayment(id, '').subscribe(() => {
       this.loadPayments(0);
     }, () => {
       this.loading = false;
@@ -262,13 +265,14 @@ export class PaymentsComponent implements OnInit {
       return;
     }
 
-    const req: PaymentRequest = {
+    // Ne pas ajouter paymentType - ce n'est pas une propriété de QRCodePaymentRequest
+    const req: QRCodePaymentRequest = {
       fromAccountId: from,
       toAccountId: to,
       amount,
       currency,
-      paymentType: PaymentType.QR_CODE
-    } as any;
+      qrCodeData: `${from}-${to || ''}-${amount}-${currency}`
+    };
 
     this.loading = true;
     this.paymentService.generateQRCode(req).subscribe(
@@ -279,7 +283,7 @@ export class PaymentsComponent implements OnInit {
       },
       () => {
         this.loading = false;
-        this.errorMessage = 'Failed to generate QR code. Please try again.';
+        this.errorMessage = 'Failed to generate QR code.';
       }
     );
   }

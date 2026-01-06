@@ -15,11 +15,12 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import {ClientFormData} from '../../shared/components/client-form-dialog/client-form-dialog.component'
 import { UserService } from '../../core/services/user.service';
 import { User, UserRole } from '../../models';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { LoaderComponent } from '../../shared/components/loader/loader.component';
-import { ClientFormDialogComponent, ClientFormData } from '../../shared/components/client-form-dialog/client-form-dialog.component';
+import { ClientFormDialogComponent } from '../../shared/components/client-form-dialog/client-form-dialog.component';
 import { AssignClientDialogComponent, AssignClientDialogData } from '../../shared/components/assign-client-dialog/assign-client-dialog.component';
 
 export interface AgentPerformance {
@@ -59,12 +60,13 @@ export interface AgentPerformance {
 })
 export class AdminAgentsComponent implements OnInit {
   agents: User[] = [];
+  clients: User[] = [];
   agentPerformance: Map<string, AgentPerformance> = new Map();
+
   displayedColumns: string[] = ['name', 'email', 'clients', 'performance', 'actions'];
   loading = false;
   errorMessage = '';
   searchQuery = '';
-  clients: User[] = [];
 
   constructor(
     private userService: UserService,
@@ -77,44 +79,65 @@ export class AdminAgentsComponent implements OnInit {
     this.loadClients();
   }
 
+  /** Charge la liste des agents */
   loadAgents(): void {
     this.loading = true;
-    this.userService.searchUsers('', UserRole.AGENT, 0, 1000).subscribe({
-      next: (result) => {
-        this.agents = result.users;
+    // Utilise getAllUsers puis filtre sur le rôle AGENT
+    this.userService.getAllUsers().subscribe({
+      next: (users: User[]) => {
+        this.agents = users.filter(u => u.role === UserRole.AGENT);
+        this.loading = false;
         this.loadAgentPerformance();
-        this.loading = false;
       },
-      error: () => {
+      error: (err: any) => {
+        console.error('Erreur lors du chargement des agents', err);
+        this.errorMessage = 'Impossible de charger les agents';
         this.loading = false;
-        this.errorMessage = 'Failed to load agents.';
+        this.snackBar.open('Erreur de chargement des agents', 'Close', { duration: 5000 });
       }
     });
   }
 
+  /** Charge tous les clients (pour l'assignation) */
   loadClients(): void {
-    this.userService.searchUsers('', UserRole.CLIENT, 0, 1000).subscribe({
-      next: (result) => {
-        this.clients = result.users;
+    // Utilise getAllUsers puis filtre sur le rôle CLIENT
+    this.userService.getAllUsers().subscribe({
+      next: (users: User[]) => {
+        this.clients = users.filter(u => u.role === UserRole.CLIENT);
+      },
+      error: (err: any) => {
+        console.error('Erreur chargement clients', err);
+        this.snackBar.open('Erreur lors du chargement des clients', 'Close', { duration: 5000 });
       }
     });
   }
 
+  /** Calcule les performances pour chaque agent */
   loadAgentPerformance(): void {
+    this.agentPerformance.clear();
+
+    if (this.agents.length === 0) return;
+
     this.agents.forEach(agent => {
-      this.userService.getAgentClients(agent.id).subscribe({
-        next: (clients) => {
+      this.userService.getAgentsClients(agent.id).subscribe({  // Note le "s" : getAgentsClients
+        next: (clients: User[]) => {
           const now = new Date();
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
           const totalClients = clients.length;
-          const activeClients = clients.filter(c => c.status === 'ACTIVE').length;
-          const newClientsThisMonth = clients.filter(c => {
+          const activeClients = clients.filter((c: User) => c.status === 'ACTIVE').length;
+
+          const newClientsThisMonth = clients.filter((c: User) => {
+            if (!c.createdAt) return false;
             const created = new Date(c.createdAt);
             return created >= startOfMonth;
           }).length;
-          const pendingKyc = clients.filter(c => c.kycStatus === 'IN_PROGRESS' || c.kycStatus === 'NOT_STARTED').length;
-          const verifiedKyc = clients.filter(c => c.kycStatus === 'VERIFIED').length;
+
+          const pendingKyc = clients.filter((c: User) =>
+            c.kycStatus === 'IN_PROGRESS' || c.kycStatus === 'NOT_STARTED'
+          ).length;
+
+          const verifiedKyc = clients.filter((c: User) => c.kycStatus === 'VERIFIED').length;
 
           this.agentPerformance.set(agent.id, {
             agentId: agent.id,
@@ -123,6 +146,18 @@ export class AdminAgentsComponent implements OnInit {
             newClientsThisMonth,
             pendingKyc,
             verifiedKyc
+          });
+        },
+        error: (err) => {
+          console.error(`Erreur performance agent ${agent.id}`, err);
+          // On met des zéros en cas d'erreur
+          this.agentPerformance.set(agent.id, {
+            agentId: agent.id,
+            totalClients: 0,
+            activeClients: 0,
+            newClientsThisMonth: 0,
+            pendingKyc: 0,
+            verifiedKyc: 0
           });
         }
       });
@@ -136,7 +171,7 @@ export class AdminAgentsComponent implements OnInit {
   onCreateAgent(): void {
     const dialogRef = this.dialog.open(ClientFormDialogComponent, {
       width: '500px',
-      data: { title: 'Create New Agent', client: null }
+      data: { title: 'Créer un nouvel agent', client: undefined } as ClientFormData
     });
 
     dialogRef.afterClosed().subscribe((result: any) => {
@@ -149,11 +184,11 @@ export class AdminAgentsComponent implements OnInit {
           role: UserRole.AGENT
         }).subscribe({
           next: () => {
-            this.snackBar.open('Agent created successfully!', 'Close', { duration: 3000 });
+            this.snackBar.open('Agent créé avec succès !', 'Fermer', { duration: 3000 });
             this.loadAgents();
           },
           error: (error) => {
-            this.snackBar.open(`Failed to create agent: ${error.message || 'Unknown error'}`, 'Close', { duration: 5000 });
+            this.snackBar.open(`Échec création agent : ${error.message || 'Erreur inconnue'}`, 'Fermer', { duration: 5000 });
           }
         });
       }
@@ -161,94 +196,65 @@ export class AdminAgentsComponent implements OnInit {
   }
 
   onDeleteAgent(agent: User): void {
-    if (confirm(`Are you sure you want to deactivate agent ${agent.fullName}?`)) {
+    if (confirm(`Voulez-vous vraiment désactiver l'agent ${agent.fullName} ?`)) {
       this.loading = true;
       this.userService.deactivateUser(agent.id).subscribe({
         next: () => {
-          this.loading = false;
-          this.snackBar.open(`Agent ${agent.fullName} has been deactivated`, 'Close', { duration: 3000 });
+          this.snackBar.open(`Agent ${agent.fullName} désactivé`, 'Fermer', { duration: 3000 });
           this.loadAgents();
         },
         error: () => {
+          this.snackBar.open('Échec désactivation agent', 'Fermer', { duration: 5000 });
           this.loading = false;
-          this.snackBar.open('Failed to deactivate agent', 'Close', { duration: 3000 });
         }
       });
     }
   }
 
   onAssignClients(agent: User): void {
-    // Get currently assigned clients to filter them out
-    this.userService.getAgentClients(agent.id).subscribe({
-      next: (assignedClients) => {
+    this.userService.getAgentsClients(agent.id).subscribe({
+      next: (assignedClients: User[]) => {
         const assignedClientIds = assignedClients.map(c => c.id);
 
-        if (assignedClientIds.length >= this.clients.length) {
-          this.snackBar.open('All clients are already assigned to this agent', 'Close', { duration: 3000 });
-          return;
-        }
-
-        // Open dialog to select a client
         const dialogRef = this.dialog.open(AssignClientDialogComponent, {
-          width: '500px',
+          width: '600px',
           data: {
-            agent: agent,
+            agent,
             clients: this.clients,
-            assignedClientIds: assignedClientIds
+            assignedClientIds
           } as AssignClientDialogData
         });
 
         dialogRef.afterClosed().subscribe((result: { clientId: string } | undefined) => {
-          if (result && result.clientId) {
-            this.loading = true;
+          if (result?.clientId) {
             this.userService.assignClientToAgent(agent.id, result.clientId).subscribe({
               next: () => {
-                this.loading = false;
-                this.snackBar.open('Client assigned successfully', 'Close', { duration: 3000 });
-                this.loadAgentPerformance();
+                this.snackBar.open('Client assigné avec succès', 'Fermer', { duration: 3000 });
+                this.loadAgentPerformance(); // Rafraîchir les stats
               },
               error: () => {
-                this.loading = false;
-                this.snackBar.open('Failed to assign client', 'Close', { duration: 3000 });
+                this.snackBar.open('Échec assignation client', 'Fermer', { duration: 5000 });
               }
             });
           }
         });
       },
       error: () => {
-        // If we can't get assigned clients, proceed with all clients
-        const dialogRef = this.dialog.open(AssignClientDialogComponent, {
-          width: '500px',
+        // En cas d'erreur, on propose tous les clients
+        this.dialog.open(AssignClientDialogComponent, {
+          width: '600px',
           data: {
-            agent: agent,
+            agent,
             clients: this.clients,
             assignedClientIds: []
           } as AssignClientDialogData
-        });
-
-        dialogRef.afterClosed().subscribe((result: { clientId: string } | undefined) => {
-          if (result && result.clientId) {
-            this.loading = true;
-            this.userService.assignClientToAgent(agent.id, result.clientId).subscribe({
-              next: () => {
-                this.loading = false;
-                this.snackBar.open('Client assigned successfully', 'Close', { duration: 3000 });
-                this.loadAgentPerformance();
-              },
-              error: () => {
-                this.loading = false;
-                this.snackBar.open('Failed to assign client', 'Close', { duration: 3000 });
-              }
-            });
-          }
         });
       }
     });
   }
 
   onViewAgentDetails(agent: User): void {
-    // Navigate to agent details page (could be created separately)
-    this.snackBar.open(`Viewing details for ${agent.fullName}`, 'Close', { duration: 2000 });
+    this.snackBar.open(`Détails de l'agent ${agent.fullName} (à implémenter)`, 'Fermer', { duration: 3000 });
   }
 
   onFilterAgents(): void {
@@ -259,9 +265,8 @@ export class AdminAgentsComponent implements OnInit {
 
     const query = this.searchQuery.toLowerCase();
     this.agents = this.agents.filter(agent =>
-      agent.fullName.toLowerCase().includes(query) ||
-      agent.email.toLowerCase().includes(query)
+      agent.fullName?.toLowerCase().includes(query) ||
+      agent.email?.toLowerCase().includes(query)
     );
   }
 }
-

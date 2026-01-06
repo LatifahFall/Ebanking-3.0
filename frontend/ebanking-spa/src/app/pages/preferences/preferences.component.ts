@@ -148,6 +148,10 @@ export class PreferencesComponent implements OnInit {
     });
   }
 
+  onSave(): void {
+    this.savePreferences();
+  }
+
   private showSuccess(message: string): void {
     this.snackBar.open(message, 'Close', {
       duration: 3000,

@@ -1,11 +1,11 @@
 /**
  * Analytics Models
- * 
+ *
  * These models are aligned with the backend Analytics Service DTOs.
  * They correspond exactly to the Java DTOs in:
  * - com.banking.analytics.dto.*
  * - com.banking.analytics.model.Alert
- * 
+ *
  * TODO: When connecting to real backend, ensure these match the Java DTOs exactly.
  */
 
@@ -78,6 +78,9 @@ export interface AdminOverview {
   activeUsers: number; // Long -> number
   totalTransactions: number; // Long -> number
   revenue: number; // BigDecimal -> number
+  activeAlerts?: any[]; // Ajouté pour correspondre au backend
+  serviceHealth?: any[]; // Ajouté pour correspondre au backend
+  apiPerformance?: any[]; // Ajouté pour correspondre au backend
 }
 
 // ============================================================================
@@ -180,4 +183,3 @@ export function getAlertSeverityColor(severity: AlertSeverity): string {
 export function isAlertActive(alert: Alert): boolean {
   return alert.status === AlertStatus.ACTIVE;
 }
-

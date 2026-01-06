@@ -89,7 +89,7 @@ export class TransactionsComponent implements OnInit {
   loadBalance(): void {
     if (!this.selectedAccount) return;
     this.accountService.getBalance(this.selectedAccount.id).subscribe(bal => {
-      this.balance = bal;
+      this.balance = { balance: bal };
     });
   }
 

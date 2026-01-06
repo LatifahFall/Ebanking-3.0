@@ -149,7 +149,7 @@ export class TransactionService {
       this.getRecentTransactions(50).subscribe(transactions => {
         const start = (page - 1) * pageSize;
         const paginatedTransactions = transactions.slice(start, start + pageSize);
-        
+
         observer.next({
           transactions: paginatedTransactions,
           total: transactions.length
@@ -171,4 +171,24 @@ export class TransactionService {
 
     return of(stats).pipe(delay(300));
   }
+
+
+
+
+getSuspiciousTransactions(): Observable<Transaction[]> {
+  return new Observable(observer => {
+    this.getRecentTransactions(50).subscribe(transactions => {
+      const suspicious = transactions.filter(t =>
+        Math.abs(t.amount || 0) > 1000 ||
+        t.type === TransactionType.CRYPTO_BUY ||
+        t.status === TransactionStatus.PENDING
+      );
+      observer.next(suspicious);
+      observer.complete();
+    });
+  });
+}
+
+
+
 }

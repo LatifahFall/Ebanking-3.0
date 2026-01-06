@@ -110,7 +110,7 @@ export class AgentPaymentsComponent implements OnInit {
       return this.clients;
     }
     const term = searchTerm.toLowerCase();
-    return this.clients.filter(client => 
+    return this.clients.filter(client =>
       client.fullName.toLowerCase().includes(term) ||
       client.email.toLowerCase().includes(term) ||
       (client.firstName && client.firstName.toLowerCase().includes(term)) ||
@@ -132,9 +132,9 @@ export class AgentPaymentsComponent implements OnInit {
 
   loadClients(): void {
     if (!this.currentAgentId) return;
-    
+
     this.loading = true;
-    this.userService.getAgentClients(this.currentAgentId).subscribe({
+    this.userService.getAgentsClients(this.currentAgentId).subscribe({
       next: (clients) => {
         this.clients = clients;
         this.loading = false;
@@ -210,9 +210,9 @@ export class AgentPaymentsComponent implements OnInit {
     // For WITHDRAWAL: fromAccountId = client account, toAccountId = null (as per backend comment)
     // For DEPOSIT: This is not directly supported by payment service - would need account service endpoint
     // For TRANSFER: fromAccountId = source, toAccountId = destination
-    
+
     let paymentRequest: PaymentRequest;
-    
+
     if (this.operationType === OperationType.WITHDRAWAL) {
       // Withdrawal: fromAccountId = client account, toAccountId = null
       paymentRequest = {

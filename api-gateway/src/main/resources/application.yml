@@ -1,0 +1,281 @@
+server:
+  port: ${SERVER_PORT:9090}
+
+spring:
+  application:
+    name: api-gateway
+  
+  # ==================== CLOUD GATEWAY CONFIGURATION ====================
+  cloud:
+    gateway:
+      # Global CORS Configuration
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:4200"
+              - "http://localhost:8080"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      # Route Definitions
+      routes:
+        # ==================== AUTH SERVICE ====================
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8080}
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: authServiceCircuitBreaker
+                fallbackUri: forward:/fallback/auth
+
+        # ==================== USER SERVICE ====================
+        - id: user-service
+          uri: ${USER_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/users/**, /api/admin/**, /api/agents/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: userServiceCircuitBreaker
+                fallbackUri: forward:/fallback/user
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+
+        # ==================== ACCOUNT SERVICE ====================
+        - id: account-service
+          uri: ${ACCOUNT_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/accounts/**, /api/transactions/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: accountServiceCircuitBreaker
+                fallbackUri: forward:/fallback/account
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+
+        # ==================== PAYMENT SERVICE ====================
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/payments/**, /api/recurring-payments/**, /api/beneficiaries/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: paymentServiceCircuitBreaker
+                fallbackUri: forward:/fallback/payment
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 15
+                redis-rate-limiter.burstCapacity: 30
+
+        # ==================== CRYPTO SERVICE ====================
+        - id: crypto-service
+          uri: ${CRYPTO_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/crypto/**, /api/coins/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: cryptoServiceCircuitBreaker
+                fallbackUri: forward:/fallback/crypto
+
+        # ==================== NOTIFICATION SERVICE ====================
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/notifications/**, /ws/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: notificationServiceCircuitBreaker
+                fallbackUri: forward:/fallback/notification
+
+        # ==================== AUDIT SERVICE ====================
+        - id: audit-service
+          uri: ${AUDIT_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/audit,/api/audit/**
+          filters:
+            - SetPath=/api/v1/audit
+            - name: CircuitBreaker
+              args:
+                name: auditServiceCircuitBreaker
+                fallbackUri: forward:/fallback/audit
+
+        # ==================== ANALYTICS SERVICE ====================
+        - id: analytics-service
+          uri: ${ANALYTICS_SERVICE_URL:http://localhost:8088}
+          predicates:
+            - Path=/api/analytics,/api/analytics/**,/api/alerts/**
+          filters:
+            - SetPath=/api/v1/analytics
+            - name: CircuitBreaker
+              args:
+                name: analyticsServiceCircuitBreaker
+                fallbackUri: forward:/fallback/analytics
+
+        # ==================== AI SERVICE ====================
+        - id: ai-service
+          uri: ${AI_SERVICE_URL:http://localhost:8089}
+          predicates:
+            - Path=/api/ai/**, /api/chat/**
+          filters:
+            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: aiServiceCircuitBreaker
+                fallbackUri: forward:/fallback/ai
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+
+      # Default Filters (Applied to all routes)
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+  # ==================== REDIS CONFIGURATION (Optional - for rate limiting) ====================
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+
+  # ==================== KAFKA CONFIGURATION ====================
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: api-gateway-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+
+# ==================== KAFKA TOPICS ====================
+kafka:
+  topics:
+    gateway-events: gateway-events
+    api-requests: api-requests
+    api-responses: api-responses
+    error-events: error-events
+
+  # ==================== SECURITY & KEYCLOAK ====================
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KC_ISSUER_URI:http://keycloak:8180/realms/bank-realm}
+          jwk-set-uri: ${KC_JWK_SET_URI:http://keycloak:8180/realms/bank-realm/protocol/openid-connect/certs}
+
+# ==================== KEYCLOAK CONFIGURATION ====================
+keycloak:
+  enabled: ${KEYCLOAK_ENABLED:false}  # false = dev mode, true = prod mode
+  realm: ${KC_REALM:bank-realm}
+  auth-server-url: ${KC_URL:http://keycloak:8180}
+
+# ==================== ACTUATOR (Monitoring) ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      enabled: true
+
+# ==================== LOGGING ====================
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+    reactor.netty: INFO
+
+# ==================== RESILIENCE4J CIRCUIT BREAKER ====================
+resilience4j:
+  circuitbreaker:
+    instances:
+      authServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+      
+      userServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+      
+      accountServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+      
+      paymentServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+      
+      cryptoServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+      
+      notificationServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+      
+      auditServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+      
+      analyticsServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50

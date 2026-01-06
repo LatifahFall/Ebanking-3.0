@@ -47,6 +47,7 @@ export class SidebarComponent {
     { label: 'Client Operations', icon: 'payment', route: '/agent/payments' },
     { label: 'Client Support', icon: 'support_agent', route: '/agent/support' },
     { label: 'Reports', icon: 'assessment', route: '/agent/reports' },
+    { label: 'Analytics', icon: 'analytics', route: '/analytics' },
     { label: 'Profile', icon: 'person', route: '/profile' }
   ];
 
@@ -56,6 +57,7 @@ export class SidebarComponent {
     { label: 'User Management', icon: 'manage_accounts', route: '/admin/users' },
     { label: 'Agent Management', icon: 'supervisor_account', route: '/admin/agents' },
     { label: 'System Management', icon: 'settings', route: '/admin/system' },
+    { label: 'Analytics', icon: 'analytics', route: '/analytics' },
     { label: 'Profile', icon: 'person', route: '/profile' }
   ];
 

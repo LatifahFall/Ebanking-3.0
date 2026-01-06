@@ -1,9 +1,44 @@
 <div class="analytics-page">
   <app-page-header
     title="Analytics"
-    subtitle="Financial insights and trends based on your accounts and transactions"
+    subtitle="Financial insights and trends"
     [breadcrumbs]="['Home', 'Analytics']">
   </app-page-header>
+
+  <!-- Client Selection for Agents and Admins -->
+  @if (isAgentOrAdmin) {
+    <mat-card class="client-selector-card">
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="client-select-field">
+          <mat-label>Select Client</mat-label>
+          <input
+            type="text"
+            matInput
+            [formControl]="clientSearchControl"
+            [matAutocomplete]="clientAuto"
+            placeholder="Search for a client...">
+          <mat-autocomplete
+            #clientAuto="matAutocomplete"
+            [displayWith]="displayClient"
+            (optionSelected)="onClientSelected($event.option.value)">
+            @for (client of filteredClients$ | async; track client.id) {
+              <mat-option [value]="client">
+                <strong>{{ client.firstName }} {{ client.lastName }}</strong>
+                <span class="client-email"> - {{ client.email }}</span>
+              </mat-option>
+            }
+          </mat-autocomplete>
+          <mat-icon matPrefix>person_search</mat-icon>
+        </mat-form-field>
+        @if (selectedClient) {
+          <div class="selected-client-info">
+            <mat-icon>person</mat-icon>
+            <span>Viewing analytics for: <strong>{{ selectedClient.firstName }} {{ selectedClient.lastName }}</strong></span>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
 
   @if (loading) {
     <div class="loading-container">
@@ -12,16 +47,16 @@
     </div>
   } @else {
     <div class="analytics-content">
-      <!-- Summary Cards -->
+      <!-- Summary Cards from DashboardSummary -->
       <div class="summary-cards">
         <mat-card class="stat-card">
           <div class="stat-icon" style="background: #EBF5FF;">
             <mat-icon style="color: #1E6AE1;">account_balance_wallet</mat-icon>
           </div>
           <div class="stat-content">
-            <h3>Total Balance</h3>
-            <p class="stat-value">{{ summary ? formatCurrency(summary.totalBalance) : '$0.00' }}</p>
-            <span class="stat-label">{{ summary?.accountsCount || 0 }} accounts</span>
+            <h3>Current Balance</h3>
+            <p class="stat-value">{{ dashboardSummary ? formatCurrency(dashboardSummary.currentBalance) : '$0.00' }}</p>
+            <span class="stat-label">As of {{ getGeneratedAtFormatted() }}</span>
           </div>
         </mat-card>
 
@@ -30,9 +65,9 @@
             <mat-icon style="color: #10B981;">trending_up</mat-icon>
           </div>
           <div class="stat-content">
-            <h3>Total Income</h3>
-            <p class="stat-value income">{{ summary ? formatCurrency(summary.totalIncome) : '$0.00' }}</p>
-            <span class="stat-label">Last period</span>
+            <h3>Monthly Income</h3>
+            <p class="stat-value income">{{ dashboardSummary ? formatCurrency(dashboardSummary.monthlyIncome) : '$0.00' }}</p>
+            <span class="stat-label">This month</span>
           </div>
         </mat-card>
 
@@ -41,76 +76,49 @@
             <mat-icon style="color: #EF4444;">trending_down</mat-icon>
           </div>
           <div class="stat-content">
-            <h3>Total Expenses</h3>
-            <p class="stat-value expense">{{ summary ? formatCurrency(summary.totalExpenses) : '$0.00' }}</p>
-            <span class="stat-label">Last period</span>
+            <h3>Monthly Spending</h3>
+            <p class="stat-value expense">{{ dashboardSummary ? formatCurrency(dashboardSummary.monthlySpending) : '$0.00' }}</p>
+            <span class="stat-label">This month</span>
           </div>
         </mat-card>
 
         <mat-card class="stat-card">
           <div class="stat-icon" style="background: #FEF3C7;">
-            <mat-icon style="color: #F59E0B;">account_balance</mat-icon>
+            <mat-icon style="color: #F59E0B;">receipt</mat-icon>
           </div>
           <div class="stat-content">
-            <h3>Net Income</h3>
-            <p class="stat-value" [class.positive]="summary && summary.netIncome >= 0" [class.negative]="summary && summary.netIncome < 0">
-              {{ summary ? formatCurrency(summary.netIncome) : '$0.00' }}
-            </p>
-            <span class="stat-label">{{ summary?.transactionCount || 0 }} transactions</span>
+            <h3>Transactions</h3>
+            <p class="stat-value">{{ dashboardSummary?.transactionsThisMonth || 0 }}</p>
+            <span class="stat-label">This month</span>
           </div>
         </mat-card>
       </div>
 
-      <!-- Charts Section -->
+      <!-- Balance Trend Chart -->
       <div class="charts-section">
-        <!-- Income vs Expenses Chart -->
-        <mat-card class="chart-card">
-          <mat-card-header>
-            <mat-card-title>
-              <mat-icon>show_chart</mat-icon>
-              Income vs Expenses
-            </mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            @if (incomeExpensesChart) {
-              <app-chart-widget
-                title="Monthly Income vs Expenses"
-                type="bar"
-                [height]="300"
-                [data]="incomeExpensesChart">
-              </app-chart-widget>
-            } @else {
-              <div class="no-data">No data available</div>
-            }
-          </mat-card-content>
-        </mat-card>
-
-        <!-- Balance Evolution Chart -->
         <mat-card class="chart-card">
           <mat-card-header>
             <mat-card-title>
               <mat-icon>timeline</mat-icon>
-              Balance Evolution
+              Balance Trend ({{ dashboardSummary?.balanceTrend?.period || '30 days' }})
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            @if (balanceEvolutionChart) {
+            @if (balanceTrendChart) {
               <app-chart-widget
-                title="Account Balance Over Time"
+                title="Balance Evolution"
                 type="line"
                 [height]="300"
-                [data]="balanceEvolutionChart">
+                [data]="balanceTrendChart">
               </app-chart-widget>
             } @else {
               <div class="no-data">No data available</div>
             }
           </mat-card-content>
         </mat-card>
-      </div>
 
-      <!-- Category Spending Section -->
-      <div class="category-section">
-        <mat-card class="category-card">
+        <!-- Category Breakdown Chart -->
+        <mat-card class="chart-card">
           <mat-card-header>
             <mat-card-title>
               <mat-icon>pie_chart</mat-icon>
@@ -118,42 +126,9 @@
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            @if (categorySpending.length > 0) {
-              <div class="category-list">
-                @for (category of categorySpending; track category.category) {
-                  <div class="category-item">
-                    <div class="category-info">
-                      <div class="category-color" [style.background]="category.color"></div>
-                      <span class="category-name">{{ formatCategoryName(category.category) }}</span>
-                    </div>
-                    <div class="category-stats">
-                      <span class="category-amount">{{ formatCurrency(category.amount) }}</span>
-                      <span class="category-percentage">{{ category.percentage.toFixed(1) }}%</span>
-                    </div>
-                    <div class="category-bar">
-                      <div class="category-bar-fill" [style.width.%]="category.percentage" [style.background]="category.color"></div>
-                    </div>
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="no-data">No spending data available</div>
-            }
-          </mat-card-content>
-        </mat-card>
-
-        <!-- Category Chart -->
-        <mat-card class="chart-card">
-          <mat-card-header>
-            <mat-card-title>
-              <mat-icon>bar_chart</mat-icon>
-              Category Breakdown
-            </mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
             @if (categoryChart) {
               <app-chart-widget
-                title="Spending by Category"
+                title="Category Breakdown"
                 type="bar"
                 [height]="300"
                 [data]="categoryChart">
@@ -164,6 +139,93 @@
           </mat-card-content>
         </mat-card>
       </div>
+
+      <!-- Category Breakdown List -->
+      @if (categoryBreakdown.length > 0) {
+        <mat-card class="category-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>category</mat-icon>
+              Category Details
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="category-list">
+              @for (category of categoryBreakdown; track category.category) {
+                <div class="category-item">
+                  <div class="category-info">
+                    <div class="category-color" [style.background]="getCategoryColor(category.category)"></div>
+                    <span class="category-name">{{ category.category }}</span>
+                  </div>
+                  <div class="category-stats">
+                    <span class="category-amount">{{ formatCurrency(category.amount) }}</span>
+                    <span class="category-percentage">{{ category.percentage.toFixed(1) }}%</span>
+                    <span class="category-count">{{ category.count }} transactions</span>
+                  </div>
+                  <div class="category-bar">
+                    <div class="category-bar-fill" 
+                         [style.width.%]="category.percentage" 
+                         [style.background]="getCategoryColor(category.category)"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Recommendations Section -->
+      @if (recommendations.length > 0) {
+        <mat-card class="recommendations-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>lightbulb</mat-icon>
+              Recommendations
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <ul class="recommendations-list">
+              @for (rec of recommendations; track rec) {
+                <li>{{ rec }}</li>
+              }
+            </ul>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Active Alerts Section -->
+      @if (activeAlerts.length > 0) {
+        <mat-card class="alerts-card">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>notifications</mat-icon>
+              Active Alerts ({{ activeAlerts.length }})
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="alerts-list">
+              @for (alert of activeAlerts; track alert.alertId) {
+                <div class="alert-item" [style.border-left-color]="getAlertSeverityColor(alert.severity)">
+                  <div class="alert-header">
+                    <div class="alert-info">
+                      <mat-chip [style.background-color]="getAlertSeverityColor(alert.severity)" color="primary">
+                        {{ formatAlertType(alert.alertType) }}
+                      </mat-chip>
+                      <span class="alert-severity">{{ alert.severity }}</span>
+                    </div>
+                    <button mat-icon-button (click)="onResolveAlert(alert.alertId)" matTooltip="Resolve alert">
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
+                  </div>
+                  <h4 class="alert-title">{{ alert.title }}</h4>
+                  <p class="alert-message">{{ alert.message }}</p>
+                  <span class="alert-time">{{ alert.triggeredAt | date:'short' }}</span>
+                </div>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
     </div>
   }
 </div>

@@ -3,8 +3,10 @@ import { Observable, combineLatest, map } from 'rxjs';
 import { UserService } from './user.service';
 import { TransactionService } from './transaction.service';
 import { AccountService } from './account.service';
+import { AnalyticsBackendService } from './analytics-backend.service';
 import { User, UserRole, UserStatus, KYCStatus } from '../../models';
 import { ChartData } from '../../shared/components/chart-widget/chart-widget.component';
+import { AdminOverview } from '../../models/analytics.model';
 
 export interface SystemStats {
   totalUsers: number;
@@ -68,19 +70,22 @@ export class AdminAnalyticsService {
   constructor(
     private userService: UserService,
     private transactionService: TransactionService,
-    private accountService: AccountService
+    private accountService: AccountService,
+    private analyticsBackend: AnalyticsBackendService
   ) {}
 
   /**
    * Get system-wide statistics
+   * Combines data from AnalyticsBackendService.getAdminOverview() with local user/account data
    */
   getSystemStats(): Observable<SystemStats> {
     return combineLatest([
+      this.analyticsBackend.getAdminOverview(),
       this.userService.getAllUsers(),
       this.transactionService.getRecentTransactions(10000),
       this.accountService.getAccounts()
     ]).pipe(
-      map(([users, transactions, accounts]) => {
+      map(([adminOverview, users, transactions, accounts]) => {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -97,10 +102,10 @@ export class AdminAnalyticsService {
           return created >= startOfMonth;
         }).length;
 
-        const completedTransactions = transactions.filter(t => t.status === 'COMPLETED');
-        const totalTransactions = completedTransactions.length;
-        const totalRevenue = completedTransactions
-          .filter(t => t.amount > 0)
+        // Use backend data when available, fallback to calculated values
+        const totalTransactions = adminOverview.totalTransactions || transactions.filter(t => t.status === 'COMPLETED').length;
+        const totalRevenue = adminOverview.revenue || transactions
+          .filter(t => t.status === 'COMPLETED' && t.amount > 0)
           .reduce((sum, t) => sum + t.amount, 0);
 
         const totalAccounts = accounts.length;
@@ -115,7 +120,7 @@ export class AdminAnalyticsService {
           totalClients,
           totalAgents,
           totalAdmins,
-          activeUsers,
+          activeUsers: adminOverview.activeUsers || activeUsers, // Use backend value if available
           inactiveUsers,
           newUsersThisMonth,
           totalTransactions,

@@ -14,6 +14,7 @@ import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
 import { AgentClientsComponent } from './pages/agent-clients/agent-clients.component';
 import { CryptoComponent } from './pages/crypto/crypto.component';
 import { AnalyticsComponent } from './pages/analytics/analytics.component';
+import { AlertsComponent } from './pages/alerts/alerts.component';
 import { TransactionsComponent } from './pages/transactions/transactions.component';
 import { TransactionReviewComponent } from './pages/transactions/transaction-review.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
@@ -132,6 +133,11 @@ export const routes: Routes = [
           path: 'analytics',
           component: AnalyticsComponent,
           title: 'Analytics - E-Banking 3.0'
+        },
+        {
+          path: 'alerts',
+          component: AlertsComponent,
+          title: 'Alerts - E-Banking 3.0'
         },
         {
           path: 'admin/dashboard',

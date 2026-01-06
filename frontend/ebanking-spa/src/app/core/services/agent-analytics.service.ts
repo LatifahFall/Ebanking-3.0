@@ -48,6 +48,11 @@ export interface PerformanceMetrics {
 /**
  * Agent Analytics Service
  * Aggregates data from UserService to generate agent-specific analytics
+ * 
+ * Note: The backend Analytics Service does not currently provide agent-specific endpoints.
+ * This service uses mock data based on UserService.getAgentClients().
+ * When agent analytics endpoints are added to the backend, this service should be
+ * refactored to use AnalyticsBackendService similar to AdminAnalyticsService.
  */
 @Injectable({
   providedIn: 'root'

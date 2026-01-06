@@ -11,6 +11,52 @@
   }
 }
 
+// Client Selector Card (for Agents and Admins)
+.client-selector-card {
+  @include card;
+  margin-bottom: $spacing-xl;
+  padding: $spacing-lg;
+
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  .client-select-field {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .selected-client-info {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+    color: var(--text-primary);
+    font-size: $text-sm;
+
+    mat-icon {
+      color: var(--primary-color);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    strong {
+      color: var(--primary-color);
+    }
+  }
+
+  .client-email {
+    color: var(--text-secondary);
+    font-size: $text-xs;
+    margin-left: $spacing-xs;
+  }
+}
+
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -244,6 +290,146 @@
         border-radius: $radius-sm;
         transition: width $transition-base;
       }
+    }
+
+    
+    .category-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: $spacing-md;
+
+      .category-count {
+        font-size: $text-xs;
+        color: var(--text-tertiary);
+      }
+    }
+  }
+}
+
+// Recommendations Section
+.recommendations-card {
+  @include card;
+  padding: $spacing-xl;
+
+  mat-card-header {
+    margin-bottom: $spacing-lg;
+
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      font-size: $text-lg;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+
+      mat-icon {
+        color: #F59E0B;
+      }
+    }
+  }
+
+  .recommendations-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+
+    li {
+      padding: $spacing-md;
+      background: var(--bg-secondary);
+      border-radius: $radius-md;
+      border-left: 3px solid #F59E0B;
+      color: var(--text-primary);
+      font-size: $text-sm;
+      line-height: 1.6;
+    }
+  }
+}
+
+// Alerts Section
+.alerts-card {
+  @include card;
+  padding: $spacing-xl;
+
+  mat-card-header {
+    margin-bottom: $spacing-lg;
+
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      font-size: $text-lg;
+      font-weight: $font-bold;
+      color: var(--text-primary);
+
+      mat-icon {
+        color: var(--primary-color);
+      }
+    }
+  }
+
+  .alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  .alert-item {
+    padding: $spacing-lg;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+    border-left: 4px solid;
+    transition: transform $transition-base, box-shadow $transition-base;
+
+    &:hover {
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .alert-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: $spacing-sm;
+
+      .alert-info {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+
+        .alert-severity {
+          font-size: $text-xs;
+          font-weight: $font-semibold;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+        }
+      }
+    }
+
+    .alert-title {
+      margin: $spacing-xs 0;
+      font-size: $text-base;
+      font-weight: $font-semibold;
+      color: var(--text-primary);
+    }
+
+    .alert-message {
+      margin: $spacing-sm 0;
+      font-size: $text-sm;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .alert-time {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-xs;
+      font-size: $text-xs;
+      color: var(--text-tertiary);
+      margin-top: $spacing-sm;
     }
   }
 }

@@ -1,0 +1,108 @@
+<div class="alerts-page">
+  <app-page-header
+    title="Alerts"
+    subtitle="Manage and monitor your account alerts"
+    [breadcrumbs]="['Home', 'Alerts']">
+  </app-page-header>
+
+  @if (loading) {
+    <div class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading alerts...</p>
+    </div>
+  } @else {
+    <div class="alerts-content">
+      <!-- Filters -->
+      <mat-card class="filters-card">
+        <mat-card-content>
+          <div class="filters">
+            <mat-form-field appearance="outline">
+              <mat-label>Filter by Type</mat-label>
+              <mat-select [(ngModel)]="selectedType" (selectionChange)="onTypeFilterChange()">
+                <mat-option value="ALL">All Types</mat-option>
+                @for (type of alertTypes; track type) {
+                  <mat-option [value]="type">{{ formatAlertType(type) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Filter by Severity</mat-label>
+              <mat-select [(ngModel)]="selectedSeverity" (selectionChange)="onSeverityFilterChange()">
+                <mat-option value="ALL">All Severities</mat-option>
+                @for (severity of severities; track severity) {
+                  <mat-option [value]="severity">{{ severity }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Alerts List -->
+      @if (filteredAlerts.length > 0) {
+        <div class="alerts-list">
+          @for (alert of filteredAlerts; track alert.alertId) {
+            <mat-card class="alert-card" [style.border-left-color]="getAlertSeverityColor(alert.severity)">
+              <mat-card-content>
+                <div class="alert-header">
+                  <div class="alert-info">
+                    <mat-icon [style.color]="getAlertSeverityColor(alert.severity)">
+                      {{ getAlertIcon(alert.alertType) }}
+                    </mat-icon>
+                    <div class="alert-meta">
+                      <mat-chip [style.background-color]="getAlertSeverityColor(alert.severity)" color="primary">
+                        {{ formatAlertType(alert.alertType) }}
+                      </mat-chip>
+                      <span class="alert-severity">{{ alert.severity }}</span>
+                    </div>
+                  </div>
+                  <button 
+                    mat-icon-button 
+                    (click)="onResolveAlert(alert.alertId)" 
+                    matTooltip="Resolve alert"
+                    color="primary">
+                    <mat-icon>check_circle</mat-icon>
+                  </button>
+                </div>
+                
+                <h3 class="alert-title">{{ alert.title }}</h3>
+                <p class="alert-message">{{ alert.message }}</p>
+                
+                @if (alert.thresholdValue || alert.currentValue) {
+                  <div class="alert-values">
+                    @if (alert.thresholdValue) {
+                      <span class="value-item">Threshold: {{ formatCurrency(alert.thresholdValue) }}</span>
+                    }
+                    @if (alert.currentValue) {
+                      <span class="value-item">Current: {{ formatCurrency(alert.currentValue) }}</span>
+                    }
+                  </div>
+                }
+                
+                <div class="alert-footer">
+                  <span class="alert-time">
+                    <mat-icon>schedule</mat-icon>
+                    {{ alert.triggeredAt | date:'short' }}
+                  </span>
+                  @if (alert.notified) {
+                    <mat-chip color="accent">Notified</mat-chip>
+                  }
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      } @else {
+        <mat-card class="empty-state">
+          <mat-card-content>
+            <mat-icon>notifications_off</mat-icon>
+            <h3>No alerts found</h3>
+            <p>You don't have any active alerts matching your filters.</p>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</div>
+

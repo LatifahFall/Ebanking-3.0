@@ -12,8 +12,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AdminAnalyticsService, SystemStats, SystemAlert, ServiceHealth, ApiPerformance } from '../../core/services/admin-analytics.service';
+import { AnalyticsBackendService } from '../../core/services/analytics-backend.service';
 import { UserService } from '../../core/services/user.service';
 import { UserRole } from '../../models';
+import { AdminOverview } from '../../models/analytics.model';
 import { ChartData } from '../../shared/components/chart-widget/chart-widget.component';
 import { ChartWidgetComponent } from '../../shared/components/chart-widget/chart-widget.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
@@ -45,6 +47,7 @@ import { ClientFormDialogComponent, ClientFormData } from '../../shared/componen
 })
 export class AdminDashboardComponent implements OnInit {
   systemStats: SystemStats | null = null;
+  adminOverview: AdminOverview | null = null;
   userGrowthChart: ChartData | null = null;
   revenueChart: ChartData | null = null;
   userDistributionChart: ChartData | null = null;
@@ -70,6 +73,7 @@ export class AdminDashboardComponent implements OnInit {
 
   constructor(
     private adminAnalytics: AdminAnalyticsService,
+    private analyticsBackend: AnalyticsBackendService,
     private userService: UserService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog
@@ -82,7 +86,19 @@ export class AdminDashboardComponent implements OnInit {
   loadDashboardData(): void {
     this.loading = true;
 
-    // Load system stats
+    // Load admin overview from Analytics Service backend
+    this.analyticsBackend.getAdminOverview().subscribe({
+      next: (overview) => {
+        this.adminOverview = overview;
+        this.checkLoadingComplete();
+      },
+      error: (error) => {
+        console.error('Error loading admin overview:', error);
+        this.checkLoadingComplete();
+      }
+    });
+
+    // Load system stats (combines backend overview with local data)
     this.adminAnalytics.getSystemStats().subscribe({
       next: (stats) => {
         this.systemStats = stats;

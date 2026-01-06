@@ -70,6 +70,7 @@ export class NavbarComponent implements OnInit {
     { label: 'Client Operations', route: '/agent/payments', icon: 'payment', description: 'Perform client operations' },
     { label: 'Client Support', route: '/agent/support', icon: 'support_agent', description: 'Handle support tickets' },
     { label: 'Reports', route: '/agent/reports', icon: 'assessment', description: 'View agent reports' },
+    { label: 'Analytics', route: '/analytics', icon: 'analytics', description: 'View financial analytics' },
     { label: 'Profile', route: '/profile', icon: 'person', description: 'Manage your profile' },
     { label: 'Preferences', route: '/profile/preferences', icon: 'settings', description: 'Account preferences' },
     { label: 'Security Settings', route: '/profile/security', icon: 'security', description: 'Security and password' }
@@ -78,6 +79,9 @@ export class NavbarComponent implements OnInit {
   adminFeatures: SearchFeature[] = [
     { label: 'Admin Dashboard', route: '/admin/dashboard', icon: 'admin_panel_settings', description: 'Admin overview' },
     { label: 'User Management', route: '/admin/users', icon: 'manage_accounts', description: 'Manage all users' },
+    { label: 'Agent Management', route: '/admin/agents', icon: 'supervisor_account', description: 'Manage agents' },
+    { label: 'System Management', route: '/admin/system', icon: 'settings', description: 'System configuration' },
+    { label: 'Analytics', route: '/analytics', icon: 'analytics', description: 'View financial analytics' },
     { label: 'Profile', route: '/profile', icon: 'person', description: 'Manage your profile' },
     { label: 'Preferences', route: '/profile/preferences', icon: 'settings', description: 'Account preferences' },
     { label: 'Security Settings', route: '/profile/security', icon: 'security', description: 'Security and password' }

@@ -1,9 +1,12 @@
 import { Injectable } from '@angular/core';
-import { Observable, combineLatest, map } from 'rxjs';
+import { Observable, combineLatest, map, switchMap } from 'rxjs';
 import { AccountService } from './account.service';
 import { TransactionService } from './transaction.service';
+import { AnalyticsBackendService } from './analytics-backend.service';
+import { AuthService } from './auth.service';
 import { Account, Transaction, TransactionType, TransactionCategory } from '../../models';
 import { ChartData } from '../../shared/components/chart-widget/chart-widget.component';
+import { DashboardSummary, CategoryBreakdown, BalanceTrend } from '../../models/analytics.model';
 
 export interface AnalyticsSummary {
   totalBalance: number;
@@ -30,7 +33,9 @@ export interface MonthlyData {
 
 /**
  * Analytics Service
- * Aggregates data from AccountService and TransactionService to generate analytics
+ * 
+ * Refactored to use AnalyticsBackendService while maintaining backward compatibility
+ * with existing components. Acts as an adapter layer between components and backend service.
  */
 @Injectable({
   providedIn: 'root'
@@ -39,37 +44,31 @@ export class AnalyticsService {
 
   constructor(
     private accountService: AccountService,
-    private transactionService: TransactionService
+    private transactionService: TransactionService,
+    private analyticsBackend: AnalyticsBackendService,
+    private authService: AuthService
   ) {}
 
   /**
    * Get analytics summary
+   * Uses AnalyticsBackendService.getDashboardSummary() and adapts to AnalyticsSummary interface
    */
   getSummary(): Observable<AnalyticsSummary> {
-    return combineLatest([
-      this.accountService.getAccounts(),
-      this.transactionService.getRecentTransactions(1000) // Get more transactions for analytics
-    ]).pipe(
-      map(([accounts, transactions]) => {
-        const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-        
-        const completedTransactions = transactions.filter(t => t.status === 'COMPLETED');
-        const totalIncome = completedTransactions
-          .filter(t => t.amount > 0)
-          .reduce((sum, t) => sum + t.amount, 0);
-        
-        const totalExpenses = Math.abs(completedTransactions
-          .filter(t => t.amount < 0)
-          .reduce((sum, t) => sum + t.amount, 0));
-        
-        const netIncome = totalIncome - totalExpenses;
+    const currentUser = this.authService.getCurrentUser();
+    const userId = currentUser?.id || '3'; // Fallback to default user
 
+    return combineLatest([
+      this.analyticsBackend.getDashboardSummary(userId),
+      this.accountService.getAccounts()
+    ]).pipe(
+      map(([dashboardSummary, accounts]) => {
+        // Adapt DashboardSummary to AnalyticsSummary
         return {
-          totalBalance,
-          totalIncome,
-          totalExpenses,
-          netIncome,
-          transactionCount: completedTransactions.length,
+          totalBalance: dashboardSummary.currentBalance,
+          totalIncome: dashboardSummary.monthlyIncome,
+          totalExpenses: dashboardSummary.monthlySpending,
+          netIncome: dashboardSummary.monthlyIncome - dashboardSummary.monthlySpending,
+          transactionCount: dashboardSummary.transactionsThisMonth,
           accountsCount: accounts.length
         };
       })
@@ -78,8 +77,11 @@ export class AnalyticsService {
 
   /**
    * Get income vs expenses chart data (last 6 months)
+   * Uses transaction service for historical data (backend doesn't provide monthly breakdown)
    */
   getIncomeExpensesChart(): Observable<ChartData> {
+    // Keep existing implementation as backend doesn't provide monthly income/expenses breakdown
+    // This could be enhanced later to use balance trend data if available
     return this.transactionService.getRecentTransactions(1000).pipe(
       map((transactions) => {
         const completedTransactions = transactions.filter(t => t.status === 'COMPLETED');
@@ -134,49 +136,49 @@ export class AnalyticsService {
 
   /**
    * Get balance evolution chart data
+   * Uses AnalyticsBackendService.getBalanceTrend() and adapts to ChartData format
    */
   getBalanceEvolutionChart(): Observable<ChartData> {
-    return combineLatest([
-      this.accountService.getAccounts(),
-      this.transactionService.getRecentTransactions(1000)
-    ]).pipe(
-      map(([accounts, transactions]) => {
-        const now = new Date();
-        const months: MonthlyData[] = [];
-        const completedTransactions = transactions.filter(t => t.status === 'COMPLETED');
+    const currentUser = this.authService.getCurrentUser();
+    const userId = currentUser?.id || '3'; // Fallback to default user
 
-        // Calculate initial balance (6 months ago)
-        const initialBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-        let runningBalance = initialBalance;
-
-        // Generate last 6 months
-        for (let i = 5; i >= 0; i--) {
-          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-          
-          const monthTransactions = completedTransactions.filter(t => {
-            const tDate = new Date(t.date);
-            return tDate.getMonth() === date.getMonth() && 
-                   tDate.getFullYear() === date.getFullYear();
-          });
-
-          const monthNet = monthTransactions.reduce((sum, t) => sum + t.amount, 0);
-          runningBalance += monthNet;
-
-          months.push({
-            month: monthName,
-            income: 0,
-            expenses: 0,
-            balance: runningBalance
-          });
+    return this.analyticsBackend.getBalanceTrend(userId, 180).pipe( // 6 months = ~180 days
+      map((balanceTrend) => {
+        // Convert DataPoint[] to monthly aggregation for chart
+        const dataPoints = balanceTrend.dataPoints;
+        if (dataPoints.length === 0) {
+          return {
+            labels: [],
+            datasets: [{ label: 'Balance', data: [], color: '#1E6AE1' }]
+          };
         }
 
+        // Group by month
+        const monthlyMap = new Map<string, number[]>();
+        dataPoints.forEach(point => {
+          const date = new Date(point.timestamp);
+          const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          if (!monthlyMap.has(monthKey)) {
+            monthlyMap.set(monthKey, []);
+          }
+          monthlyMap.get(monthKey)!.push(point.value);
+        });
+
+        // Calculate average balance per month
+        const months: string[] = [];
+        const balances: number[] = [];
+        monthlyMap.forEach((values, month) => {
+          months.push(month);
+          const avgBalance = values.reduce((sum, val) => sum + val, 0) / values.length;
+          balances.push(Math.round(avgBalance * 100) / 100);
+        });
+
         return {
-          labels: months.map(m => m.month),
+          labels: months,
           datasets: [
             {
               label: 'Balance',
-              data: months.map(m => m.balance),
+              data: balances,
               color: '#1E6AE1'
             }
           ]
@@ -187,22 +189,25 @@ export class AnalyticsService {
 
   /**
    * Get spending by category
+   * Uses AnalyticsBackendService.getSpendingBreakdown() and adapts to CategorySpending format
    */
   getCategorySpending(): Observable<CategorySpending[]> {
-    return this.transactionService.getRecentTransactions(1000).pipe(
-      map((transactions) => {
-        const completedExpenses = transactions
-          .filter(t => t.status === 'COMPLETED' && t.amount < 0)
-          .filter(t => t.category !== TransactionCategory.TRANSFER); // Exclude transfers
+    const currentUser = this.authService.getCurrentUser();
+    const userId = currentUser?.id || '3'; // Fallback to default user
 
-        const categoryMap = new Map<TransactionCategory, number>();
-        
-        completedExpenses.forEach(t => {
-          const current = categoryMap.get(t.category) || 0;
-          categoryMap.set(t.category, current + Math.abs(t.amount));
-        });
-
-        const total = Array.from(categoryMap.values()).reduce((sum, val) => sum + val, 0);
+    return this.analyticsBackend.getSpendingBreakdown(userId, 'MONTH').pipe(
+      map((breakdown: CategoryBreakdown[]) => {
+        // Map backend category names to TransactionCategory enum
+        const categoryMapping: Record<string, TransactionCategory> = {
+          'Food & Dining': TransactionCategory.FOOD,
+          'Transportation': TransactionCategory.TRANSPORT,
+          'Shopping': TransactionCategory.SHOPPING,
+          'Utilities': TransactionCategory.UTILITIES,
+          'Entertainment': TransactionCategory.ENTERTAINMENT,
+          'Healthcare': TransactionCategory.HEALTHCARE,
+          'Education': TransactionCategory.EDUCATION,
+          'Investment': TransactionCategory.INVESTMENT
+        };
 
         const categoryColors: Record<TransactionCategory, string> = {
           [TransactionCategory.SHOPPING]: '#EF4444',
@@ -218,17 +223,12 @@ export class AnalyticsService {
           [TransactionCategory.OTHER]: '#64748B'
         };
 
-        const result: CategorySpending[] = Array.from(categoryMap.entries())
-          .map(([category, amount]) => ({
-            category,
-            amount,
-            percentage: total > 0 ? (amount / total) * 100 : 0,
-            color: categoryColors[category] || '#64748B'
-          }))
-          .sort((a, b) => b.amount - a.amount)
-          .slice(0, 6); // Top 6 categories
-
-        return result;
+        return breakdown.map(item => ({
+          category: categoryMapping[item.category] || TransactionCategory.OTHER,
+          amount: item.amount,
+          percentage: item.percentage,
+          color: categoryColors[categoryMapping[item.category] || TransactionCategory.OTHER] || '#64748B'
+        })).slice(0, 6); // Top 6 categories
       })
     );
   }

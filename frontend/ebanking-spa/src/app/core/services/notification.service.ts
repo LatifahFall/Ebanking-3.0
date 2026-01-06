@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay, BehaviorSubject, catchError } from 'rxjs';
+import { Observable, of, BehaviorSubject, catchError, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { Notification, NotificationType, NotificationPriority } from '../../models';
+import { Notification } from '../../models';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -14,8 +14,8 @@ import { environment } from '../../../environments/environment';
 export class NotificationService {
   private unreadCountSubject = new BehaviorSubject<number>(0);
   public unreadCount$ = this.unreadCountSubject.asObservable();
-  private readonly baseUrl = environment.notificationServiceUrl;
-  private readonly useMock = environment.useMock;
+  // Utiliser une URL relative pour permettre le proxy Vercel
+  private baseUrl = '/api/notifications';
 
   constructor(private http: HttpClient) {
     this.updateUnreadCount();
@@ -25,101 +25,71 @@ export class NotificationService {
    * Get all notifications
    */
   getNotifications(): Observable<Notification[]> {
-    if (this.useMock) {
-      return this.getNotificationsMock();
-    }
     return this.http.get<Notification[]>(this.baseUrl).pipe(
-      catchError(() => {
-        // Fallback to mock
-        return this.getNotificationsMock();
-      })
+      catchError(() => of([]))
     );
   }
 
   /**
-   * Get all notifications (mock data)
+   * Send a single notification
+   * POST /api/notifications
    */
-  private getNotificationsMock(): Observable<Notification[]> {
-    const mockNotifications: Notification[] = [
-      {
-        id: 'notif-001',
-        type: NotificationType.TRANSACTION,
-        priority: NotificationPriority.MEDIUM,
-        title: 'Payment Received',
-        message: 'You received $5,500.00 from Tech Corp Inc.',
-        read: false,
-        timestamp: new Date('2025-12-31T09:00:00'),
-        userId: 'usr-123456',
-        icon: 'account_balance',
-        color: '#10B981'
-      },
-      {
-        id: 'notif-002',
-        type: NotificationType.SECURITY,
-        priority: NotificationPriority.HIGH,
-        title: 'New Device Login',
-        message: 'Login detected from new device in New York, NY',
-        read: false,
-        actionUrl: '/profile/security',
-        actionLabel: 'Review Activity',
-        timestamp: new Date('2025-12-30T22:15:00'),
-        userId: 'usr-123456',
-        icon: 'security',
-        color: '#F59E0B'
-      },
-      {
-        id: 'notif-003',
-        type: NotificationType.ACCOUNT,
-        priority: NotificationPriority.LOW,
-        title: 'Monthly Statement Ready',
-        message: 'Your December statement is now available',
-        read: true,
-        actionUrl: '/accounts',
-        actionLabel: 'View Statement',
-        timestamp: new Date('2025-12-30T08:00:00'),
-        userId: 'usr-123456',
-        icon: 'description',
-        color: '#6B7280'
-      },
-      {
-        id: 'notif-004',
-        type: NotificationType.ALERT,
-        priority: NotificationPriority.URGENT,
-        title: 'Large Transaction Alert',
-        message: 'A transaction of $1,000.00 was processed',
-        read: false,
-        timestamp: new Date('2025-12-30T14:20:00'),
-        userId: 'usr-123456',
-        icon: 'warning',
-        color: '#EF4444'
-      },
-      {
-        id: 'notif-005',
-        type: NotificationType.PROMOTION,
-        priority: NotificationPriority.LOW,
-        title: 'Special Offer',
-        message: 'Get 2% cashback on all purchases this month',
-        read: true,
-        timestamp: new Date('2025-12-28T10:00:00'),
-        userId: 'usr-123456',
-        icon: 'local_offer',
-        color: '#8B5CF6'
-      }
-    ];
+  sendNotification(payload: Partial<Notification>): Observable<any> {
+    return this.http.post<any>(this.baseUrl, payload).pipe(
+      catchError(() => of({ success: false }))
+    );
+  }
 
-    return of(mockNotifications).pipe(delay(300));
+  /**
+   * Send bulk notifications (broadcast)
+   * POST /api/notifications/bulk
+   */
+  sendBulkNotifications(payload: Partial<Notification>[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bulk`, payload).pipe(
+      catchError(() => of({ success: false }))
+    );
+  }
+
+  /**
+   * Get user notification history
+   * GET /api/notifications/user/{userId}
+   */
+  getUserNotifications(userId: string): Observable<Notification[]> {
+    return this.http.get<Notification[]>(`${this.baseUrl}/user/${userId}`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  /**
+   * Get unread IN_APP notifications
+   * GET /api/notifications/in-app/{userId}
+   */
+  getInAppNotifications(userId: string): Observable<Notification[]> {
+    return this.http.get<Notification[]>(`${this.baseUrl}/in-app/${userId}`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  /**
+   * Get pending notifications (monitoring)
+   * GET /api/notifications/pending
+   */
+  getPendingNotifications(): Observable<Notification[]> {
+    return this.http.get<Notification[]>(`${this.baseUrl}/pending`).pipe(
+      catchError(() => of([]))
+    );
   }
 
   /**
    * Get unread notification count
    */
   getUnreadCount(): Observable<number> {
-    return new Observable(observer => {
+    return new Observable<number>(observer => {
       this.getNotifications().subscribe(notifications => {
-        const count = notifications.filter(n => !n.read).length;
+        const count = (notifications || []).filter(n => !n.read).length;
         observer.next(count);
         observer.complete();
-      });
+      }, () => { observer.next(0); observer.complete(); });
     });
   }
 
@@ -127,15 +97,9 @@ export class NotificationService {
    * Mark notification as read
    */
   markAsRead(notificationId: string): Observable<boolean> {
-    if (this.useMock) {
-      this.updateUnreadCount();
-      return of(true).pipe(delay(200));
-    }
     return this.http.put<boolean>(`${this.baseUrl}/${notificationId}/read`, {}).pipe(
-      catchError(() => {
-        this.updateUnreadCount();
-        return of(true).pipe(delay(200));
-      })
+      map(() => { this.updateUnreadCount(); return true; }),
+      catchError(() => { this.updateUnreadCount(); return of(true); })
     );
   }
 
@@ -144,7 +108,7 @@ export class NotificationService {
    */
   markAllAsRead(): Observable<boolean> {
     this.unreadCountSubject.next(0);
-    return of(true).pipe(delay(200));
+    return of(true).pipe(catchError(() => of(false)));
   }
 
   /**
@@ -154,5 +118,79 @@ export class NotificationService {
     this.getUnreadCount().subscribe(count => {
       this.unreadCountSubject.next(count);
     });
+  }
+
+  /**
+   * Get user notification preferences
+   * GET /api/notifications/preferences/{userId}
+   */
+  getUserPreferences(userId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/preferences/${userId}`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  /**
+   * Update user notification preferences
+   * PUT /api/notifications/preferences/{userId}
+   */
+  updateUserPreferences(userId: string, preferences: any): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/preferences/${userId}`, preferences).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  /**
+   * Toggle all notifications (enable/disable)
+   * PUT /api/notifications/preferences/{userId}/toggle-all?enabled={true|false}
+   */
+  toggleAllNotifications(userId: string, enabled: boolean): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/preferences/${userId}/toggle-all`, null, {
+      params: { enabled: String(enabled) }
+    }).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  /**
+   * Toggle Do Not Disturb mode
+   * PUT /api/notifications/preferences/{userId}/do-not-disturb?enabled={true|false}
+   */
+  toggleDoNotDisturb(userId: string, enabled: boolean): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/preferences/${userId}/do-not-disturb`, null, {
+      params: { enabled: String(enabled) }
+    }).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  /**
+   * Get user audit history (notifications)
+   * GET /api/notifications/audit/{userId}
+   */
+  getUserNotificationAudit(userId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/audit/${userId}`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  /**
+   * Get global notification statistics
+   * GET /api/notifications/stats
+   */
+  getNotificationStats(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/stats`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  /**
+   * Health check notifications
+   * GET /api/notifications/health
+   */
+  getNotificationHealth(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/health`).pipe(
+      catchError(() => of(null))
+    );
   }
 }

@@ -1,0 +1,99 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ebanking-ingress
+  namespace: default
+  annotations:
+    # Use ssl redirect and allow proxying HTTP backends
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    # Large enough for API payloads
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # Dynamic CORS: only allow listed origins and return the exact Origin when matched
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      # Allowed origins: add your production frontend domain(s) and dev origins
+      set $allowed_origin '';
+      if ($http_origin ~* "(https?://(localhost:4200|ebanking-3-0-2sqfjpd32-ghitas-projects-2f8ab62a.vercel.app|34\\.22\\.142\\.65)(:[0-9]+)?)") {
+        set $allowed_origin $http_origin;
+      }
+      if ($allowed_origin != '') {
+        add_header 'Access-Control-Allow-Origin' $allowed_origin always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS, PATCH' always;
+        add_header 'Access-Control-Allow-Headers' 'Authorization,Content-Type,Accept,Origin,X-Requested-With' always;
+        add_header 'Access-Control-Max-Age' '3600' always;
+      }
+      # Ensure OPTIONS requests are handled
+      if ($request_method = 'OPTIONS') {
+        add_header 'Content-Length' 0 always;
+        add_header 'Content-Type' 'text/plain; charset=utf-8' always;
+        return 204;
+      }
+spec:
+  tls:
+    # Replace host and secret with your real domain & cert-manager secret
+    - hosts:
+        - api.example.com
+      secretName: ebanking-tls-secret
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          - path: /api/payments
+            pathType: Prefix
+            backend:
+              service:
+                name: payment-svc
+                port:
+                  number: 80
+          - path: /api/accounts
+            pathType: Prefix
+            backend:
+              service:
+                name: account-svc
+                port:
+                  number: 80
+          - path: /api/users
+            pathType: Prefix
+            backend:
+              service:
+                name: user-svc
+                port:
+                  number: 80
+          - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-svc
+                port:
+                  number: 80
+          - path: /api/crypto
+            pathType: Prefix
+            backend:
+              service:
+                name: crypto-svc
+                port:
+                  number: 80
+          - path: /api/notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-svc
+                port:
+                  number: 80
+          - path: /api/audit
+            pathType: Prefix
+            backend:
+              service:
+                name: audit-svc
+                port:
+                  number: 80
+          - path: /api/analytics
+            pathType: Prefix
+            backend:
+              service:
+                name: analytics-svc
+                port:
+                  number: 80
+  ingressClassName: nginx
+

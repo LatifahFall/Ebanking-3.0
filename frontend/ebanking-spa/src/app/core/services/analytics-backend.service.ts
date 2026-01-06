@@ -21,13 +21,13 @@ import { environment } from '../../../environments/environment';
 
 /**
  * Analytics Backend Service
- * 
+ *
  * This service mirrors the backend Analytics Service endpoints:
  * - Base URL: /api/v1/analytics
  * - Port: 8087 (configured via environment)
- * 
+ *
  * Currently uses MOCK data, but structured to easily switch to real HTTP calls.
- * 
+ *
  * Backend Endpoints:
  * - GET /api/v1/analytics/dashboard/summary?userId={userId}
  * - GET /api/v1/analytics/spending/breakdown?userId={userId}&period={MONTH|WEEK}
@@ -71,8 +71,8 @@ export class AnalyticsBackendService {
     if (customBase) {
       return customBase.replace(/\/+$/, '');
     }
-    // Use environment configuration
-    return environment.analyticsServiceUrl.replace(/\/+$/, '');
+    // Build base using global apiBaseUrl to ensure calls go to `${apiBaseUrl}/api/analytics`
+    return `${environment.apiBaseUrl}/api/analytics`.replace(/\/+$/, '');
   }
 
   // ============================================================================
@@ -81,7 +81,7 @@ export class AnalyticsBackendService {
 
   /**
    * Generic HTTP call method with retry logic and fallback to mock
-   * 
+   *
    * @param endpoint - API endpoint (relative to base URL)
    * @param method - HTTP method (GET, POST, PUT, DELETE)
    * @param params - Query parameters
@@ -89,7 +89,7 @@ export class AnalyticsBackendService {
    * @param mockFallback - Observable to return if HTTP call fails
    * @param retryCount - Number of retry attempts (default: 2)
    * @returns Observable<T>
-   * 
+   *
    * TODO: Replace mock fallback with proper error handling when backend is ready
    */
   private httpCall<T>(
@@ -139,13 +139,13 @@ export class AnalyticsBackendService {
       }),
       catchError((error: HttpErrorResponse) => {
         console.error(`HTTP Error [${method} ${url}]:`, error);
-        
+
         // If mock fallback is provided, use it
         if (mockFallback) {
           console.warn('Falling back to mock data due to HTTP error');
           return mockFallback;
         }
-        
+
         // Otherwise, throw the error
         return throwError(() => error);
       })
@@ -159,7 +159,7 @@ export class AnalyticsBackendService {
   /**
    * GET /api/v1/analytics/dashboard/summary?userId={userId}
    * Get dashboard summary for a user
-   * 
+   *
    * TODO: Replace mock with HTTP call when backend is ready
    * Backend endpoint: GET /api/v1/analytics/dashboard/summary?userId={userId}
    * Expected response: DashboardSummary DTO
@@ -183,7 +183,7 @@ export class AnalyticsBackendService {
   /**
    * GET /api/v1/analytics/spending/breakdown?userId={userId}&period={MONTH|WEEK}
    * Get spending breakdown by category
-   * 
+   *
    * TODO: Replace mock with HTTP call when backend is ready
    * Backend endpoint: GET /api/v1/analytics/spending/breakdown?userId={userId}&period={MONTH|WEEK}
    * Expected response: CategoryBreakdown[] DTO
@@ -209,7 +209,7 @@ export class AnalyticsBackendService {
   /**
    * GET /api/v1/analytics/trends/balance?userId={userId}&days={30}
    * Get balance trend over time
-   * 
+   *
    * TODO: Replace mock with HTTP call when backend is ready
    * Backend endpoint: GET /api/v1/analytics/trends/balance?userId={userId}&days={30}
    * Expected response: BalanceTrend DTO
@@ -235,7 +235,7 @@ export class AnalyticsBackendService {
   /**
    * GET /api/v1/analytics/insights/recommendations?userId={userId}
    * Get personalized recommendations
-   * 
+   *
    * TODO: Replace mock with HTTP call when backend is ready
    * Backend endpoint: GET /api/v1/analytics/insights/recommendations?userId={userId}
    * Expected response: string[] (array of recommendation messages)
@@ -259,7 +259,7 @@ export class AnalyticsBackendService {
   /**
    * GET /api/v1/analytics/admin/overview
    * Get admin overview (admin only)
-   * 
+   *
    * TODO: Replace mock with HTTP call when backend is ready
    * Backend endpoint: GET /api/v1/analytics/admin/overview
    * Expected response: AdminOverview DTO
@@ -287,7 +287,7 @@ export class AnalyticsBackendService {
   /**
    * GET /api/v1/analytics/alerts/active?userId={userId}
    * Get active alerts for a user
-   * 
+   *
    * TODO: Replace mock with HTTP call when backend is ready
    * Backend endpoint: GET /api/v1/analytics/alerts/active?userId={userId}
    * Expected response: Alert[] DTO
@@ -311,7 +311,7 @@ export class AnalyticsBackendService {
   /**
    * POST /api/v1/analytics/alerts/{alertId}/resolve
    * Resolve an alert
-   * 
+   *
    * TODO: Replace mock with HTTP call when backend is ready
    * Backend endpoint: POST /api/v1/analytics/alerts/{alertId}/resolve
    * Expected response: void (204 No Content)
@@ -343,17 +343,17 @@ export class AnalyticsBackendService {
   private getDashboardSummaryMock(userId: string): Observable<DashboardSummary> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     return combineLatest([
       this.accountService.getAccounts(userId),
       this.transactionService.getRecentTransactions(1000)
     ]).pipe(
       map(([accounts, allTransactions]) => {
         // Filter transactions for this user and current month
-        const userTransactions = allTransactions.filter(t => 
+        const userTransactions = allTransactions.filter(t =>
           t.userId === userId || accounts.some(acc => acc.id === t.fromAccount || acc.id === t.toAccount)
         );
-        
+
         const monthTransactions = userTransactions.filter(t => {
           const txDate = new Date(t.date);
           return txDate >= startOfMonth && txDate <= now;
@@ -413,7 +413,7 @@ export class AnalyticsBackendService {
   private getSpendingBreakdownMock(userId: string, period: SpendingPeriod): Observable<CategoryBreakdown[]> {
     const now = new Date();
     const isMonth = period === 'MONTH';
-    const periodStart = isMonth 
+    const periodStart = isMonth
       ? new Date(now.getFullYear(), now.getMonth(), 1)
       : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
@@ -423,21 +423,21 @@ export class AnalyticsBackendService {
     ]).pipe(
       map(([accounts, allTransactions]) => {
         // Filter transactions for this user and period
-        const userTransactions = allTransactions.filter(t => 
+        const userTransactions = allTransactions.filter(t =>
           t.userId === userId || accounts.some(acc => acc.id === t.fromAccount || acc.id === t.toAccount)
         );
-        
+
         const periodTransactions = userTransactions.filter(t => {
           const txDate = new Date(t.date);
-          return txDate >= periodStart && txDate <= now && 
-                 t.amount < 0 && 
+          return txDate >= periodStart && txDate <= now &&
+                 t.amount < 0 &&
                  t.category !== TransactionCategory.TRANSFER &&
                  t.status === TransactionStatus.COMPLETED;
         });
 
         // Calculate breakdown by category
         const categoryMap = new Map<string, { amount: number; count: number }>();
-        
+
         periodTransactions.forEach(t => {
           const categoryName = this.mapCategoryToBackendName(t.category);
           const current = categoryMap.get(categoryName) || { amount: 0, count: 0 };
@@ -481,14 +481,8 @@ export class AnalyticsBackendService {
       this.accountService.getAccounts(userId),
       this.transactionService.getRecentTransactions(1000)
     ]).pipe(
-      map(([accounts, allTransactions]) => {
-        const now = new Date();
+      map(([accounts]) => {
         const currentBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-        
-        // Filter user transactions
-        const userTransactions = allTransactions.filter(t => 
-          t.userId === userId || accounts.some(acc => acc.id === t.fromAccount || acc.id === t.toAccount)
-        );
 
         // Generate data points based on transaction history
         const dataPoints = this.generateBalanceTrendDataPoints(accounts, currentBalance, days);
@@ -511,19 +505,19 @@ export class AnalyticsBackendService {
   private getRecommendationsMock(userId: string): Observable<string[]> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     return combineLatest([
       this.accountService.getAccounts(userId),
       this.transactionService.getRecentTransactions(1000)
     ]).pipe(
       map(([accounts, allTransactions]) => {
         const recommendations: string[] = [];
-        
+
         // Filter user transactions
-        const userTransactions = allTransactions.filter(t => 
+        const userTransactions = allTransactions.filter(t =>
           t.userId === userId || accounts.some(acc => acc.id === t.fromAccount || acc.id === t.toAccount)
         );
-        
+
         const monthTransactions = userTransactions.filter(t => {
           const txDate = new Date(t.date);
           return txDate >= startOfMonth && txDate <= now && t.status === TransactionStatus.COMPLETED;
@@ -603,19 +597,19 @@ export class AnalyticsBackendService {
   private getActiveAlertsMock(userId: string): Observable<Alert[]> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     return combineLatest([
       this.accountService.getAccounts(userId),
       this.transactionService.getRecentTransactions(1000)
     ]).pipe(
       map(([accounts, allTransactions]) => {
         const alerts: Alert[] = [];
-        
+
         // Filter user transactions
-        const userTransactions = allTransactions.filter(t => 
+        const userTransactions = allTransactions.filter(t =>
           t.userId === userId || accounts.some(acc => acc.id === t.fromAccount || acc.id === t.toAccount)
         );
-        
+
         const monthTransactions = userTransactions.filter(t => {
           const txDate = new Date(t.date);
           return txDate >= startOfMonth && txDate <= now && t.status === TransactionStatus.COMPLETED;
@@ -623,7 +617,7 @@ export class AnalyticsBackendService {
 
         // Calculate current balance
         const currentBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-        
+
         // Calculate monthly spending
         const monthlySpending = monthTransactions
           .filter(t => t.amount < 0 && t.category !== TransactionCategory.TRANSFER)
@@ -705,7 +699,7 @@ export class AnalyticsBackendService {
         const monthlyIncome = monthTransactions
           .filter(t => t.amount > 0 && t.category === TransactionCategory.SALARY)
           .reduce((sum, t) => sum + t.amount, 0);
-        
+
         if (monthlyIncome > 0 && monthlySpending > monthlyIncome * 1.2) {
           alerts.push({
             alertId: `alert-budget-exceeded-${userId}`,
@@ -759,25 +753,25 @@ export class AnalyticsBackendService {
   private generateBalanceTrendDataPoints(accounts: any[], currentBalance: number, days: number): DataPoint[] {
     const now = new Date();
     const dataPoints: DataPoint[] = [];
-    
+
     // Start with a base balance (assume 10% lower 30 days ago)
     let baseBalance = currentBalance * 0.9;
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
-      
+
       // Simulate gradual progression towards current balance
       const progress = (days - i) / days;
       const variation = (Math.random() - 0.5) * (currentBalance * 0.02); // ±2% variation
       const balance = baseBalance + (currentBalance - baseBalance) * progress + variation;
-      
+
       dataPoints.push({
         timestamp: date.toISOString(),
         value: Math.round(Math.max(0, balance) * 100) / 100
       });
     }
-    
+
     return dataPoints;
   }
 
@@ -786,7 +780,7 @@ export class AnalyticsBackendService {
    */
   private generateCategoryBreakdownFromTransactions(transactions: any[]): CategoryBreakdown[] {
     const categoryMap = new Map<string, { amount: number; count: number }>();
-    
+
     // Map TransactionCategory to backend category names
     transactions
       .filter(t => t.amount < 0 && t.category !== TransactionCategory.TRANSFER && t.status === TransactionStatus.COMPLETED)

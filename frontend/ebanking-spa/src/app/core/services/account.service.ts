@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, delay, catchError, map } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
-import { Account, AccountSummary, AccountType, CryptoAsset } from '../../models';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Account, AccountSummary, AccountType, CryptoAsset, Transaction } from '../../models';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -12,7 +12,8 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class AccountService {
-  private readonly baseUrl = environment.accountServiceUrl;
+  // Utiliser une URL relative pour permettre le proxy Vercel
+  private baseUrl = '/api/accounts';
   private readonly useMock = environment.useMock;
 
   constructor(private http: HttpClient) {}
@@ -165,7 +166,7 @@ export class AccountService {
     ];
 
     // Filter by userId if provided
-    const filteredAccounts = userId 
+    const filteredAccounts = userId
       ? allMockAccounts.filter(acc => acc.userId === userId)
       : allMockAccounts;
 
@@ -288,6 +289,82 @@ export class AccountService {
         // Fallback to mock
         return of(newAccount).pipe(delay(300));
       })
+    );
+  }
+
+  /**
+   * Get account balance
+   * GET /api/accounts/{id}/balance
+   */
+  getBalance(accountId: string): Observable<{ balance: number; availableBalance?: number } | null> {
+    if (this.useMock) {
+      // find account in mock and return balances
+      return this.getAccountsMock().pipe(
+        map(accounts => {
+          const acc = accounts.find(a => a.id === accountId);
+          if (!acc) return null;
+          return { balance: acc.balance || 0, availableBalance: acc.availableBalance ?? acc.balance };
+        }),
+        catchError(() => of(null))
+      );
+    }
+    return this.http.get<{ balance: number; availableBalance?: number }>(`${this.baseUrl}/${accountId}/balance`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  /**
+   * Get transaction history for an account
+   * GET /api/accounts/{id}/transactions?limit={limit}
+   */
+  getTransactions(accountId: string, limit = 50): Observable<Transaction[]> {
+    if (this.useMock) {
+      // generate mock transactions based on account
+      return this.getAccountsMock().pipe(
+        map(accounts => {
+          const acc = accounts.find(a => a.id === accountId);
+          if (!acc) return [] as Transaction[];
+          const now = Date.now();
+          const list: Transaction[] = Array.from({ length: Math.min(limit, 10) }).map((_, i) => ({
+            id: `tx-${accountId}-${i}-${now}`,
+            type: i % 2 === 0 ? ("DEBIT" as any) : ("CREDIT" as any),
+            category: ("OTHER" as any),
+            amount: +(Math.random() * 500).toFixed(2),
+            currency: acc.currency || 'USD',
+            description: i % 2 === 0 ? 'Payment' : 'Deposit',
+            status: (i % 3 === 0 ? ("COMPLETED" as any) : ("PENDING" as any)),
+            date: new Date(now - i * 86400000),
+            fromAccount: i % 2 === 0 ? acc.id : undefined,
+            toAccount: i % 2 === 0 ? undefined : acc.id,
+            userId: acc.userId
+          } as Transaction));
+          return list;
+        })
+      );
+    }
+
+    const params = new HttpParams().set('limit', `${limit}`);
+    return this.http.get<Transaction[]>(`${this.baseUrl}/${accountId}/transactions`, { params }).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  /**
+   * Get account statement for date range
+   * GET /api/accounts/{id}/statement?startDate={ISO}&endDate={ISO}
+   */
+  getStatement(accountId: string, startDate: Date, endDate: Date): Observable<Transaction[]> {
+    const start = startDate.toISOString();
+    const end = endDate.toISOString();
+    if (this.useMock) {
+      // reuse getTransactions and filter by date range
+      return this.getTransactions(accountId, 100).pipe(
+        map(list => list.filter(t => t.date >= startDate && t.date <= endDate))
+      );
+    }
+    const params = new HttpParams().set('startDate', start).set('endDate', end);
+    return this.http.get<Transaction[]>(`${this.baseUrl}/${accountId}/statement`, { params }).pipe(
+      catchError(() => of([]))
     );
   }
 

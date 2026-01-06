@@ -16,7 +16,8 @@ export class UserService {
   private clientAssignments: Record<string, string[]> = {}; // agentId -> clientIds
 
   // Use environment configuration, with localStorage override for development
-  private base = (localStorage.getItem('API_BASE') || environment.userServiceUrl).replace(/\/+$/, '');
+  // Use apiBaseUrl root so service can call endpoints like /admin/users, /me, /agent/clients
+  private base = (localStorage.getItem('API_BASE') || `${environment.apiBaseUrl}`).replace(/\/+$/, '');
   private readonly useMock: boolean = environment.useMock;
 
   constructor(private http: HttpClient) {
@@ -161,7 +162,7 @@ export class UserService {
       agentId: Number(agentId) || agentId, // Try to convert to number
       clientId: Number(clientId) || clientId
     };
-    
+
     // Backend returns AgentClientAssignmentResponse, but we simplify to { success: boolean }
     return this.http.post<any>(`${this.base}/admin/users/assignments`, request).pipe(
       map(() => ({ success: true })),

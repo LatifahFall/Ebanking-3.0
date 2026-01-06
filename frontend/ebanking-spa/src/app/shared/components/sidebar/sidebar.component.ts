@@ -57,6 +57,7 @@ export class SidebarComponent {
     { label: 'User Management', icon: 'manage_accounts', route: '/admin/users' },
     { label: 'Agent Management', icon: 'supervisor_account', route: '/admin/agents' },
     { label: 'System Management', icon: 'settings', route: '/admin/system' },
+    { label: 'Audit Logs', icon: 'history', route: '/admin/audit' }, // ✅ Ajouté
     { label: 'Analytics', icon: 'analytics', route: '/analytics' },
     { label: 'Profile', icon: 'person', route: '/profile' }
   ];

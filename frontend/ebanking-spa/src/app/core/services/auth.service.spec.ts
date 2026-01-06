@@ -31,7 +31,7 @@ describe('AuthService', () => {
       done();
     });
 
-    const httpReq = httpMock.expectOne('/api/v1/auth/login');
+    const httpReq = httpMock.expectOne('http://34.22.142.65/auth/login');
     httpReq.flush({}, { status: 500, statusText: 'Server Error' });
   });
 
@@ -42,7 +42,7 @@ describe('AuthService', () => {
       done();
     });
 
-    const httpReq = httpMock.expectOne('/api/v1/auth/login');
+    const httpReq = httpMock.expectOne('http://34.22.142.65/auth/login');
     httpReq.flush({}, { status: 500, statusText: 'Server Error' });
   });
 });

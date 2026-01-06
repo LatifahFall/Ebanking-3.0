@@ -26,7 +26,9 @@ import {
   providedIn: 'root'
 })
 export class CryptoService {
-  private readonly API_BASE_URL = environment.cryptoServiceUrl;
+  // Build base using global apiBaseUrl to ensure calls go to `${apiBaseUrl}/api/crypto`
+  // Utiliser une URL relative pour permettre le proxy Vercel
+  private readonly API_BASE_URL = '/api/crypto';
   private useMock = environment.useMock;
 
   // Mock data
@@ -231,88 +233,94 @@ export class CryptoService {
     if (this.useMock) {
       return of(this.mockTransactions.filter(t => t.walletId === walletId)).pipe(delay(300));
     }
-    return this.http.get<CryptoTransaction[]>(`${this.API_BASE_URL}/transactions/wallet/${walletId}`)
+    return this.http.get<CryptoTransaction[]>(`/api/transactions/wallet/${walletId}`)
       .pipe(catchError(this.handleError));
   }
 
   /**
    * Buy crypto
-   * NOTE: Backend endpoint does not exist yet - using mock only
-   * TODO: Implement POST /api/transactions/buy in backend
+   * POST /api/transactions/buy?walletId={walletId}
    */
   buyCrypto(walletId: number, request: BuyCryptoRequest): Observable<CryptoTransaction> {
-    // Backend endpoint does not exist - using mock only
-    const coin = this.mockCoins.find(c => c.symbol.toUpperCase() === request.symbol.toUpperCase());
-    const pricePerUnit = coin?.current_price || 0;
-    const cryptoAmount = request.eurAmount / pricePerUnit;
-    const fee = request.eurAmount * 0.001; // 0.1% fee
+    if (this.useMock) {
+      const coin = this.mockCoins.find(c => c.symbol.toUpperCase() === request.symbol.toUpperCase());
+      const pricePerUnit = coin?.current_price || 0;
+      const cryptoAmount = request.eurAmount / pricePerUnit;
+      const fee = request.eurAmount * 0.001; // 0.1% fee
 
-    const transaction: CryptoTransaction = {
-      id: Date.now(),
-      walletId,
-      type: TransactionType.BUY,
-      cryptoSymbol: request.symbol.toUpperCase(),
-      cryptoAmount,
-      eurAmount: request.eurAmount,
-      eurPricePerUnit: pricePerUnit,
-      fee,
-      status: TransactionStatus.COMPLETED,
-      createdAt: new Date().toISOString()
-    };
-
-    // Update mock holdings
-    const existingHolding = this.mockHoldings.find(h => h.walletId === walletId && h.cryptoSymbol === request.symbol.toUpperCase());
-    if (existingHolding) {
-      existingHolding.amount += cryptoAmount;
-      existingHolding.updatedAt = new Date().toISOString();
-    } else {
-      this.mockHoldings.push({
+      const transaction: CryptoTransaction = {
+        id: Date.now(),
         walletId,
+        type: TransactionType.BUY,
         cryptoSymbol: request.symbol.toUpperCase(),
-        amount: cryptoAmount,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-    }
+        cryptoAmount,
+        eurAmount: request.eurAmount,
+        eurPricePerUnit: pricePerUnit,
+        fee,
+        status: TransactionStatus.COMPLETED,
+        createdAt: new Date().toISOString()
+      };
 
-    this.mockTransactions.unshift(transaction);
-    return of(transaction).pipe(delay(500));
+      // Update mock holdings
+      const existingHolding = this.mockHoldings.find(h => h.walletId === walletId && h.cryptoSymbol === request.symbol.toUpperCase());
+      if (existingHolding) {
+        existingHolding.amount += cryptoAmount;
+        existingHolding.updatedAt = new Date().toISOString();
+      } else {
+        this.mockHoldings.push({
+          walletId,
+          cryptoSymbol: request.symbol.toUpperCase(),
+          amount: cryptoAmount,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      this.mockTransactions.unshift(transaction);
+      return of(transaction).pipe(delay(500));
+    }
+    const params = new HttpParams().set('walletId', walletId.toString());
+    return this.http.post<CryptoTransaction>(`/api/transactions/buy`, request, { params })
+      .pipe(catchError(this.handleError));
   }
 
   /**
    * Sell crypto
-   * NOTE: Backend endpoint does not exist yet - using mock only
-   * TODO: Implement POST /api/transactions/sell in backend
+   * POST /api/transactions/sell?walletId={walletId}
    */
   sellCrypto(walletId: number, request: SellCryptoRequest): Observable<CryptoTransaction> {
-    // Backend endpoint does not exist - using mock only
-    const coin = this.mockCoins.find(c => c.symbol.toUpperCase() === request.symbol.toUpperCase());
-    const pricePerUnit = coin?.current_price || 0;
-    const eurAmount = request.cryptoAmount * pricePerUnit;
-    const fee = eurAmount * 0.001; // 0.1% fee
+    if (this.useMock) {
+      const coin = this.mockCoins.find(c => c.symbol.toUpperCase() === request.symbol.toUpperCase());
+      const pricePerUnit = coin?.current_price || 0;
+      const eurAmount = request.cryptoAmount * pricePerUnit;
+      const fee = eurAmount * 0.001; // 0.1% fee
 
-    const transaction: CryptoTransaction = {
-      id: Date.now(),
-      walletId,
-      type: TransactionType.SELL,
-      cryptoSymbol: request.symbol.toUpperCase(),
-      cryptoAmount: request.cryptoAmount,
-      eurAmount,
-      eurPricePerUnit: pricePerUnit,
-      fee,
-      status: TransactionStatus.COMPLETED,
-      createdAt: new Date().toISOString()
-    };
+      const transaction: CryptoTransaction = {
+        id: Date.now(),
+        walletId,
+        type: TransactionType.SELL,
+        cryptoSymbol: request.symbol.toUpperCase(),
+        cryptoAmount: request.cryptoAmount,
+        eurAmount,
+        eurPricePerUnit: pricePerUnit,
+        fee,
+        status: TransactionStatus.COMPLETED,
+        createdAt: new Date().toISOString()
+      };
 
-    // Update mock holdings
-    const existingHolding = this.mockHoldings.find(h => h.walletId === walletId && h.cryptoSymbol === request.symbol.toUpperCase());
-    if (existingHolding) {
-      existingHolding.amount -= request.cryptoAmount;
-      existingHolding.updatedAt = new Date().toISOString();
+      // Update mock holdings
+      const existingHolding = this.mockHoldings.find(h => h.walletId === walletId && h.cryptoSymbol === request.symbol.toUpperCase());
+      if (existingHolding) {
+        existingHolding.amount -= request.cryptoAmount;
+        existingHolding.updatedAt = new Date().toISOString();
+      }
+
+      this.mockTransactions.unshift(transaction);
+      return of(transaction).pipe(delay(500));
     }
-
-    this.mockTransactions.unshift(transaction);
-    return of(transaction).pipe(delay(500));
+    const params = new HttpParams().set('walletId', walletId.toString());
+    return this.http.post<CryptoTransaction>(`/api/transactions/sell`, request, { params })
+      .pipe(catchError(this.handleError));
   }
 
   // ========== Market Data Operations ==========
@@ -417,4 +425,3 @@ export class CryptoService {
     return throwError(() => error);
   };
 }
-

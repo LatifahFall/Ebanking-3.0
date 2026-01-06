@@ -85,7 +85,7 @@ export class AuthService {
   login(username: string, password: string): Observable<{ success: boolean; requiresMFA?: boolean; userId?: string }> {
     // Backend-first attempt
     const payload = { username, password };
-    return this.http.post<any>(`${this.base}/auth/login`, payload).pipe(
+    return this.http.post<any>(`/api/auth/login`, payload).pipe(
       map(res => {
         // If backend responds with MFA required flag
         if (res && res.requiresMFA) {
@@ -156,7 +156,7 @@ export class AuthService {
    */
   loginWithDTO(request: LoginRequest): Observable<TokenResponse> {
     // Try real backend first, fallback to mock
-    return this.http.post<TokenResponse>(`${this.base}/auth/login`, request).pipe(
+    return this.http.post<TokenResponse>(`/api/auth/login`, request).pipe(
       tap(response => {
         this.storeTokens(response);
         // try to resolve user from token or fallback to mock users
@@ -202,7 +202,7 @@ export class AuthService {
   // ========================================
   register(request: RegisterRequest): Observable<RegisterResponse> {
     // Try backend register endpoint first, fallback to mock implementation on error
-    return this.http.post<RegisterResponse>(`${this.base}/auth/register`, request).pipe(
+    return this.http.post<RegisterResponse>(`/api/auth/register`, request).pipe(
       catchError(() => {
         return of(null).pipe(
           delay(1200),
@@ -255,7 +255,7 @@ export class AuthService {
     }
 
     // Try backend refresh endpoint
-    return this.http.post<TokenResponse>(`${this.base}/auth/refresh`, { refresh_token: token }).pipe(
+    return this.http.post<TokenResponse>(`/api/auth/refresh`, { refresh_token: token }).pipe(
       tap(response => this.storeTokens(response)),
       catchError(() => {
         // Fallback to mock
@@ -283,7 +283,7 @@ export class AuthService {
   // 4. LOGOUT (POST /auth/logout)
   // ========================================
   logout(): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.base}/auth/logout`, {}).pipe(
+    return this.http.post<{ message: string }>(`/api/auth/logout`, {}).pipe(
       tap(() => this.logoutSync()),
       catchError(() => of({ message: 'Logged out (mock)' }))
     );
@@ -303,7 +303,7 @@ export class AuthService {
   // 5. VERIFY TOKEN (POST /auth/verify-token)
   // ========================================
   verifyToken(token: string): Observable<{ valid: boolean }> {
-    return this.http.post<{ valid: boolean }>(`${this.base}/auth/verify-token`, { token }).pipe(
+    return this.http.post<{ valid: boolean }>(`/api/auth/verify-token`, { token }).pipe(
       catchError(() => of({ valid: !!this.decodeToken(token) && !this.isTokenExpired(this.decodeToken(token) as any) }))
     );
   }
@@ -316,7 +316,7 @@ export class AuthService {
     if (!accessToken) {
       return of(null);
     }
-    return this.http.post<TokenInfo>(`${this.base}/auth/token-info`, { token: accessToken }).pipe(
+    return this.http.post<TokenInfo>(`/api/auth/token-info`, { token: accessToken }).pipe(
       catchError(() => of(this.decodeToken(accessToken)))
     );
   }
@@ -326,7 +326,7 @@ export class AuthService {
   // ========================================
   verifyMFA(code: string, userId?: string): Observable<{ success: boolean; user?: User }> {
     // Try backend verify endpoint first
-    return this.http.post<{ success: boolean; access_token?: string }>(`${this.base}/auth/mfa/verify`, { code, userId }).pipe(
+    return this.http.post<{ success: boolean; access_token?: string }>(`/api/auth/mfa/verify`, { code, userId }).pipe(
       tap(res => {
         if (res && res.access_token) {
           const token: TokenResponse = { access_token: res.access_token, refresh_token: '', expires_in: 3600, refresh_expires_in: 86400, token_type: 'Bearer', scope: '' };

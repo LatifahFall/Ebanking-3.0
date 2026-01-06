@@ -13,8 +13,14 @@ import { environment } from '../../../environments/environment';
 })
 export class PaymentService {
   private payments: PaymentResponse[] = [];
-  private readonly baseUrl = environment.paymentServiceUrl;
+  // Build base using environment.paymentServiceUrl with optional local override
+  private baseUrl = (localStorage.getItem('PAYMENTS_BASE') || environment.paymentServiceUrl || `${environment.apiBaseUrl}/api/payments`).replace(/\/+$/, '');
+  private adminRulesUrl = (localStorage.getItem('ADMIN_BASE') || `${environment.apiBaseUrl}/api/admin/payment-rules`).replace(/\/+$/, '');
   private readonly useMock = environment.useMock;
+  // In-memory admin payment rules mock
+  private adminPaymentRules: any[] = [
+    { uuid: 'rule-1', name: 'Max transfer 10k', enabled: true, conditions: { maxAmount: 10000 } }
+  ];
 
   constructor(private http: HttpClient) {
     // Seed with some mock payments
@@ -314,6 +320,124 @@ export class PaymentService {
 
         this.payments.unshift(newPayment);
         return of(newPayment).pipe(delay(500));
+      })
+    );
+  }
+
+  // ----------------------------------------
+  // Biometric payments
+  // POST /api/payments/biometric/generate-qr
+  generateBiometricQRCode(request: PaymentRequest): Observable<QRCodeResponse> {
+    if (this.useMock) {
+      return of({ qrCode: 'data:image/png;base64,MOCK-BIO-QR', message: 'Biometric QR (mock)', format: 'PNG (base64)' }).pipe(delay(300));
+    }
+    return this.http.post<QRCodeResponse>(`${this.baseUrl}/biometric/generate-qr`, request).pipe(
+      catchError(() => of({ qrCode: 'data:image/png;base64,MOCK-BIO-QR', message: 'Biometric QR (fallback)', format: 'PNG (base64)' }))
+    );
+  }
+
+  // POST /api/payments/biometric
+  initiateBiometricPayment(request: QRCodePaymentRequest | PaymentRequest): Observable<PaymentResponse> {
+    if (this.useMock) {
+      const newPayment: PaymentResponse = {
+        id: `pay-${Math.random().toString(36).substr(2, 9)}`,
+        fromAccountId: (request as any).fromAccountId,
+        toAccountId: (request as any).toAccountId,
+        amount: (request as any).amount,
+        currency: (request as any).currency || 'USD',
+        paymentType: PaymentType.BIOMETRIC,
+        status: PaymentStatus.COMPLETED,
+        beneficiaryName: (request as any).beneficiaryName || 'Biometric Pay',
+        reference: (request as any).reference || '',
+        description: (request as any).description || '',
+        createdAt: new Date().toISOString(),
+        completedAt: new Date().toISOString()
+      };
+      this.payments.unshift(newPayment);
+      return of(newPayment).pipe(delay(500));
+    }
+    return this.http.post<PaymentResponse>(`${this.baseUrl}/biometric`, request as any).pipe(
+      catchError(() => {
+        const newPayment: PaymentResponse = {
+          id: `pay-${Math.random().toString(36).substr(2, 9)}`,
+          fromAccountId: (request as any).fromAccountId,
+          toAccountId: (request as any).toAccountId,
+          amount: (request as any).amount,
+          currency: (request as any).currency || 'USD',
+          paymentType: PaymentType.BIOMETRIC,
+          status: PaymentStatus.COMPLETED,
+          beneficiaryName: (request as any).beneficiaryName || 'Biometric Pay',
+          reference: (request as any).reference || '',
+          description: (request as any).description || '',
+          createdAt: new Date().toISOString(),
+          completedAt: new Date().toISOString()
+        };
+        this.payments.unshift(newPayment);
+        return of(newPayment).pipe(delay(500));
+      })
+    );
+  }
+
+  // ----------------------------------------
+  // Admin - Payment Rules
+  // GET /api/admin/payment-rules
+  getPaymentRules(): Observable<any[]> {
+    if (this.useMock) {
+      return of(this.adminPaymentRules).pipe(delay(200));
+    }
+    return this.http.get<any[]>(this.adminRulesUrl).pipe(
+      catchError(() => of(this.adminPaymentRules))
+    );
+  }
+
+  // POST /api/admin/payment-rules
+  createPaymentRule(rule: any): Observable<any> {
+    if (this.useMock) {
+      const newRule = { ...rule, uuid: `rule-${Date.now()}` };
+      this.adminPaymentRules.push(newRule);
+      return of(newRule).pipe(delay(200));
+    }
+    return this.http.post<any>(this.adminRulesUrl, rule).pipe(
+      catchError(() => {
+        const newRule = { ...rule, uuid: `rule-${Date.now()}` };
+        this.adminPaymentRules.push(newRule);
+        return of(newRule).pipe(delay(200));
+      })
+    );
+  }
+
+  // PUT /api/admin/payment-rules/{uuid}
+  updatePaymentRule(uuid: string, rule: any): Observable<any> {
+    if (this.useMock) {
+      const idx = this.adminPaymentRules.findIndex(r => r.uuid === uuid);
+      if (idx === -1) return of(null).pipe(delay(200));
+      this.adminPaymentRules[idx] = { ...this.adminPaymentRules[idx], ...rule };
+      return of(this.adminPaymentRules[idx]).pipe(delay(200));
+    }
+    return this.http.put<any>(`${this.adminRulesUrl}/${uuid}`, rule).pipe(
+      catchError(() => {
+        const idx = this.adminPaymentRules.findIndex(r => r.uuid === uuid);
+        if (idx === -1) return of(null).pipe(delay(200));
+        this.adminPaymentRules[idx] = { ...this.adminPaymentRules[idx], ...rule };
+        return of(this.adminPaymentRules[idx]).pipe(delay(200));
+      })
+    );
+  }
+
+  // DELETE /api/admin/payment-rules/{uuid}
+  deletePaymentRule(uuid: string): Observable<{ success: boolean }> {
+    if (this.useMock) {
+      const idx = this.adminPaymentRules.findIndex(r => r.uuid === uuid);
+      if (idx === -1) return of({ success: false }).pipe(delay(200));
+      this.adminPaymentRules.splice(idx, 1);
+      return of({ success: true }).pipe(delay(200));
+    }
+    return this.http.delete<{ success: boolean }>(`${this.adminRulesUrl}/${uuid}`).pipe(
+      catchError(() => {
+        const idx = this.adminPaymentRules.findIndex(r => r.uuid === uuid);
+        if (idx === -1) return of({ success: false }).pipe(delay(200));
+        this.adminPaymentRules.splice(idx, 1);
+        return of({ success: true }).pipe(delay(200));
       })
     );
   }

@@ -7,32 +7,37 @@
         <span class="logo-text">E-Banking 3.0</span>
       }
     </div>
-    <button 
-      class="toggle-btn" 
+    <button
+      class="toggle-btn"
       (click)="toggleSidebar()"
       [matTooltip]="isCollapsed() ? 'Expand' : 'Collapse'"
-      matTooltipPosition="right">
+      matTooltipPosition="right"
+      [attr.aria-label]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
       <mat-icon>{{ isCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
     </button>
   </div>
 
   <!-- Navigation Menu -->
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" role="navigation" aria-label="Main navigation">
     <ul class="menu-list">
       @for (item of menuItems; track item.route) {
         <li class="menu-item">
-          <a 
-            [routerLink]="item.route" 
+          <a
+            [routerLink]="item.route"
             routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: false }"
             class="menu-link"
             [matTooltip]="isCollapsed() ? item.label : ''"
-            matTooltipPosition="right">
+            matTooltipPosition="right"
+            [attr.aria-label]="item.label">
             <mat-icon class="menu-icon">{{ item.icon }}</mat-icon>
             @if (!isCollapsed()) {
               <span class="menu-label">{{ item.label }}</span>
             }
             @if (item.badge && !isCollapsed()) {
-              <span class="badge">{{ item.badge }}</span>
+              <span class="badge" [attr.aria-label]="item.badge + ' notifications'">
+                {{ item.badge }}
+              </span>
             }
           </a>
         </li>
@@ -46,6 +51,10 @@
       <div class="footer-content">
         <p class="version">Version 3.0.1</p>
         <p class="copyright">© 2026 E-Banking</p>
+      </div>
+    } @else {
+      <div class="footer-icon" [matTooltip]="'Version 3.0.1'" matTooltipPosition="right">
+        <mat-icon>info</mat-icon>
       </div>
     }
   </div>

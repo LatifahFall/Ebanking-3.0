@@ -93,10 +93,10 @@ export class AdminAnalyticsService {
         const totalClients = users.filter(u => u.role === UserRole.CLIENT).length;
         const totalAgents = users.filter(u => u.role === UserRole.AGENT).length;
         const totalAdmins = users.filter(u => u.role === UserRole.ADMIN || u.role === UserRole.SUPER_ADMIN).length;
-        
+
         const activeUsers = users.filter(u => u.status === UserStatus.ACTIVE).length;
         const inactiveUsers = users.filter(u => u.status === UserStatus.INACTIVE || u.status === UserStatus.SUSPENDED).length;
-        
+
         const newUsersThisMonth = users.filter(u => {
           const created = new Date(u.createdAt);
           return created >= startOfMonth;
@@ -359,7 +359,8 @@ export class AdminAnalyticsService {
         last24h: 234
       },
       {
-        endpoint: '/api/v1/payments',
+        // Use public API pattern: /api/{service}
+        endpoint: '/api/payments',
         method: 'POST',
         avgResponseTime: 85,
         requestCount: 8921,
@@ -367,7 +368,7 @@ export class AdminAnalyticsService {
         last24h: 1234
       },
       {
-        endpoint: '/api/v1/accounts',
+        endpoint: '/api/accounts',
         method: 'GET',
         avgResponseTime: 45,
         requestCount: 4567,
@@ -375,7 +376,8 @@ export class AdminAnalyticsService {
         last24h: 567
       },
       {
-        endpoint: '/api/v1/transactions',
+        // Transactions are provided by the Account Service under /api/accounts/transactions
+        endpoint: '/api/accounts/transactions',
         method: 'GET',
         avgResponseTime: 78,
         requestCount: 6789,
@@ -390,4 +392,3 @@ export class AdminAnalyticsService {
     });
   }
 }
-

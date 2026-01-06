@@ -9,3 +9,7 @@ export * from './notification.model';
 export * from './payment.model';
 export * from './auth.model';
 export * from './analytics.model';
+export * from './audit.model';
+
+export class EventType {
+}

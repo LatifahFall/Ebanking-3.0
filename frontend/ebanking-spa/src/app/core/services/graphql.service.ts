@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Apollo, gql } from 'apollo-angular';
 import { environment } from '../../../environments/environment';
-import { AuthService } from './auth.service';
 import { Observable } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
@@ -15,15 +14,15 @@ import { map, catchError } from 'rxjs/operators';
 })
 export class GraphQLService {
   constructor(
-    private apollo: Apollo,
-    private authService: AuthService
+    private apollo: Apollo
   ) {}
 
   /**
    * Exécute une query GraphQL avec authentification automatique
    */
   query<T = any>(query: string, variables?: any): Observable<T> {
-    const token = this.authService.getToken();
+    // Read token directly from storage to avoid DI circular dependency with AuthService
+    const token = localStorage.getItem('access_token');
     const context: any = {};
 
     if (token) {
@@ -50,7 +49,8 @@ export class GraphQLService {
    * Exécute une mutation GraphQL avec authentification automatique
    */
   mutate<T = any>(mutation: string, variables?: any): Observable<T> {
-    const token = this.authService.getToken();
+    // Read token directly from storage to avoid DI circular dependency with AuthService
+    const token = localStorage.getItem('access_token');
     const context: any = {};
 
     if (token) {

@@ -2,25 +2,25 @@ export const environment = {
   production: true,
   useMock: false,
 
-  // Base URL - Cloudflare Tunnel
-  apiBaseUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com',
+  // Base URL - Production API
+  apiBaseUrl: 'https://api.flagsbank.org',
 
   // Service URLs - All operational
-  authServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/auth',
-  userServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com',
-  accountServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/api/accounts',
-  paymentServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/api/payments',
-  cryptoServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/api/coins',
-  walletServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/api/wallets',
-  transactionServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/api/transactions',
-  notificationServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/api/notifications',
-  auditServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/api/audit',
-  analyticsServiceUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/api/analytics',
+  authServiceUrl: 'https://api.flagsbank.org/auth',
+  userServiceUrl: 'https://api.flagsbank.org',
+  accountServiceUrl: 'https://api.flagsbank.org/api/accounts',
+  paymentServiceUrl: 'https://api.flagsbank.org/api/payments',
+  cryptoServiceUrl: 'https://api.flagsbank.org/api/coins',
+  walletServiceUrl: 'https://api.flagsbank.org/api/wallets',
+  transactionServiceUrl: 'https://api.flagsbank.org/api/transactions',
+  notificationServiceUrl: 'https://api.flagsbank.org/api/notifications',
+  auditServiceUrl: 'https://api.flagsbank.org/api/audit',
+  analyticsServiceUrl: 'https://api.flagsbank.org/api/analytics',
 
-  graphqlGatewayUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/api/gateway/graphql',
+  graphqlGatewayUrl: 'https://api.flagsbank.org/api/gateway/graphql',
 
-  keycloakUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/auth',
-  keycloakAdminUrl: 'https://inspection-reaction-stolen-development.trycloudflare.com/auth/admin',
+  keycloakUrl: 'https://api.flagsbank.org/auth',
+  keycloakAdminUrl: 'https://api.flagsbank.org/auth/admin',
 
   // Feature flags - All services operational
   useGraphQL: false,
@@ -39,5 +39,5 @@ export const environment = {
   enableErrorTracking: true,
 
   // WebSocket
-  wsUrl: 'wss://inspection-reaction-stolen-development.trycloudflare.com/ws'
+  wsUrl: 'wss://api.flagsbank.org/ws'
 };

@@ -1,10 +1,10 @@
-package main.userservice;
+package aiservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class UserServiceApplicationTests {
+class AIServiceApplicationTests {
 
 	@Test
 	void contextLoads() {

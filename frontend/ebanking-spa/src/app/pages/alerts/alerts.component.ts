@@ -12,10 +12,10 @@ import { FormsModule } from '@angular/forms';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { AnalyticsBackendService } from '../../core/services/analytics-backend.service';
 import { AuthService } from '../../core/services/auth.service';
-import { 
-  Alert, 
-  AlertType, 
-  AlertSeverity, 
+import {
+  Alert,
+  AlertType,
+  AlertSeverity,
   AlertStatus,
   formatAlertType,
   getAlertSeverityColor
@@ -44,13 +44,13 @@ export class AlertsComponent implements OnInit {
   loading = true;
   allAlerts: Alert[] = [];
   filteredAlerts: Alert[] = [];
-  
+
   selectedType: AlertType | 'ALL' = 'ALL';
   selectedSeverity: AlertSeverity | 'ALL' = 'ALL';
-  
-  alertTypes = Object.values(AlertType);
+
+  alertTypes = Object.values(AlertType) as AlertType[];
   severities = Object.values(AlertSeverity);
-  
+
   userId: string | null = null;
 
   constructor(
@@ -66,7 +66,6 @@ export class AlertsComponent implements OnInit {
 
   loadAlerts(): void {
     if (!this.userId) return;
-    
     this.loading = true;
     this.analyticsBackend.getActiveAlerts(this.userId).subscribe({
       next: (alerts) => {
@@ -90,6 +89,10 @@ export class AlertsComponent implements OnInit {
   }
 
   onTypeFilterChange(): void {
+    // Cast selectedType to AlertType if not 'ALL'
+    if (this.selectedType !== 'ALL' && typeof this.selectedType === 'string') {
+      this.selectedType = this.selectedType as AlertType;
+    }
     this.applyFilters();
   }
 
@@ -98,13 +101,15 @@ export class AlertsComponent implements OnInit {
   }
 
   onResolveAlert(alertId: string): void {
+    this.loading = true;
     this.analyticsBackend.resolveAlert(alertId).subscribe({
       next: () => {
-        this.allAlerts = this.allAlerts.filter(a => a.alertId !== alertId);
-        this.applyFilters();
+        // Recharge les alertes après résolution pour garantir la cohérence avec l'API
+        this.loadAlerts();
       },
       error: (error) => {
         console.error('Error resolving alert:', error);
+        this.loading = false;
       }
     });
   }
@@ -138,4 +143,3 @@ export class AlertsComponent implements OnInit {
     }).format(amount);
   }
 }
-

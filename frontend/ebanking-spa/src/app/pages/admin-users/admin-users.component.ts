@@ -66,7 +66,7 @@ export class AdminUsersComponent implements OnInit {
   selectedKycStatus: KYCStatus | 'ALL' = 'ALL';
   dateFrom: Date | null = null;
   dateTo: Date | null = null;
-  
+
   // Selection for bulk actions
   selectedUsers = new Set<string>();
   selectAll = false;
@@ -123,17 +123,15 @@ export class AdminUsersComponent implements OnInit {
   loadUsers(): void {
     this.loading = true;
     this.errorMessage = '';
-    
     const roleFilter = this.selectedRole === 'ALL' ? undefined : this.selectedRole;
-    
     this.userService.searchUsers(
-      this.searchQuery || undefined,
+      this.searchQuery || '',
       roleFilter,
       0,
-      10000 // Get all for filtering
+      10000
     ).subscribe({
       next: (result) => {
-        this.allUsers = result.users;
+        this.allUsers = result;
         this.applyFilters();
         this.loading = false;
       },
@@ -175,7 +173,7 @@ export class AdminUsersComponent implements OnInit {
     // Search filter
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(u => 
+      filtered = filtered.filter(u =>
         u.fullName.toLowerCase().includes(query) ||
         u.email.toLowerCase().includes(query) ||
         u.firstName.toLowerCase().includes(query) ||
@@ -189,12 +187,11 @@ export class AdminUsersComponent implements OnInit {
   }
 
   loadAgentsAndClients(): void {
-    // Load agents and clients for assignment dialog
-    this.userService.searchUsers('', UserRole.AGENT, 0, 100).subscribe(result => {
-      this.agents = result.users;
+    this.userService.searchUsers('', UserRole.AGENT, 0, 100).subscribe(agents => {
+      this.agents = agents;
     });
-    this.userService.searchUsers('', UserRole.CLIENT, 0, 100).subscribe(result => {
-      this.clients = result.users;
+    this.userService.searchUsers('', UserRole.CLIENT, 0, 100).subscribe(clients => {
+      this.clients = clients;
     });
   }
 
@@ -398,10 +395,10 @@ export class AdminUsersComponent implements OnInit {
 
   onToggleStatus(user: User): void {
     this.loading = true;
-    const action = user.status === 'ACTIVE' 
+    const action = user.status === 'ACTIVE'
       ? this.userService.deactivateUser(user.id)
       : this.userService.activateUser(user.id);
-    
+
     action.subscribe({
       next: () => {
         // Record in history
@@ -432,11 +429,9 @@ export class AdminUsersComponent implements OnInit {
           currentAgentId: currentAgent?.id || null
         } as AssignAgentData
       });
-
       dialogRef.afterClosed().subscribe(result => {
         if (result !== undefined) {
           if (result === null) {
-            // Unassign
             if (currentAgent) {
               this.loading = true;
               this.userService.unassignClient(currentAgent.id, client.id).subscribe({
@@ -451,7 +446,6 @@ export class AdminUsersComponent implements OnInit {
               });
             }
           } else if (result) {
-            // Assign to selected agent
             this.loading = true;
             this.userService.assignClientToAgent(result, client.id).subscribe({
               next: () => {
@@ -509,5 +503,59 @@ export class AdminUsersComponent implements OnInit {
 
   getRoleLabel(role: UserRole): string {
     return this.roles.find(r => r.value === role)?.label || role;
+  }
+
+  createUser(newUser: Partial<User>): void {
+    this.loading = true;
+    this.userService.createUser(newUser).subscribe({
+      next: (user) => {
+        this.snackBar.open('Utilisateur créé', 'Fermer', { duration: 3000 });
+        this.loadUsers();
+        this.loading = false;
+      },
+      error: () => {
+        this.snackBar.open('Erreur lors de la création', 'Fermer', { duration: 3000 });
+        this.loading = false;
+      }
+    });
+  }
+
+  updateUser(user: User): void {
+    this.loading = true;
+    this.userService.updateUser(user.id, user).subscribe({
+      next: () => {
+        this.snackBar.open('Utilisateur modifié', 'Fermer', { duration: 3000 });
+        this.loadUsers();
+        this.loading = false;
+      },
+      error: () => {
+        this.snackBar.open('Erreur lors de la modification', 'Fermer', { duration: 3000 });
+        this.loading = false;
+      }
+    });
+  }
+
+  activateUser(user: User): void {
+    this.userService.activateUser(user.id).subscribe({
+      next: () => {
+        this.snackBar.open('Utilisateur activé', 'Fermer', { duration: 3000 });
+        this.loadUsers();
+      },
+      error: () => {
+        this.snackBar.open('Erreur lors de l’activation', 'Fermer', { duration: 3000 });
+      }
+    });
+  }
+
+  deactivateUser(user: User): void {
+    this.userService.deactivateUser(user.id).subscribe({
+      next: () => {
+        this.snackBar.open('Utilisateur désactivé', 'Fermer', { duration: 3000 });
+        this.loadUsers();
+      },
+      error: () => {
+        this.snackBar.open('Erreur lors de la désactivation', 'Fermer', { duration: 3000 });
+      }
+    });
   }
 }

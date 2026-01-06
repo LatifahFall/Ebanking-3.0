@@ -18,30 +18,28 @@ export class MfaComponent {
   errorMessage = '';
   resendTimer = 60;
   pendingUserId: string | null = null;
-  devCode: string | null = null;
 
   constructor(
     private authService: AuthService,
     private router: Router
   ) {
     this.startResendTimer();
-    // get pending MFA user id and dev code if available
+    // get pending MFA user id if available
     try {
       this.pendingUserId = this.authService.getPendingMfaUserId();
-      this.devCode = this.pendingUserId ? this.authService.getMfaCodeForDev(this.pendingUserId) : null;
     } catch {}
   }
 
   onCodeInput(index: number, event: any): void {
     const value = event.target.value;
-    
+
     if (value && index < 5) {
       const nextInput = event.target.nextElementSibling;
       if (nextInput) {
         nextInput.focus();
       }
     }
-    
+
     if (this.isCodeComplete()) {
       this.verifyCode();
     }
@@ -61,19 +59,21 @@ export class MfaComponent {
   }
 
   verifyCode(): void {
-    const fullCode = this.code.join('');
+    if (!this.isCodeComplete() || !this.pendingUserId) return;
     this.loading = true;
     this.errorMessage = '';
-    this.authService.verifyMFA(fullCode, this.pendingUserId || undefined).subscribe({
-      next: (response) => {
-        if (response.success) {
+    const code = this.code.join('');
+    this.authService.verifyMFA(code, this.pendingUserId).subscribe({
+      next: (res) => {
+        if (res.success) {
           this.router.navigate(['/dashboard']);
+        } else {
+          this.errorMessage = 'Code incorrect ou expiré';
         }
         this.loading = false;
       },
-      error: (error) => {
-        this.errorMessage = 'Invalid verification code';
-        this.code = ['', '', '', '', '', ''];
+      error: () => {
+        this.errorMessage = 'Erreur lors de la vérification du code';
         this.loading = false;
       }
     });
@@ -94,4 +94,3 @@ export class MfaComponent {
     }, 1000);
   }
 }
-

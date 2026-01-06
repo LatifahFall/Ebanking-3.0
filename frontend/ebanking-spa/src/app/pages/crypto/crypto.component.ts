@@ -20,17 +20,8 @@ import { ChartWidgetComponent, ChartData } from '../../shared/components/chart-w
 import { CustomButtonComponent } from '../../shared/components/custom-button/custom-button.component';
 import { LoaderComponent } from '../../shared/components/loader/loader.component';
 import { CryptoService } from '../../core/services/crypto.service';
-import {
-  CryptoPortfolio,
-  CryptoHoldingWithPrice,
-  CryptoTransaction,
-  CryptoCoin,
-  BuyCryptoRequest,
-  SellCryptoRequest,
-  TransactionType,
-  TransactionStatus
-} from '../../models/crypto.model';
-
+import { AuthService } from '../../core/services/auth.service';
+import { CryptoPortfolio, CryptoWallet, CryptoHolding, CryptoCoin, BuyCryptoRequest, SellCryptoRequest, TransactionType, TransactionStatus, CryptoHoldingWithPrice } from '../../models/crypto.model';
 /**
  * Crypto Component
  * Complete crypto wallet management with portfolio, trading, and analytics
@@ -70,6 +61,8 @@ export class CryptoComponent implements OnInit {
   portfolio: CryptoPortfolio | null = null;
   availableCoins: CryptoCoin[] = [];
   selectedTab = 0;
+  wallet: CryptoWallet | null = null;
+  holdings: CryptoHolding[] = [];
 
   // Forms
   buyForm = {
@@ -93,7 +86,8 @@ export class CryptoComponent implements OnInit {
   constructor(
     private cryptoService: CryptoService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -106,65 +100,40 @@ export class CryptoComponent implements OnInit {
   loadData(): void {
     this.loading = true;
     this.errorMessage = null;
-
-    const userId = 1; // TODO: Get from auth service
-
-    this.cryptoService.getPortfolio(userId).subscribe({
-      next: (portfolio) => {
-        this.portfolio = portfolio;
-        this.generateCharts();
-        this.loading = false;
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      this.errorMessage = 'Utilisateur non authentifié';
+      this.loading = false;
+      return;
+    }
+    const userId = user.id;
+    this.cryptoService.getWalletByUserId(userId).subscribe({
+      next: (wallet: CryptoWallet) => {
+        this.wallet = wallet;
+        this.cryptoService.getHoldings(wallet.id.toString()).subscribe({
+          next: (holdings: CryptoHolding[]) => {
+            this.holdings = holdings;
+            this.loading = false;
+          },
+          error: () => {
+            this.errorMessage = 'Erreur lors du chargement des avoirs.';
+            this.loading = false;
+          }
+        });
       },
-      error: (error) => {
-        console.error('Error loading portfolio:', error);
-        this.errorMessage = 'Failed to load crypto portfolio. Please try again.';
+      error: () => {
+        this.errorMessage = 'Erreur lors du chargement du wallet.';
         this.loading = false;
-        this.showError('Failed to load crypto portfolio');
       }
     });
-
-    this.cryptoService.getCoinsDetails().subscribe({
-      next: (coins) => {
+    this.cryptoService.getAllCoinsDetails().subscribe({
+      next: (coins: CryptoCoin[]) => {
         this.availableCoins = coins;
       },
-      error: (error) => {
-        console.error('Error loading coins:', error);
+      error: () => {
+        this.errorMessage = 'Erreur lors du chargement des cryptomonnaies.';
       }
     });
-  }
-
-  /**
-   * Generate chart data from portfolio
-   */
-  private generateCharts(): void {
-    if (!this.portfolio) return;
-
-    // Portfolio distribution chart (pie-like data for bar chart)
-    const holdings = this.portfolio.holdings;
-    const labels = holdings.map(h => h.cryptoSymbol);
-    const values = holdings.map(h => h.valueInEUR);
-
-    this.portfolioChartData = {
-      labels,
-      datasets: [{
-        label: 'Portfolio Value (EUR)',
-        data: values,
-        color: '#1E6AE1'
-      }]
-    };
-
-    // Performance chart (last 7 days mock data)
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const portfolioValues = [8500, 8700, 9200, 9100, 9500, 9800, this.portfolio.totalValueEUR];
-
-    this.performanceChartData = {
-      labels: days,
-      datasets: [{
-        label: 'Portfolio Value',
-        data: portfolioValues,
-        color: '#10B981'
-      }]
-    };
   }
 
   /**
@@ -181,13 +150,12 @@ export class CryptoComponent implements OnInit {
       eurAmount: this.buyForm.eurAmount
     };
 
-    this.cryptoService.buyCrypto(this.portfolio.wallet.id, request).subscribe({
-      next: (transaction) => {
+    this.cryptoService.buyCrypto(this.portfolio!.wallet.id.toString(), request).subscribe({      next: (transaction: any) => {
         this.showSuccess(`Successfully bought ${transaction.cryptoAmount.toFixed(8)} ${transaction.cryptoSymbol}`);
         this.buyForm = { symbol: '', eurAmount: 0 };
         this.loadData(); // Reload to update portfolio
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error buying crypto:', error);
         this.showError('Failed to buy crypto. Please try again.');
       }
@@ -215,13 +183,13 @@ export class CryptoComponent implements OnInit {
       cryptoAmount: this.sellForm.cryptoAmount
     };
 
-    this.cryptoService.sellCrypto(this.portfolio.wallet.id, request).subscribe({
-      next: (transaction) => {
+    this.cryptoService.sellCrypto(this.portfolio!.wallet.id.toString(), request).subscribe({
+      next: (transaction: any) => {
         this.showSuccess(`Successfully sold ${transaction.cryptoAmount.toFixed(8)} ${transaction.cryptoSymbol} for €${transaction.eurAmount.toFixed(2)}`);
         this.sellForm = { symbol: '', cryptoAmount: 0 };
         this.loadData(); // Reload to update portfolio
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error selling crypto:', error);
         this.showError('Failed to sell crypto. Please try again.');
       }

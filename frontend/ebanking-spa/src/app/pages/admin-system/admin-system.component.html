@@ -176,9 +176,10 @@
     <!-- Suspicious Transactions Tab -->
     <mat-tab label="Suspicious Transactions">
       <div class="tab-content">
-        @if (loading) {
+        <ng-container *ngIf="loading; else suspiciousContent">
           <app-loader [fullScreen]="false" message="Loading suspicious transactions..."></app-loader>
-        } @else {
+        </ng-container>
+        <ng-template #suspiciousContent>
           <mat-card class="suspicious-card">
             <mat-card-header>
               <mat-card-title>Suspicious Activity Monitoring</mat-card-title>
@@ -187,7 +188,7 @@
               </button>
             </mat-card-header>
             <mat-card-content>
-              @if (suspiciousTransactions.length > 0) {
+              <ng-container *ngIf="suspiciousTransactions.length > 0; else noSuspicious">
                 <table mat-table [dataSource]="suspiciousTransactions" class="suspicious-table">
                   <ng-container matColumnDef="transactionId">
                     <th mat-header-cell *matHeaderCellDef>Transaction ID</th>
@@ -235,7 +236,7 @@
                   <ng-container matColumnDef="actions">
                     <th mat-header-cell *matHeaderCellDef>Actions</th>
                     <td mat-cell *matCellDef="let suspicious">
-                      @if (suspicious.status === 'pending') {
+                      <ng-container *ngIf="suspicious.status === 'pending'; else noActions">
                         <div class="action-buttons">
                           <button mat-icon-button (click)="onReviewTransaction(suspicious, 'approve')" color="primary" matTooltip="Approve">
                             <mat-icon>check_circle</mat-icon>
@@ -247,24 +248,24 @@
                             <mat-icon>flag</mat-icon>
                           </button>
                         </div>
-                      }
+                      </ng-container>
+                      <ng-template #noActions>
+                        <span>Aucune action disponible</span>
+                      </ng-template>
                     </td>
                   </ng-container>
 
                   <tr mat-header-row *matHeaderRowDef="suspiciousColumns"></tr>
                   <tr mat-row *matRowDef="let row; columns: suspiciousColumns;"></tr>
                 </table>
-              } @else {
-                <div class="empty-state">
-                  <mat-icon>security</mat-icon>
-                  <p>No suspicious transactions detected</p>
-                </div>
-              }
+              </ng-container>
+              <ng-template #noSuspicious>
+                <div class="empty-message">Aucune transaction suspecte trouvée.</div>
+              </ng-template>
             </mat-card-content>
           </mat-card>
-        }
+        </ng-template>
       </div>
     </mat-tab>
   </mat-tab-group>
 </div>
-

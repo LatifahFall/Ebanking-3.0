@@ -16,6 +16,7 @@ import { CryptoService } from '../../core/services/crypto.service';
 import { Account, Transaction, AccountSummary } from '../../models';
 import { ChartData } from '../../shared/components/chart-widget/chart-widget.component';
 import { CryptoPortfolio } from '../../models/crypto.model';
+import { TransactionType } from '../../models/transaction.model';
 
 /**
  * Dashboard Page
@@ -104,14 +105,31 @@ export class DashboardComponent implements OnInit {
   }
 
   /**
-   * Generate spending data for charts (mock data based on transactions)
+   * Génère les données de dépenses pour les graphiques à partir des transactions réelles
    */
   private generateSpendingData(): void {
-    // Generate last 6 months of data
-    const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const income = [5200, 5500, 4800, 6000, 5500, 5800];
-    const expenses = [3200, 3800, 2900, 4200, 3500, 4100];
-
+    if (!this.recentTransactions || this.recentTransactions.length === 0) {
+      this.spendingData = null;
+      return;
+    }
+    const now = new Date();
+    const months: string[] = [];
+    const income: number[] = [];
+    const expenses: number[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthLabel = monthDate.toLocaleDateString('en-US', { month: 'short' });
+      months.push(monthLabel);
+      const monthTx = this.recentTransactions.filter(tx => {
+        const txDate = new Date(tx.date);
+        return txDate.getMonth() === monthDate.getMonth() && txDate.getFullYear() === monthDate.getFullYear();
+      });
+      // Utilise les bons types pour revenus et dépenses
+      const monthIncome = monthTx.filter(tx => tx.type === TransactionType.CREDIT || tx.type === TransactionType.DEPOSIT).reduce((sum, tx) => sum + tx.amount, 0);
+      const monthExpenses = monthTx.filter(tx => tx.type === TransactionType.DEBIT || tx.type === TransactionType.PAYMENT || tx.type === TransactionType.WITHDRAWAL).reduce((sum, tx) => sum + tx.amount, 0);
+      income.push(monthIncome);
+      expenses.push(monthExpenses);
+    }
     this.spendingData = {
       labels: months,
       datasets: [
@@ -155,8 +173,8 @@ export class DashboardComponent implements OnInit {
 
   onQuickTransfer(): void {
     // Navigate to payments page with transfer pre-selected
-    this.router.navigate(['/payments'], { 
-      queryParams: { action: 'transfer' } 
+    this.router.navigate(['/payments'], {
+      queryParams: { action: 'transfer' }
     });
   }
 
@@ -177,4 +195,3 @@ export class DashboardComponent implements OnInit {
     });
   }
 }
-

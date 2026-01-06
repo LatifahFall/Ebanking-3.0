@@ -89,11 +89,11 @@ export class AgentClientDetailsComponent implements OnInit {
     }
   }
 
+  // Remplace getClientProfile par fetchClient du UserService
   loadClientDetails(): void {
     if (!this.currentAgentId || !this.clientId) return;
-
     this.loading = true;
-    this.userService.getClientProfile(this.currentAgentId, this.clientId).subscribe({
+    this.userService.fetchClient(this.currentAgentId, this.clientId).subscribe({
       next: (client) => {
         this.client = client;
         this.loadAccounts();
@@ -321,4 +321,3 @@ export class CreateAccountDialogComponent {
     this.dialogRef.close(false);
   }
 }
-

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, BehaviorSubject, catchError, map } from 'rxjs';
+import { Observable, BehaviorSubject, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { Notification } from '../../models';
 import { environment } from '../../../environments/environment';
@@ -25,9 +25,7 @@ export class NotificationService {
    * Get all notifications
    */
   getNotifications(): Observable<Notification[]> {
-    return this.http.get<Notification[]>(this.baseUrl).pipe(
-      catchError(() => of([]))
-    );
+    return this.http.get<Notification[]>(this.baseUrl);
   }
 
   /**
@@ -35,9 +33,7 @@ export class NotificationService {
    * POST /api/notifications
    */
   sendNotification(payload: Partial<Notification>): Observable<any> {
-    return this.http.post<any>(this.baseUrl, payload).pipe(
-      catchError(() => of({ success: false }))
-    );
+    return this.http.post<any>(this.baseUrl, payload);
   }
 
   /**
@@ -45,9 +41,7 @@ export class NotificationService {
    * POST /api/notifications/bulk
    */
   sendBulkNotifications(payload: Partial<Notification>[]): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/bulk`, payload).pipe(
-      catchError(() => of({ success: false }))
-    );
+    return this.http.post<any>(`${this.baseUrl}/bulk`, payload);
   }
 
   /**
@@ -55,9 +49,7 @@ export class NotificationService {
    * GET /api/notifications/user/{userId}
    */
   getUserNotifications(userId: string): Observable<Notification[]> {
-    return this.http.get<Notification[]>(`${this.baseUrl}/user/${userId}`).pipe(
-      catchError(() => of([]))
-    );
+    return this.http.get<Notification[]>(`${this.baseUrl}/user/${userId}`);
   }
 
   /**
@@ -66,7 +58,7 @@ export class NotificationService {
    */
   getInAppNotifications(userId: string): Observable<Notification[]> {
     return this.http.get<Notification[]>(`${this.baseUrl}/in-app/${userId}`).pipe(
-      catchError(() => of([]))
+      map(notifications => notifications.filter(n => !n.read))
     );
   }
 
@@ -75,9 +67,7 @@ export class NotificationService {
    * GET /api/notifications/pending
    */
   getPendingNotifications(): Observable<Notification[]> {
-    return this.http.get<Notification[]>(`${this.baseUrl}/pending`).pipe(
-      catchError(() => of([]))
-    );
+    return this.http.get<Notification[]>(`${this.baseUrl}/pending`);
   }
 
   /**

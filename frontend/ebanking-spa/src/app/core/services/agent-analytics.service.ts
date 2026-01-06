@@ -48,7 +48,7 @@ export interface PerformanceMetrics {
 /**
  * Agent Analytics Service
  * Aggregates data from UserService to generate agent-specific analytics
- * 
+ *
  * Note: The backend Analytics Service does not currently provide agent-specific endpoints.
  * This service uses mock data based on UserService.getAgentClients().
  * When agent analytics endpoints are added to the backend, this service should be
@@ -65,23 +65,20 @@ export class AgentAnalyticsService {
    * Get agent statistics
    */
   getAgentStats(agentId: string): Observable<AgentStats> {
-    return this.userService.getAgentClients(agentId).pipe(
-      map((clients) => {
+    return this.userService.getAgentsClients(agentId).pipe(
+      map((clients: User[]) => {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
         const totalClients = clients.length;
-        const activeClients = clients.filter(c => c.status === 'ACTIVE').length;
-        
-        const newClientsThisMonth = clients.filter(c => {
+        const activeClients = clients.filter((c: User) => c.status === 'ACTIVE').length;
+        const newClientsThisMonth = clients.filter((c: User) => {
           const created = new Date(c.createdAt);
           return created >= startOfMonth;
         }).length;
-
-        const pendingKyc = clients.filter(c => c.kycStatus === KYCStatus.IN_PROGRESS || c.kycStatus === KYCStatus.NOT_STARTED).length;
-        const verifiedKyc = clients.filter(c => c.kycStatus === KYCStatus.VERIFIED).length;
-        const rejectedKyc = clients.filter(c => c.kycStatus === KYCStatus.REJECTED).length;
-
+        const pendingKyc = clients.filter((c: User) => c.kycStatus === KYCStatus.IN_PROGRESS || c.kycStatus === KYCStatus.NOT_STARTED).length;
+        const verifiedKyc = clients.filter((c: User) => c.kycStatus === KYCStatus.VERIFIED).length;
+        const rejectedKyc = clients.filter((c: User) => c.kycStatus === KYCStatus.REJECTED).length;
         return {
           totalClients,
           activeClients,
@@ -98,16 +95,14 @@ export class AgentAnalyticsService {
    * Get recent activity
    */
   getRecentActivity(agentId: string, limit: number = 10): Observable<RecentActivity[]> {
-    return this.userService.getAgentClients(agentId).pipe(
-      map((clients) => {
+    return this.userService.getAgentsClients(agentId).pipe(
+      map((clients: User[]) => {
         const activities: RecentActivity[] = [];
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        clients.forEach(client => {
+        clients.forEach((client: User) => {
           const created = new Date(client.createdAt);
           const updated = client.lastLogin ? new Date(client.lastLogin) : null;
-
           // New clients this month
           if (created >= thirtyDaysAgo) {
             activities.push({
@@ -120,7 +115,6 @@ export class AgentAnalyticsService {
               color: '#10B981'
             });
           }
-
           // KYC status changes
           if (updated && updated >= thirtyDaysAgo) {
             if (client.kycStatus === KYCStatus.IN_PROGRESS || client.kycStatus === KYCStatus.NOT_STARTED) {
@@ -145,7 +139,6 @@ export class AgentAnalyticsService {
               });
             }
           }
-
           // Status changes
           if (client.status === 'INACTIVE' && updated && updated >= thirtyDaysAgo) {
             activities.push({
@@ -159,7 +152,6 @@ export class AgentAnalyticsService {
             });
           }
         });
-
         // Sort by timestamp (most recent first) and limit
         return activities
           .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
@@ -172,11 +164,10 @@ export class AgentAnalyticsService {
    * Get alerts and tasks
    */
   getAlerts(agentId: string): Observable<AgentAlert[]> {
-    return this.userService.getAgentClients(agentId).pipe(
-      map((clients) => {
+    return this.userService.getAgentsClients(agentId).pipe(
+      map((clients: User[]) => {
         const alerts: AgentAlert[] = [];
-
-        clients.forEach(client => {
+        clients.forEach((client: User) => {
           // KYC pending alerts
           if (client.kycStatus === KYCStatus.IN_PROGRESS || client.kycStatus === KYCStatus.NOT_STARTED) {
             alerts.push({
@@ -191,7 +182,6 @@ export class AgentAnalyticsService {
               actionUrl: `/agent/clients?clientId=${client.id}`
             });
           }
-
           // KYC rejected alerts
           if (client.kycStatus === KYCStatus.REJECTED) {
             alerts.push({
@@ -206,7 +196,6 @@ export class AgentAnalyticsService {
               actionUrl: `/agent/clients?clientId=${client.id}`
             });
           }
-
           // Inactive client alerts
           if (client.status === 'INACTIVE') {
             alerts.push({
@@ -222,7 +211,6 @@ export class AgentAnalyticsService {
             });
           }
         });
-
         // Sort by priority (high first) and timestamp
         return alerts.sort((a, b) => {
           const priorityOrder = { high: 0, medium: 1, low: 2 };
@@ -238,55 +226,45 @@ export class AgentAnalyticsService {
    * Get performance metrics
    */
   getPerformanceMetrics(agentId: string): Observable<PerformanceMetrics> {
-    return this.userService.getAgentClients(agentId).pipe(
-      map((clients) => {
+    return this.userService.getAgentsClients(agentId).pipe(
+      map((clients: User[]) => {
         const now = new Date();
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-        const clientsLastMonth = clients.filter(c => {
+        const clientsLastMonth = clients.filter((c: User) => {
           const created = new Date(c.createdAt);
           return created < thisMonth;
         }).length;
-
-        const clientsThisMonth = clients.filter(c => {
+        const clientsThisMonth = clients.filter((c: User) => {
           const created = new Date(c.createdAt);
           return created >= thisMonth;
         }).length;
-
-        const clientGrowth = clientsLastMonth > 0 
-          ? ((clientsThisMonth - clientsLastMonth) / clientsLastMonth) * 100 
+        const clientGrowth = clientsLastMonth > 0
+          ? ((clientsThisMonth - clientsLastMonth) / clientsLastMonth) * 100
           : clientsThisMonth > 0 ? 100 : 0;
-
         const activeClientRate = clients.length > 0
-          ? (clients.filter(c => c.status === 'ACTIVE').length / clients.length) * 100
+          ? (clients.filter((c: User) => c.status === 'ACTIVE').length / clients.length) * 100
           : 0;
-
         const kycCompletionRate = clients.length > 0
-          ? (clients.filter(c => c.kycStatus === KYCStatus.VERIFIED).length / clients.length) * 100
+          ? (clients.filter((c: User) => c.kycStatus === KYCStatus.VERIFIED).length / clients.length) * 100
           : 0;
-
         // Generate monthly trend (last 6 months)
         const monthlyTrend = [];
         for (let i = 5; i >= 0; i--) {
           const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
           const monthName = monthDate.toLocaleDateString('en-US', { month: 'short' });
-          
-          const monthClients = clients.filter(c => {
+          const monthClients = clients.filter((c: User) => {
             const created = new Date(c.createdAt);
-            return created.getMonth() === monthDate.getMonth() && 
+            return created.getMonth() === monthDate.getMonth() &&
                    created.getFullYear() === monthDate.getFullYear();
           });
-
-          const monthActive = monthClients.filter(c => c.status === 'ACTIVE').length;
-
+          const monthActive = monthClients.filter((c: User) => c.status === 'ACTIVE').length;
           monthlyTrend.push({
             month: monthName,
             clients: monthClients.length,
             active: monthActive
           });
         }
-
         return {
           clientGrowth,
           activeClientRate,
@@ -297,4 +275,3 @@ export class AgentAnalyticsService {
     );
   }
 }
-

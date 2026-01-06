@@ -8,6 +8,7 @@ import { RouterModule } from '@angular/router';
  */
 @Component({
   selector: 'app-auth-layout',
+  standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './auth-layout.component.html',
   styleUrl: './auth-layout.component.scss'
@@ -15,4 +16,3 @@ import { RouterModule } from '@angular/router';
 export class AuthLayoutComponent {
   currentYear = new Date().getFullYear();
 }
-

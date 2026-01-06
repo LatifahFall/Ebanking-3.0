@@ -12,7 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { CustomButtonComponent } from '../../shared/components/custom-button/custom-button.component';
 import { LoaderComponent } from '../../shared/components/loader/loader.component';
-import { UserService } from '../../core/services/user.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserPreferences, UserPreferencesRequest } from '../../models/preferences.model';
 
@@ -46,6 +46,7 @@ export class PreferencesComponent implements OnInit {
   saving = false;
   preferences: UserPreferences | null = null;
   userId: string | null = null;
+  auditHistory: any[] = [];
 
   // Form model
   form = {
@@ -70,7 +71,7 @@ export class PreferencesComponent implements OnInit {
   ];
 
   constructor(
-    private userService: UserService,
+    private notificationService: NotificationService,
     private authService: AuthService,
     private snackBar: MatSnackBar
   ) {}
@@ -80,6 +81,7 @@ export class PreferencesComponent implements OnInit {
     if (currentUser) {
       this.userId = currentUser.id;
       this.loadPreferences();
+      this.loadAudit();
     } else {
       this.loading = false;
       this.showError('User not authenticated');
@@ -88,9 +90,8 @@ export class PreferencesComponent implements OnInit {
 
   loadPreferences(): void {
     if (!this.userId) return;
-
     this.loading = true;
-    this.userService.getPreferences(this.userId).subscribe({
+    this.notificationService.getUserPreferences(this.userId).subscribe({
       next: (prefs) => {
         if (prefs) {
           this.preferences = prefs;
@@ -105,19 +106,29 @@ export class PreferencesComponent implements OnInit {
         }
         this.loading = false;
       },
-      error: (error) => {
-        console.error('Error loading preferences:', error);
-        this.showError('Failed to load preferences');
+      error: () => {
         this.loading = false;
+        this.showError('Erreur lors du chargement des préférences');
       }
     });
   }
 
-  onSave(): void {
+  loadAudit(): void {
     if (!this.userId) return;
+    this.notificationService.getUserNotificationAudit(this.userId).subscribe({
+      next: (audit) => {
+        this.auditHistory = audit || [];
+      },
+      error: () => {
+        this.showError('Erreur lors du chargement de l\'audit des notifications');
+      }
+    });
+  }
 
+  savePreferences(): void {
+    if (!this.userId) return;
     this.saving = true;
-    const request: UserPreferencesRequest = {
+    const prefs = {
       language: this.form.language,
       theme: this.form.theme,
       notificationEmail: this.form.notificationEmail,
@@ -125,24 +136,14 @@ export class PreferencesComponent implements OnInit {
       notificationPush: this.form.notificationPush,
       notificationInApp: this.form.notificationInApp
     };
-
-    this.userService.updatePreferences(this.userId, request).subscribe({
-      next: (updated) => {
-        if (updated) {
-          this.preferences = updated;
-          this.showSuccess('Preferences updated successfully');
-          
-          // Apply theme immediately if changed
-          if (updated.theme) {
-            document.body.setAttribute('data-theme', updated.theme);
-          }
-        }
+    this.notificationService.updateUserPreferences(this.userId, prefs).subscribe({
+      next: () => {
         this.saving = false;
+        this.showSuccess('Préférences enregistrées');
       },
-      error: (error) => {
-        console.error('Error updating preferences:', error);
-        this.showError('Failed to update preferences');
+      error: () => {
         this.saving = false;
+        this.showError('Erreur lors de la sauvegarde des préférences');
       }
     });
   }
@@ -161,4 +162,3 @@ export class PreferencesComponent implements OnInit {
     });
   }
 }
-

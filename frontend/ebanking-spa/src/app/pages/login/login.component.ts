@@ -54,11 +54,10 @@ export class LoginComponent {
         }
         this.loading = false;
       },
-      error: (error) => {
-        this.errorMessage = 'Invalid credentials';
+      error: () => {
+        this.errorMessage = "Identifiants invalides ou erreur serveur";
         this.loading = false;
       }
     });
   }
 }
-

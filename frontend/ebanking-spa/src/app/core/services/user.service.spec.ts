@@ -21,14 +21,19 @@ describe('UserService', () => {
     httpMock.verify();
   });
 
-  it('falls back to mock when getUserById backend fails', (done) => {
-    service.getUserById('3').subscribe(u => {
-      expect(u).toBeTruthy();
-      expect(u?.email).toContain('@');
-      done();
+  it('should return error when getUserById backend fails', (done) => {
+    service.getUserById('3').subscribe({
+      next: () => {
+        fail('Should not return user on backend error');
+      },
+      error: (err) => {
+        expect(err.status).toBe(500);
+        expect(err.statusText).toBe('Server Error');
+        done();
+      }
     });
 
-    const httpReq = httpMock.expectOne('/api/v1/admin/users/3');
+    const httpReq = httpMock.expectOne('http://34.22.142.65/admin/users/3');
     httpReq.flush({}, { status: 500, statusText: 'Server Error' });
   });
 });

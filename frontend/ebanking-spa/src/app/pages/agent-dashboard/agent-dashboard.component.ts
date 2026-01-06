@@ -41,7 +41,7 @@ import { ChartData } from '../../shared/components/chart-widget/chart-widget.com
 export class AgentDashboardComponent implements OnInit {
   loading = true;
   agentId: string | null = null;
-  
+
   stats: AgentStats | null = null;
   recentActivity: RecentActivity[] = [];
   alerts: AgentAlert[] = [];
@@ -67,70 +67,66 @@ export class AgentDashboardComponent implements OnInit {
 
   loadDashboard(): void {
     if (!this.agentId) return;
-
     this.loading = true;
 
-    // Load stats
+    // Charger les stats
     this.agentAnalytics.getAgentStats(this.agentId).subscribe({
       next: (stats) => {
         this.stats = stats;
         this.checkLoadingComplete();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading stats:', error);
         this.checkLoadingComplete();
       }
     });
 
-    // Load recent activity
-    this.agentAnalytics.getRecentActivity(this.agentId, 5).subscribe({
-      next: (activity) => {
+    // Charger l'activité récente de l'agent
+    this.agentAnalytics.getRecentActivity(this.agentId).subscribe({
+      next: (activity: any) => {
         this.recentActivity = activity;
         this.checkLoadingComplete();
       },
-      error: (error) => {
-        console.error('Error loading activity:', error);
+      error: (error: any) => {
+        console.error('Erreur lors du chargement de l’activité agent:', error);
         this.checkLoadingComplete();
       }
     });
 
-    // Load alerts
-    this.agentAnalytics.getAlerts(this.agentId).subscribe({
-      next: (alerts) => {
-        this.alerts = alerts.slice(0, 5); // Top 5 alerts
+    // Charger les alertes de l'agent
+    this.agentAnalytics.getAgentStats(this.agentId).subscribe({
+      next: (alerts: any) => {
+        this.alerts = alerts.alerts ? alerts.alerts.slice(0, 5) : [];
         this.checkLoadingComplete();
       },
-      error: (error) => {
-        console.error('Error loading alerts:', error);
+      error: (error: any) => {
+        console.error('Erreur lors du chargement des alertes agent:', error);
         this.checkLoadingComplete();
       }
     });
 
-    // Load performance
+    // Charger la performance
     this.agentAnalytics.getPerformanceMetrics(this.agentId).subscribe({
-      next: (performance) => {
+      next: (performance: any) => {
         this.performance = performance;
-        
-        // Generate chart data
         this.performanceChart = {
-          labels: performance.monthlyTrend.map(m => m.month),
+          labels: performance.monthlyTrend.map((m: any) => m.month),
           datasets: [
             {
               label: 'Total Clients',
-              data: performance.monthlyTrend.map(m => m.clients),
+              data: performance.monthlyTrend.map((m: any) => m.clients),
               color: '#1E6AE1'
             },
             {
               label: 'Active Clients',
-              data: performance.monthlyTrend.map(m => m.active),
+              data: performance.monthlyTrend.map((m: any) => m.active),
               color: '#10B981'
             }
           ]
         };
-        
         this.checkLoadingComplete();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading performance:', error);
         this.checkLoadingComplete();
       }
@@ -182,4 +178,3 @@ export class AgentDashboardComponent implements OnInit {
     });
   }
 }
-

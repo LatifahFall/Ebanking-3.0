@@ -57,17 +57,17 @@ export class AgentClientsComponent implements OnInit {
   loading = false;
   errorMessage = '';
   searchQuery = '';
-  
+
   // Filters
   statusFilter: string = 'ALL';
   kycFilter: string = 'ALL';
   dateFilter: string = 'ALL';
-  
+
   // Pagination
   page = 0;
   pageSize = 10;
   totalClients = 0;
-  
+
   currentAgentId: string | null = null;
 
   constructor(
@@ -82,7 +82,7 @@ export class AgentClientsComponent implements OnInit {
     const currentUser = this.authService.getCurrentUser();
     if (currentUser && currentUser.role === UserRole.AGENT) {
       this.currentAgentId = currentUser.id;
-      
+
       // Check for search query parameter from navbar
       this.route.queryParams.subscribe(params => {
         if (params['search']) {
@@ -97,18 +97,16 @@ export class AgentClientsComponent implements OnInit {
 
   loadClients(): void {
     if (!this.currentAgentId) return;
-    
     this.loading = true;
     this.errorMessage = '';
-    
     this.userService.searchAssignedClients(
       this.currentAgentId,
-      this.searchQuery || undefined,
+      this.searchQuery || '',
       this.page,
       this.pageSize
     ).subscribe({
       next: (result) => {
-        this.clients = result.clients;
+        this.clients = result;
         this.applyFilters();
         this.totalClients = this.filteredClients.length;
         this.loading = false;
@@ -120,52 +118,106 @@ export class AgentClientsComponent implements OnInit {
     });
   }
 
+  createClient(newClient: Partial<User>): void {
+    if (!this.currentAgentId) return;
+    this.loading = true;
+    this.userService.createClient(this.currentAgentId, newClient).subscribe({
+      next: () => {
+        this.loadClients();
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+        this.errorMessage = 'Failed to create client.';
+      }
+    });
+  }
+
+  updateClient(clientId: string, updated: Partial<User>): void {
+    if (!this.currentAgentId) return;
+    this.loading = true;
+    this.userService.updateClient(this.currentAgentId, clientId, updated).subscribe({
+      next: () => {
+        this.loadClients();
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+        this.errorMessage = 'Failed to update client.';
+      }
+    });
+  }
+
+  activateClient(clientId: string): void {
+    if (!this.currentAgentId) return;
+    this.userService.activateClient(this.currentAgentId, clientId).subscribe({
+      next: () => {
+        this.loadClients();
+      },
+      error: () => {
+        this.errorMessage = 'Failed to activate client.';
+      }
+    });
+  }
+
+  deactivateClient(clientId: string): void {
+    if (!this.currentAgentId) return;
+    this.userService.deactivateClient(this.currentAgentId, clientId).subscribe({
+      next: () => {
+        this.loadClients();
+      },
+      error: () => {
+        this.errorMessage = 'Failed to deactivate client.';
+      }
+    });
+  }
+
   applyFilters(): void {
     this.filteredClients = [...this.clients];
-    
+
     // Status filter
     if (this.statusFilter !== 'ALL') {
       this.filteredClients = this.filteredClients.filter(c => c.status === this.statusFilter);
     }
-    
+
     // KYC filter
     if (this.kycFilter !== 'ALL') {
       this.filteredClients = this.filteredClients.filter(c => c.kycStatus === this.kycFilter);
     }
-    
+
     // Date filter
     if (this.dateFilter !== 'ALL') {
       const now = new Date();
       const filterDate = new Date();
-      
+
       switch (this.dateFilter) {
         case 'TODAY':
           filterDate.setHours(0, 0, 0, 0);
-          this.filteredClients = this.filteredClients.filter(c => 
+          this.filteredClients = this.filteredClients.filter(c =>
             new Date(c.createdAt) >= filterDate
           );
           break;
         case 'WEEK':
           filterDate.setDate(now.getDate() - 7);
-          this.filteredClients = this.filteredClients.filter(c => 
+          this.filteredClients = this.filteredClients.filter(c =>
             new Date(c.createdAt) >= filterDate
           );
           break;
         case 'MONTH':
           filterDate.setMonth(now.getMonth() - 1);
-          this.filteredClients = this.filteredClients.filter(c => 
+          this.filteredClients = this.filteredClients.filter(c =>
             new Date(c.createdAt) >= filterDate
           );
           break;
         case 'YEAR':
           filterDate.setFullYear(now.getFullYear() - 1);
-          this.filteredClients = this.filteredClients.filter(c => 
+          this.filteredClients = this.filteredClients.filter(c =>
             new Date(c.createdAt) >= filterDate
           );
           break;
       }
     }
-    
+
     // Pagination
     const start = this.page * this.pageSize;
     const end = start + this.pageSize;
@@ -236,9 +288,10 @@ export class AgentClientsComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result && this.currentAgentId) {
         this.loading = true;
-        this.userService.updateClientProfile(this.currentAgentId, client.id, result).subscribe({
+        this.userService.updateClient(this.currentAgentId, client.id, result).subscribe({
           next: () => {
             this.loadClients();
+            this.loading = false;
           },
           error: () => {
             this.loading = false;
@@ -251,12 +304,12 @@ export class AgentClientsComponent implements OnInit {
 
   onToggleStatus(client: User): void {
     if (!this.currentAgentId) return;
-    
+
     this.loading = true;
-    const action = client.status === 'ACTIVE' 
+    const action = client.status === 'ACTIVE'
       ? this.userService.deactivateClient(this.currentAgentId, client.id)
       : this.userService.activateClient(this.currentAgentId, client.id);
-    
+
     action.subscribe({
       next: () => {
         this.loadClients();

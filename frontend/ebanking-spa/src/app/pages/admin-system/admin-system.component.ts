@@ -14,10 +14,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TransactionService } from '../../core/services/transaction.service';
+import { PaymentRule } from '../../models/payment-rule.model';
+import { PaymentRulesService } from '../../core/services/payment-rules.service';
 import { Transaction } from '../../models';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 import { LoaderComponent } from '../../shared/components/loader/loader.component';
-
 export interface SystemConfig {
   maxTransactionAmount: number;
   minTransactionAmount: number;
@@ -34,14 +35,6 @@ export interface SecuritySettings {
   passwordMinLength: number;
   requireStrongPassword: boolean;
   enableFraudDetection: boolean;
-}
-
-export interface PaymentRule {
-  id: string;
-  name: string;
-  condition: string;
-  action: string;
-  enabled: boolean;
 }
 
 export interface SuspiciousTransaction {
@@ -107,29 +100,9 @@ export class AdminSystemComponent implements OnInit {
   };
 
   // Payment Rules
-  paymentRules: PaymentRule[] = [
-    {
-      id: 'rule-1',
-      name: 'High Amount Alert',
-      condition: 'Amount > $10,000',
-      action: 'Require additional verification',
-      enabled: true
-    },
-    {
-      id: 'rule-2',
-      name: 'Rapid Transactions',
-      condition: 'More than 5 transactions in 1 hour',
-      action: 'Temporary account freeze',
-      enabled: true
-    },
-    {
-      id: 'rule-3',
-      name: 'Unusual Location',
-      condition: 'Transaction from new location',
-      action: 'Send SMS verification',
-      enabled: false
-    }
-  ];
+  paymentRules: PaymentRule[] = [];
+  paymentRuleForm: FormGroup;
+  loadingPaymentRules = false;
   paymentRulesColumns: string[] = ['name', 'condition', 'action', 'enabled', 'actions'];
 
   // Suspicious Transactions
@@ -139,6 +112,7 @@ export class AdminSystemComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private transactionService: TransactionService,
+    private paymentRulesService: PaymentRulesService,
     private snackBar: MatSnackBar
   ) {
     this.systemConfigForm = this.fb.group({
@@ -158,16 +132,22 @@ export class AdminSystemComponent implements OnInit {
       requireStrongPassword: [this.securitySettings.requireStrongPassword],
       enableFraudDetection: [this.securitySettings.enableFraudDetection]
     });
+
+    this.paymentRuleForm = this.fb.group({
+      name: ['', Validators.required],
+      description: [''],
+      isActive: [true]
+    });
   }
 
   ngOnInit(): void {
+    this.loadPaymentRules();
     this.loadSuspiciousTransactions();
   }
 
   onSaveSystemConfig(): void {
     if (this.systemConfigForm.valid) {
       this.loading = true;
-      // In a real app, this would call a backend endpoint
       setTimeout(() => {
         this.systemConfig = this.systemConfigForm.value;
         this.loading = false;
@@ -200,28 +180,69 @@ export class AdminSystemComponent implements OnInit {
     }
   }
 
+  loadPaymentRules(): void {
+    this.loadingPaymentRules = true;
+    this.paymentRulesService.getAllPaymentRules().subscribe({
+      next: (rules) => {
+        this.paymentRules = rules;
+        this.loadingPaymentRules = false;
+      },
+      error: () => {
+        this.snackBar.open('Erreur lors du chargement des règles de paiement', 'Fermer', { duration: 3000 });
+        this.loadingPaymentRules = false;
+      }
+    });
+  }
+
+  createPaymentRule(): void {
+    if (this.paymentRuleForm.invalid) return;
+    this.paymentRulesService.createPaymentRule(this.paymentRuleForm.value).subscribe({
+      next: (rule) => {
+        this.snackBar.open('Règle de paiement créée', 'Fermer', { duration: 3000 });
+        this.loadPaymentRules();
+        this.paymentRuleForm.reset({ isActive: true });
+      },
+      error: () => {
+        this.snackBar.open('Erreur lors de la création', 'Fermer', { duration: 3000 });
+      }
+    });
+  }
+
+  updatePaymentRule(rule: PaymentRule): void {
+    if (!rule.uuid) return;
+    this.paymentRulesService.updatePaymentRule(rule.uuid, rule).subscribe({
+      next: () => {
+        this.snackBar.open('Règle mise à jour', 'Fermer', { duration: 3000 });
+        this.loadPaymentRules();
+      },
+      error: () => {
+        this.snackBar.open('Erreur lors de la mise à jour', 'Fermer', { duration: 3000 });
+      }
+    });
+  }
+
+  deletePaymentRule(rule: PaymentRule): void {
+    if (!rule.uuid) return;
+    this.paymentRulesService.deletePaymentRule(rule.uuid).subscribe({
+      next: () => {
+        this.snackBar.open('Règle supprimée', 'Fermer', { duration: 3000 });
+        this.loadPaymentRules();
+      },
+      error: () => {
+        this.snackBar.open('Erreur lors de la suppression', 'Fermer', { duration: 3000 });
+      }
+    });
+  }
+
   loadSuspiciousTransactions(): void {
     this.loading = true;
-    // Mock suspicious transactions - in production, this would come from a fraud detection service
-    this.transactionService.getRecentTransactions(100).subscribe({
+    this.transactionService.getSuspiciousTransactions().subscribe({
       next: (transactions) => {
-        // Simulate suspicious transactions
-        this.suspiciousTransactions = transactions
-          .filter(t => t.amount > 10000 || Math.random() > 0.9)
-          .slice(0, 10)
-          .map(t => ({
-            id: `sus-${t.id}`,
-            transactionId: t.id,
-            userId: t.userId || 'unknown',
-            amount: Math.abs(t.amount),
-            reason: t.amount > 10000 ? 'High amount transaction' : 'Unusual pattern detected',
-            severity: t.amount > 50000 ? 'critical' : t.amount > 20000 ? 'high' : 'medium' as any,
-            timestamp: t.date,
-            status: 'pending' as any
-          }));
+        this.suspiciousTransactions = transactions;
         this.loading = false;
       },
       error: () => {
+        this.snackBar.open('Erreur lors du chargement des transactions suspectes', 'Fermer', { duration: 3000 });
         this.loading = false;
       }
     });
@@ -260,4 +281,3 @@ export class AdminSystemComponent implements OnInit {
     }
   }
 }
-

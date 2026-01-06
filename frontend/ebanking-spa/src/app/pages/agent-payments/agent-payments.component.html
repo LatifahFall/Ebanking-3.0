@@ -1,4 +1,7 @@
 <div class="agent-payments-page">
+  <!-- Suppression de toute logique mock, affichage et opérations uniquement via API réelle -->
+  <!-- Tous les paiements, retraits et transferts sont effectués via PaymentService et l'API backend -->
+
   <app-page-header
     title="Client Operations"
     subtitle="Perform deposit, withdrawal, or transfer operations for your clients"
@@ -14,13 +17,13 @@
         <mat-card-content>
           <mat-form-field appearance="outline" class="client-selector">
             <mat-label>Search Client</mat-label>
-            <input 
-              matInput 
+            <input
+              matInput
               [formControl]="clientSearchControl"
               [matAutocomplete]="clientAutocomplete"
               placeholder="Type to search by name or email...">
             <mat-icon matSuffix>search</mat-icon>
-            <mat-autocomplete 
+            <mat-autocomplete
               #clientAutocomplete="matAutocomplete"
               [displayWith]="displayClient"
               (optionSelected)="onClientSelected($event.option.value)">
@@ -88,7 +91,7 @@
                   <mat-select formControlName="accountId">
                     @for (account of clientAccounts; track account.id) {
                       <mat-option [value]="account.id">
-                        {{ account.accountName }} ({{ account.accountNumber }}) - 
+                        {{ account.accountName }} ({{ account.accountNumber }}) -
                         {{ account.currency }} {{ account.balance | number:'1.2-2' }}
                       </mat-option>
                     }
@@ -105,7 +108,7 @@
                     <mat-select formControlName="toAccountId">
                       @for (account of clientAccounts; track account.id) {
                         <mat-option [value]="account.id">
-                          {{ account.accountName }} ({{ account.accountNumber }}) - 
+                          {{ account.accountName }} ({{ account.accountNumber }}) -
                           {{ account.currency }} {{ account.balance | number:'1.2-2' }}
                         </mat-option>
                       }
@@ -156,10 +159,10 @@
                 <!-- Account Balance Info -->
                 @if (getSelectedAccount()) {
                   <div class="account-info">
-                    <p><strong>Current Balance:</strong> 
+                    <p><strong>Current Balance:</strong>
                       {{ getSelectedAccount()!.currency }} {{ getSelectedAccount()!.balance | number:'1.2-2' }}
                     </p>
-                    <p><strong>Available Balance:</strong> 
+                    <p><strong>Available Balance:</strong>
                       {{ getSelectedAccount()!.currency }} {{ getSelectedAccount()!.availableBalance | number:'1.2-2' }}
                     </p>
                   </div>
@@ -167,9 +170,9 @@
 
                 <!-- Submit Button -->
                 <div class="form-actions">
-                  <button 
-                    mat-raised-button 
-                    color="primary" 
+                  <button
+                    mat-raised-button
+                    color="primary"
                     type="submit"
                     [disabled]="operationForm.invalid || processing">
                     @if (processing) {
@@ -184,8 +187,8 @@
                       </ng-container>
                     }
                   </button>
-                  <button 
-                    mat-button 
+                  <button
+                    mat-button
                     type="button"
                     (click)="operationForm.reset({ currency: 'USD', accountId: clientAccounts.length > 0 ? clientAccounts[0].id : '' })">
                     Reset

@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { User, UserRole, LoginRequest, RegisterRequest, TokenResponse, RefreshRequest, TokenRequest, TokenInfo, RegisterResponse } from '../../models';
 import { BehaviorSubject, Observable, of, delay, throwError, tap, map, catchError, switchMap } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { GraphQLService } from './graphql.service';
 
 // (Auth DTOs are exported from src/app/models/auth.model.ts)
 
@@ -19,13 +21,25 @@ export class AuthService {
   private readonly REFRESH_TOKEN_KEY = 'refresh_token';
   private readonly USER_KEY = 'ebanking-user';
 
+  /**
+   * Get current access token
+   * Used by GraphQL service to add Authorization header
+   */
+  getToken(): string | null {
+    return localStorage.getItem(this.TOKEN_KEY);
+  }
+
   // Reactive state
   private currentUserSubject = new BehaviorSubject<User | null>(this.getStoredUser());
   public currentUser$ = this.currentUserSubject.asObservable();
   
   public isAuthenticated = signal<boolean>(!!this.getStoredUser());
 
-  private base = (localStorage.getItem('API_BASE') || '/api/v1').replace(/\/+$/, '');
+  // Use environment configuration, with localStorage override for development
+  private base = (localStorage.getItem('API_BASE') || environment.authServiceUrl).replace(/\/+$/, '');
+  private readonly useMock: boolean = environment.useMock;
+  private readonly useGraphQL: boolean = environment.useGraphQL ?? false;
+
 
   // ========================================
   // MOCK USERS (Backend-like structure)
@@ -75,7 +89,11 @@ export class AuthService {
   // Pending MFA user id when login requires 2FA (used by MfaComponent)
   private pendingMfaUserId: string | null = null;
 
-  constructor(private router: Router, private http: HttpClient) {
+  constructor(
+    private router: Router,
+    private http: HttpClient,
+    private graphqlService?: GraphQLService
+  ) {
     // Check token validity on init
     this.validateStoredToken();
   }
@@ -145,8 +163,87 @@ export class AuthService {
    * Login with backend DTOs
    */
   loginWithDTO(request: LoginRequest): Observable<TokenResponse> {
-    // Try real backend first, fallback to mock
-    return this.http.post<TokenResponse>(`${this.base}/auth/login`, request).pipe(
+    if (this.useMock) {
+      // Use mock implementation
+      return of(null).pipe(
+        delay(800),
+        map(() => {
+          const user = this.MOCK_USERS.find(
+            u => u.username === request.username && u.password === request.password
+          );
+          if (!user) {
+            throw new Error('Invalid credentials');
+          }
+          const response = this.generateTokenResponse(user);
+          this.storeTokens(response);
+          this.setCurrentUser(user);
+          return response;
+        })
+      );
+    }
+
+    // Use GraphQL Gateway if enabled
+    if (this.useGraphQL && this.graphqlService) {
+      const loginMutation = `
+        mutation Login($input: LoginInput!) {
+          login(input: $input) {
+            access_token
+            refresh_token
+            expires_in
+            refresh_expires_in
+            token_type
+            scope
+          }
+        }
+      `;
+
+      return this.graphqlService.mutate<{ login: TokenResponse }>(loginMutation, {
+        input: {
+          username: request.username,
+          password: request.password
+        }
+      }).pipe(
+        map(result => result.login),
+        tap(response => {
+          this.storeTokens(response);
+          const info = this.decodeToken(response.access_token);
+          const user = info ? this.MOCK_USERS.find(u => u.id === info.sub) : null;
+          if (user) this.setCurrentUser(user);
+        }),
+        catchError(() => {
+          // Fallback to REST
+          return this.http.post<TokenResponse>(`${this.base}/login`, request).pipe(
+            tap(response => {
+              this.storeTokens(response);
+              const info = this.decodeToken(response.access_token);
+              const user = info ? this.MOCK_USERS.find(u => u.id === info.sub) : null;
+              if (user) this.setCurrentUser(user);
+            }),
+            catchError(() => {
+              // Final fallback to mock
+              return of(null).pipe(
+                delay(800),
+                map(() => {
+                  const user = this.MOCK_USERS.find(
+                    u => u.username === request.username && u.password === request.password
+                  );
+                  if (!user) {
+                    throw new Error('Invalid credentials');
+                  }
+                  const response = this.generateTokenResponse(user);
+                  this.storeTokens(response);
+                  this.setCurrentUser(user);
+                  return response;
+                })
+              );
+            })
+          );
+        })
+      );
+    }
+
+    // Try real backend REST first, fallback to mock
+    return this.http.post<TokenResponse>(`${this.base}/login`, request).pipe(
       tap(response => {
         this.storeTokens(response);
         // try to resolve user from token or fallback to mock users
@@ -182,8 +279,29 @@ export class AuthService {
   // 2. REGISTER (POST /auth/register)
   // ========================================
   register(request: RegisterRequest): Observable<RegisterResponse> {
+    if (this.useMock) {
+      return of(null).pipe(
+        delay(1200),
+        map(() => {
+          const existingUser = this.MOCK_USERS.find(u => u.username === request.username);
+          if (existingUser) {
+            throw new Error('Username already taken');
+          }
+          const existingEmail = this.MOCK_USERS.find(u => u.email === request.email);
+          if (existingEmail) {
+            throw new Error('Email already registered');
+          }
+          const newUserId = `usr-${Date.now()}`;
+          return {
+            success: true,
+            message: 'Registration successful. Please check your email to verify your account.',
+            userId: newUserId
+          } as RegisterResponse;
+        })
+      );
+    }
     // Try backend register endpoint first, fallback to mock implementation on error
-    return this.http.post<RegisterResponse>(`${this.base}/auth/register`, request).pipe(
+    return this.http.post<RegisterResponse>(`${this.base}/register`, request).pipe(
       catchError(() => {
         return of(null).pipe(
           delay(1200),
@@ -222,8 +340,71 @@ export class AuthService {
       return throwError(() => new Error('No refresh token available'));
     }
 
+    if (this.useMock) {
+      return of(null).pipe(
+        delay(300),
+        map(() => {
+          const userId = this.extractUserIdFromRefreshToken(token);
+          const user = this.MOCK_USERS.find(u => u.id === userId);
+          if (!user) {
+            throw new Error('Invalid refresh token');
+          }
+          const response = this.generateTokenResponse(user);
+          this.storeTokens(response);
+          return response;
+        })
+      );
+    }
+
+    // Use GraphQL Gateway if enabled
+    if (this.useGraphQL && this.graphqlService) {
+      const refreshMutation = `
+        mutation RefreshToken($input: RefreshTokenInput!) {
+          refreshToken(input: $input) {
+            access_token
+            refresh_token
+            expires_in
+            refresh_expires_in
+            token_type
+            scope
+          }
+        }
+      `;
+
+      return this.graphqlService.mutate<{ refreshToken: TokenResponse }>(refreshMutation, {
+        input: {
+          refresh_token: token
+        }
+      }).pipe(
+        map(result => result.refreshToken),
+        tap(response => this.storeTokens(response)),
+        catchError(() => {
+          // Fallback to REST
+          return this.http.post<TokenResponse>(`${this.base}/refresh`, { refresh_token: token }).pipe(
+            tap(response => this.storeTokens(response)),
+            catchError(() => {
+              // Final fallback to mock
+              return of(null).pipe(
+                delay(300),
+                map(() => {
+                  const userId = this.extractUserIdFromRefreshToken(token);
+                  const user = this.MOCK_USERS.find(u => u.id === userId);
+                  if (!user) {
+                    throw new Error('Invalid refresh token');
+                  }
+                  const response = this.generateTokenResponse(user);
+                  this.storeTokens(response);
+                  return response;
+                })
+              );
+            })
+          );
+        })
+      );
+    }
+
     // Try backend refresh endpoint
-    return this.http.post<TokenResponse>(`${this.base}/auth/refresh`, { refresh_token: token }).pipe(
+    return this.http.post<TokenResponse>(`${this.base}/refresh`, { refresh_token: token }).pipe(
       tap(response => this.storeTokens(response)),
       catchError(() => {
         // Fallback to mock
@@ -251,11 +432,46 @@ export class AuthService {
   // 4. LOGOUT (POST /auth/logout)
   // ========================================
   logout(): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.base}/auth/logout`, {}).pipe(
+    if (this.useMock) {
+      this.logoutSync();
+      return of({ message: 'Logged out successfully' }).pipe(delay(200));
+    }
+
+    const refreshToken = localStorage.getItem(this.REFRESH_TOKEN_KEY);
+
+    // Use GraphQL Gateway if enabled
+    if (this.useGraphQL && this.graphqlService && refreshToken) {
+      const logoutMutation = `
+        mutation Logout($input: RefreshTokenInput!) {
+          logout(input: $input)
+        }
+      `;
+
+      return this.graphqlService.mutate<{ logout: boolean }>(logoutMutation, {
+        input: {
+          refresh_token: refreshToken
+        }
+      }).pipe(
+        map(() => ({ message: 'Logged out successfully' })),
+        tap(() => this.logoutSync()),
+        catchError(() => {
+          // Fallback to REST
+          return this.http.post<{ message: string }>(`${this.base}/logout`, {}).pipe(
+            tap(() => this.logoutSync()),
+            catchError(() => {
+              this.logoutSync();
+              return of({ message: 'Logged out (fallback)' });
+            })
+          );
+        })
+      );
+    }
+
+    return this.http.post<{ message: string }>(`${this.base}/logout`, {}).pipe(
       tap(() => this.logoutSync()),
       catchError(() => {
         this.logoutSync();
-        return of({ message: 'Logged out (mock)' });
+        return of({ message: 'Logged out (fallback)' });
       })
     );
   }
@@ -274,7 +490,15 @@ export class AuthService {
   // 5. VERIFY TOKEN (POST /auth/verify-token)
   // ========================================
   verifyToken(token: string): Observable<{ valid: boolean }> {
-    return this.http.post<{ valid: boolean }>(`${this.base}/auth/verify-token`, { token }).pipe(
+    if (this.useMock) {
+      try {
+        const decoded = this.decodeToken(token);
+        return of({ valid: !!decoded }).pipe(delay(100));
+      } catch {
+        return of({ valid: false }).pipe(delay(100));
+      }
+    }
+    return this.http.post<{ valid: boolean }>(`${this.base}/verify-token`, { token }).pipe(
       catchError(() => of({ valid: !!this.decodeToken(token) && !this.isTokenExpired(this.decodeToken(token) as any) }))
     );
   }
@@ -287,7 +511,21 @@ export class AuthService {
     if (!accessToken) {
       return of(null);
     }
-    return this.http.post<TokenInfo>(`${this.base}/auth/token-info`, { token: accessToken }).pipe(
+    if (this.useMock) {
+      const decoded = this.decodeToken(accessToken) as any;
+      const user = decoded?.sub ? this.MOCK_USERS.find(u => u.id === decoded.sub) : null;
+      return of({
+        sub: decoded?.sub || '',
+        email: user?.email || decoded?.email || '',
+        preferred_username: user?.username || decoded?.username || '',
+        given_name: user?.firstName || decoded?.given_name || '',
+        family_name: user?.lastName || decoded?.family_name || '',
+        roles: decoded?.roles || (user?.role ? [user.role] : []),
+        exp: decoded?.exp || 0,
+        iat: decoded?.iat || 0
+      } as TokenInfo).pipe(delay(100));
+    }
+    return this.http.post<TokenInfo>(`${this.base}/token-info`, { token: accessToken }).pipe(
       catchError(() => of(this.decodeToken(accessToken)))
     );
   }
@@ -297,7 +535,22 @@ export class AuthService {
   // ========================================
   verifyMFA(code: string, userId?: string): Observable<{ success: boolean; user?: User }> {
     // Try backend verify endpoint first
-    return this.http.post<{ success: boolean; access_token?: string }>(`${this.base}/auth/mfa/verify`, { code, userId }).pipe(
+    if (this.useMock) {
+      const storedCode = sessionStorage.getItem(`mfa_code_${userId}`);
+      if (!storedCode || storedCode !== code) {
+        return of({ success: false }).pipe(delay(500));
+      }
+      const user = this.MOCK_USERS.find(u => u.id === userId);
+      if (!user) {
+        return of({ success: false }).pipe(delay(500));
+      }
+      const tokenResponse = this.generateTokenResponse(user);
+      this.storeTokens(tokenResponse);
+      this.setCurrentUser(user);
+      sessionStorage.removeItem(`mfa_code_${userId}`);
+      return of({ success: true, access_token: tokenResponse.access_token }).pipe(delay(500));
+    }
+    return this.http.post<{ success: boolean; access_token?: string }>(`${this.base}/mfa/verify`, { code, userId }).pipe(
       tap(res => {
         if (res && res.access_token) {
           const token: TokenResponse = { access_token: res.access_token, refresh_token: '', expires_in: 3600, refresh_expires_in: 86400, token_type: 'Bearer', scope: '' };

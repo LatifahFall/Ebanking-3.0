@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay, BehaviorSubject } from 'rxjs';
+import { Observable, of, delay, BehaviorSubject, catchError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { Notification, NotificationType, NotificationPriority } from '../../models';
+import { environment } from '../../../environments/environment';
 
 /**
  * Notification Service
@@ -12,15 +14,32 @@ import { Notification, NotificationType, NotificationPriority } from '../../mode
 export class NotificationService {
   private unreadCountSubject = new BehaviorSubject<number>(0);
   public unreadCount$ = this.unreadCountSubject.asObservable();
+  private readonly baseUrl = environment.notificationServiceUrl;
+  private readonly useMock = environment.useMock;
 
-  constructor() {
+  constructor(private http: HttpClient) {
     this.updateUnreadCount();
+  }
+
+  /**
+   * Get all notifications
+   */
+  getNotifications(): Observable<Notification[]> {
+    if (this.useMock) {
+      return this.getNotificationsMock();
+    }
+    return this.http.get<Notification[]>(this.baseUrl).pipe(
+      catchError(() => {
+        // Fallback to mock
+        return this.getNotificationsMock();
+      })
+    );
   }
 
   /**
    * Get all notifications (mock data)
    */
-  getNotifications(): Observable<Notification[]> {
+  private getNotificationsMock(): Observable<Notification[]> {
     const mockNotifications: Notification[] = [
       {
         id: 'notif-001',
@@ -108,9 +127,16 @@ export class NotificationService {
    * Mark notification as read
    */
   markAsRead(notificationId: string): Observable<boolean> {
-    // Mock implementation
-    this.updateUnreadCount();
-    return of(true).pipe(delay(200));
+    if (this.useMock) {
+      this.updateUnreadCount();
+      return of(true).pipe(delay(200));
+    }
+    return this.http.put<boolean>(`${this.baseUrl}/${notificationId}/read`, {}).pipe(
+      catchError(() => {
+        this.updateUnreadCount();
+        return of(true).pipe(delay(200));
+      })
+    );
   }
 
   /**

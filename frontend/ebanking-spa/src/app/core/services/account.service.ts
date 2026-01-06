@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { Observable, of, delay, catchError, map } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { Account, AccountSummary, AccountType, CryptoAsset } from '../../models';
+import { environment } from '../../../environments/environment';
 
 /**
  * Account Service
@@ -10,12 +12,37 @@ import { Account, AccountSummary, AccountType, CryptoAsset } from '../../models'
   providedIn: 'root'
 })
 export class AccountService {
+  private readonly baseUrl = environment.accountServiceUrl;
+  private readonly useMock = environment.useMock;
+
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Get user accounts
+   * @param userId Optional - if provided, returns accounts for that user
+   */
+  getAccounts(userId?: string): Observable<Account[]> {
+    if (this.useMock) {
+      return this.getAccountsMock(userId);
+    }
+    // Real HTTP call
+    let url = this.baseUrl;
+    if (userId) {
+      url += `?userId=${userId}`;
+    }
+    return this.http.get<Account[]>(url).pipe(
+      catchError(() => {
+        // Fallback to mock on error
+        return this.getAccountsMock(userId);
+      })
+    );
+  }
 
   /**
    * Get user accounts (mock data)
    * @param userId Optional - if provided, returns accounts for that user
    */
-  getAccounts(userId?: string): Observable<Account[]> {
+  private getAccountsMock(userId?: string): Observable<Account[]> {
     // Generate mock accounts for different users
     const allMockAccounts: Account[] = [
       // Accounts for user '3' (Fatima Client)
@@ -204,13 +231,26 @@ export class AccountService {
    * Get single account by ID
    */
   getAccountById(accountId: string): Observable<Account | null> {
-    return new Observable(observer => {
-      this.getAccounts().subscribe(accounts => {
-        const account = accounts.find(acc => acc.id === accountId);
-        observer.next(account || null);
-        observer.complete();
+    if (this.useMock) {
+      return new Observable<Account | null>(observer => {
+        this.getAccountsMock().subscribe(accounts => {
+          const account = accounts.find(acc => acc.id === accountId);
+          observer.next(account || null);
+          observer.complete();
+        });
       });
-    });
+    }
+    return this.http.get<Account>(`${this.baseUrl}/${accountId}`).pipe(
+      catchError(() => {
+        // Fallback to mock
+        return this.getAccountsMock().pipe(
+          map(accounts => {
+            const account = accounts.find(acc => acc.id === accountId);
+            return account || null;
+          })
+        );
+      })
+    );
   }
 
   /**
@@ -218,8 +258,6 @@ export class AccountService {
    * POST /api/accounts
    */
   createAccount(userId: string, accountType: AccountType, currency: string, initialBalance?: number): Observable<Account> {
-    // TODO: When backend supports it, use POST /api/accounts
-    // For now, create mock account
     const newAccount: Account = {
       id: `acc-${Date.now()}`,
       accountNumber: `****${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
@@ -236,7 +274,21 @@ export class AccountService {
       icon: this.getAccountIcon(accountType)
     };
 
-    return of(newAccount).pipe(delay(300));
+    if (this.useMock) {
+      return of(newAccount).pipe(delay(300));
+    }
+    // Real HTTP call
+    return this.http.post<Account>(this.baseUrl, {
+      userId,
+      accountType,
+      currency,
+      initialBalance
+    }).pipe(
+      catchError(() => {
+        // Fallback to mock
+        return of(newAccount).pipe(delay(300));
+      })
+    );
   }
 
   private getAccountColor(accountType: AccountType): string {

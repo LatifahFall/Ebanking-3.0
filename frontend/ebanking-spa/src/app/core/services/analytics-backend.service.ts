@@ -17,6 +17,7 @@ import {
 import { AccountService } from './account.service';
 import { TransactionService } from './transaction.service';
 import { TransactionCategory, TransactionStatus } from '../../models';
+import { environment } from '../../../environments/environment';
 
 /**
  * Analytics Backend Service
@@ -42,9 +43,9 @@ import { TransactionCategory, TransactionStatus } from '../../models';
 export class AnalyticsBackendService {
   /**
    * Flag to control whether to use mock data or real HTTP calls
-   * Can be set via environment variable: ANALYTICS_USE_MOCK
+   * Set from environment configuration
    */
-  private readonly useMock: boolean = true; // TODO: Set from environment variable
+  private readonly useMock: boolean = environment.useMock;
 
   /**
    * Mock alerts storage (simulating database)
@@ -62,17 +63,16 @@ export class AnalyticsBackendService {
 
   /**
    * Get base URL for analytics service
-   * TODO: Replace with environment variable: environment.analyticsServiceUrl
+   * Uses environment configuration, with localStorage override for development
    */
   private getBaseUrl(): string {
-    // Check for custom base URL in localStorage or environment
+    // Check for custom base URL in localStorage (for development/testing)
     const customBase = localStorage.getItem('ANALYTICS_SERVICE_URL');
     if (customBase) {
       return customBase.replace(/\/+$/, '');
     }
-    // Default to /api/v1/analytics (relative URL for same origin)
-    // TODO: Use environment.analyticsServiceUrl when available
-    return '/api/v1/analytics';
+    // Use environment configuration
+    return environment.analyticsServiceUrl.replace(/\/+$/, '');
   }
 
   // ============================================================================

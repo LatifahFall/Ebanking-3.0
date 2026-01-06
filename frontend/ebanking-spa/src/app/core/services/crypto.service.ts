@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, delay, catchError, map, throwError } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import {
   CryptoWallet,
   CryptoTransaction,
@@ -25,8 +26,8 @@ import {
   providedIn: 'root'
 })
 export class CryptoService {
-  private readonly API_BASE_URL = 'http://localhost:8083/api'; // Crypto service port
-  private useMock = true; // Set to false when backend is ready
+  private readonly API_BASE_URL = environment.cryptoServiceUrl;
+  private useMock = environment.useMock;
 
   // Mock data
   private mockWallet: CryptoWallet = {

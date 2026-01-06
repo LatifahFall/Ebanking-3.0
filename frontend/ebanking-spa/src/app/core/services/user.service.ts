@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, of, delay, catchError, map, switchMap, throwError } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { User, UserRole } from '../../models';
+import { environment } from '../../../environments/environment';
 
 /**
  * User Service (MOCK)
@@ -14,7 +15,9 @@ export class UserService {
   private users: User[] = [];
   private clientAssignments: Record<string, string[]> = {}; // agentId -> clientIds
 
-  private base = (localStorage.getItem('API_BASE') || '/api/v1').replace(/\/+$/, '');
+  // Use environment configuration, with localStorage override for development
+  private base = (localStorage.getItem('API_BASE') || environment.userServiceUrl).replace(/\/+$/, '');
+  private readonly useMock: boolean = environment.useMock;
 
   constructor(private http: HttpClient) {
     // Seed users
